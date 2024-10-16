@@ -19,11 +19,6 @@ public class Employees {
     private String email;
     @Column(name = "phone_number")
     private String phone_number;
-
-    @ManyToOne
-    @JoinColumn(name = "id", referencedColumnName = "id")
-    private Role role_id;
-    @ManyToOne
-    @JoinColumn(name = "id", referencedColumnName = "id")
-    private Status status_id;
+    @Column(name = "role")
+    private String role;
 }
