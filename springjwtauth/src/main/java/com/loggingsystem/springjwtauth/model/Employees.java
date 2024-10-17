@@ -1,9 +1,13 @@
 package com.loggingsystem.springjwtauth.model;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "employees")
+@Getter
+@Setter
 public class Employees {
 
     @Id
@@ -21,4 +25,15 @@ public class Employees {
     private String phone_number;
     @Column(name = "role")
     private String role;
+
+    public Employees(Long id, String password, String firstName, String lastName, String email, String phoneNumber, String role) {
+        this.id = id;
+        this.password = password;
+        this.first_name = firstName;
+        this.last_name = lastName;
+        this.email = email;
+        this.phone_number = phoneNumber;
+        this.role = role;
+
+    }
 }
