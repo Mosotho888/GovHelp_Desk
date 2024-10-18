@@ -10,7 +10,7 @@ import static org.zalando.problem.Status.FORBIDDEN;
 import static org.zalando.problem.Status.UNAUTHORIZED;
 
 @JsonInclude(NON_EMPTY)
-@JsonIgnoreProperties({"stackTrace", "type", "title", "message", "localizedMessage", "parameters"})
+@JsonIgnoreProperties({"type", "title", "message", "localizedMessage", "parameters"})
 public class CommonException extends AbstractThrowableProblem {
 
     private CommonException(StatusType status, String detail) {

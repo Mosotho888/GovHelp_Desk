@@ -21,47 +21,49 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.Objects;
 
+
 @Component
 @Slf4j
 public class JwtFilter extends OncePerRequestFilter {
+
     public static final String AUTHORIZATION = "Authorization";
 
-    private final EmployeeUserDetailsService employeeUserDetailsService;
+    private final EmployeeUserDetailsService userDetailsService;
 
     private final JwtHelper jwtHelper;
 
-    public JwtFilter(EmployeeUserDetailsService employeeUserDetailsService, JwtHelper jwtHelper) {
-        this.employeeUserDetailsService = employeeUserDetailsService;
+    public JwtFilter(EmployeeUserDetailsService userDetailsService, JwtHelper jwtHelper) {
+        this.userDetailsService = userDetailsService;
         this.jwtHelper = jwtHelper;
     }
 
-    @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
+    @Override
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         log.info("Inside JWT filter");
         try {
-            final String authorizationHeader = request.getHeader(AUTHORIZATION);
+            final String authorizationHeader = request.getHeader("Authorization");
 
             System.out.println("Print Auth header: " + authorizationHeader);
             String jwt = null;
-            String username = null;
-
+            String useremail = null;
             if (Objects.nonNull(authorizationHeader) && authorizationHeader.startsWith("Bearer ")) {
                 jwt = authorizationHeader.substring(7);
-                System.out.println("JWT Token Only: " + jwt);
-                username = jwtHelper.extractUsername(jwt);
+                System.out.println("JWT Tokwn ONLY: " + jwt);
+                useremail = jwtHelper.extractUseremail(jwt);
             }
 
             System.out.println("Security Context: " + SecurityContextHolder.getContext().getAuthentication());
-
-            if (Objects.nonNull(username) && SecurityContextHolder.getContext().getAuthentication() == null) {
-                System.out.println("Context username: " + username);
-                UserDetails userDetails = this.employeeUserDetailsService.loadUserByUsername(username);
+            if (Objects.nonNull(useremail) && SecurityContextHolder.getContext().getAuthentication() == null) {
+                System.out.println("Context username:" + useremail);
+                UserDetails userDetails = this.userDetailsService.loadUserByUsername(useremail);
                 System.out.println("Context user details: " + userDetails);
-
                 boolean isTokenValidated = jwtHelper.validateToken(jwt, userDetails);
+                System.out.println("Is token validated: " + isTokenValidated);
 
                 if (isTokenValidated) {
+                    System.out.println("UerDetails authorities: " + userDetails.getAuthorities());
                     UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken =
                             new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                     usernamePasswordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
@@ -73,10 +75,12 @@ public class JwtFilter extends OncePerRequestFilter {
         } catch (ExpiredJwtException jwtException) {
             request.setAttribute("exception", jwtException);
         } catch (BadCredentialsException | UnsupportedJwtException | MalformedJwtException e) {
-           log.error("Filter exception: {}", e.getMessage());
-           request.setAttribute("exception", e);
+            log.error("Filter exception: {}", e.getMessage());
+            request.setAttribute("exception", e);
         }
 
         filterChain.doFilter(request, response);
+
     }
 }
+
