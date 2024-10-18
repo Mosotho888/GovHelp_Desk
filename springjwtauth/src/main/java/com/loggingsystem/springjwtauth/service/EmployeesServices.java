@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.util.List;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
@@ -40,5 +42,9 @@ public class EmployeesServices {
                 .toUri();
 
         return ResponseEntity.created(locationOfNewLocation).build();
+    }
+
+    public ResponseEntity<List<Employees>> findAll() {
+        return ResponseEntity.ok((List<Employees>) employeesRepository.findAll());
     }
 }
