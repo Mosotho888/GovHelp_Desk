@@ -1,23 +1,42 @@
 package com.loggingsystem.springjwtauth.service;
 
-import com.loggingsystem.springjwtauth.model.EmployeeUserDetails;
 import com.loggingsystem.springjwtauth.model.Employees;
 import com.loggingsystem.springjwtauth.repository.EmployeesRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
+@Slf4j
 public class EmployeeUserDetailsService implements UserDetailsService {
-    @Autowired
-    private EmployeesRepository employeesRepository;
+    private final EmployeesRepository employeesRepository;
+
+    public EmployeeUserDetailsService(EmployeesRepository employeesRepository) {
+        this.employeesRepository = employeesRepository;
+    }
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Employees employees = employeesRepository.findByEmail(email);
 
-        return new EmployeeUserDetails(employees);
+        Optional<Employees> employee = employeesRepository.findByEmail(email);
+
+        if (employee.isPresent()) {
+            // Retrieve employee details
+            Employees employeeDetails = employee.get();
+
+            // Return UserDetails object with email, password, and role
+            return User.withUsername(employeeDetails.getEmail())
+                    .password(employeeDetails.getPassword())
+                    .roles(employeeDetails.getRole())
+                    .build();
+
+        } else {
+            throw new UsernameNotFoundException("User not found with email: " + email);
+        }
     }
 }
