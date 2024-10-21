@@ -23,12 +23,12 @@ public class EmployeesController {
 
     @GetMapping
     private ResponseEntity<List<Employees>> findAll (Pageable pageable) {
-        return ResponseEntity.ok(employeesServices.findAll(pageable).getBody());
+        return employeesServices.findAll(pageable);
     }
 
     @GetMapping("/{id}")
     private ResponseEntity<Employees> findById (@PathVariable Long id) {
-        return ResponseEntity.ok(employeesServices.findById(id).getBody());
+        return employeesServices.findById(id);
     }
 
 }
