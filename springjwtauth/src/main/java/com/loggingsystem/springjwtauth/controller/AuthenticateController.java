@@ -6,7 +6,6 @@ import com.loggingsystem.springjwtauth.model.JwtResponse;
 import com.loggingsystem.springjwtauth.service.EmployeesServices;
 import com.loggingsystem.springjwtauth.service.JwtService;
 import jakarta.validation.Valid;
-import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
