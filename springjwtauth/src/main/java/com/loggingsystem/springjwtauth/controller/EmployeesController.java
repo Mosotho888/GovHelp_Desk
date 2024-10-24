@@ -15,7 +15,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/employees")
 public class EmployeesController {
-    private EmployeesServices employeesServices;
+    private final EmployeesServices employeesServices;
 
     public EmployeesController(EmployeesServices employeesServices) {
         this.employeesServices = employeesServices;
@@ -23,12 +23,12 @@ public class EmployeesController {
 
     @GetMapping
     private ResponseEntity<List<Employees>> findAll (Pageable pageable) {
-        return ResponseEntity.ok(employeesServices.findAll(pageable).getBody());
+        return employeesServices.findAll(pageable);
     }
 
     @GetMapping("/{id}")
     private ResponseEntity<Employees> findById (@PathVariable Long id) {
-        return ResponseEntity.ok(employeesServices.findById(id).getBody());
+        return employeesServices.findById(id);
     }
 
 }
