@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -24,15 +25,17 @@ public class TicketsServices {
     private final PriorityRepository priorityRepository;
     private final CategoryRepository categoryRepository;
     private final StatusRepository statusRepository;
+    private final TicketCommentsRepository ticketCommentsRepository;
 
     public TicketsServices(TicketsRepository ticketsRepository, EmployeesRepository employeesRepository,
                            PriorityRepository priorityRepository, CategoryRepository categoryRepository,
-                           StatusRepository statusRepository) {
+                           StatusRepository statusRepository, TicketCommentsRepository ticketCommentsRepository) {
         this.ticketsRepository = ticketsRepository;
         this.employeesRepository = employeesRepository;
         this.priorityRepository = priorityRepository;
         this.categoryRepository = categoryRepository;
         this.statusRepository = statusRepository;
+        this.ticketCommentsRepository = ticketCommentsRepository;
     }
 
     public ResponseEntity<Void> createTicket(@Valid TicketRequestDTO ticketRequest, Principal principal, UriComponentsBuilder ucb) {
@@ -52,7 +55,7 @@ public class TicketsServices {
             newTicket.setStatus(assignedStatus.get());
         }
 
-        newTicket.setComment(ticketRequest.getComment());
+        newTicket.setDescription(ticketRequest.getDescription());
         newTicket.setResolution(ticketRequest.getResolution());
         newTicket.setAttachments(ticketRequest.getAttachments());
         newTicket.setOwner(principal.getName());
@@ -82,5 +85,36 @@ public class TicketsServices {
         ));
 
         return ResponseEntity.ok(page.getContent());
+    }
+
+    public ResponseEntity<Tickets> findById(Long id) {
+        Optional<Tickets> ticket = ticketsRepository.findById(id);
+
+        if (ticket.isPresent()) {
+            return ResponseEntity.ok(ticket.get());
+        }
+
+        return ResponseEntity.notFound().build();
+    }
+
+    public ResponseEntity<Void> addCommentToTicket(Long ticketId, TicketComments comments, Principal principal) {
+        Optional<Tickets> optionalTickets = ticketsRepository.findById(ticketId);
+        Optional<Employees> optionalEmployee = employeesRepository.findByEmail(principal.getName());
+
+        if (optionalTickets.isPresent() && optionalEmployee.isPresent()) {
+            Tickets tickets = optionalTickets.get();
+            Employees employee = optionalEmployee.get();
+
+            comments.setTickets(tickets);
+            comments.setCommenter(employee);
+            //comments.setCreated_at(LocalDateTime.now());
+
+            ticketCommentsRepository.save(comments);
+
+            return ResponseEntity.status(HttpStatus.CREATED).build();
+
+        }
+
+        return ResponseEntity.notFound().build();
     }
 }
