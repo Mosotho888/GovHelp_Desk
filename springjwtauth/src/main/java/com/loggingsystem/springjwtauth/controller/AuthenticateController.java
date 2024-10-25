@@ -34,4 +34,6 @@ public class AuthenticateController {
     public ResponseEntity<JwtResponse> login (@RequestBody JwtRequest jwtRequest) {
         return jwtService.generateToken(jwtRequest);
     }
+
+    //@PostMapping("/logout")
 }

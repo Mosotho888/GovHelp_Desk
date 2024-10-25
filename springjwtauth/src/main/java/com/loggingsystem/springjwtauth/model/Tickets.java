@@ -5,6 +5,10 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.security.core.userdetails.User;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 @Setter
 @Getter
 @Entity
@@ -22,8 +26,8 @@ public class Tickets {
     @JoinColumn(name = "status_id")
     private Status status;
 
-    @Column(name = "comments")
-    private String comment;
+    @Column(name = "description")
+    private String description;
 
     @Column(name = "resolution")
     private String resolution;
@@ -41,6 +45,10 @@ public class Tickets {
     @ManyToOne
     @JoinColumn(name = "priority_id")
     private Priority priority;
+    private LocalDateTime created_at;
+
+    @OneToMany(mappedBy = "tickets", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<TicketComments> comments = new ArrayList<>();
 
     public Tickets() {
     }
