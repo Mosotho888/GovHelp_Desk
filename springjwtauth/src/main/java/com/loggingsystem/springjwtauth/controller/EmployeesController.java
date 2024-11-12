@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.security.Principal;
 import java.util.List;
 
 @RestController
@@ -31,7 +32,10 @@ public class EmployeesController {
         return employeesServices.findById(id);
     }
 
-//    @GetMapping("/profile")
+    @GetMapping("/profile")
+    private ResponseEntity<Employees> findByEmail(Principal principal) {
+        return employeesServices.findByEmail(principal);
+    }
 //    @PutMapping("/profile")
 //    @PostMapping("/{id}/roles")
 }
