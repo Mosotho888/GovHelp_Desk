@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.security.Principal;
 import java.util.List;
 import java.util.Optional;
 
@@ -63,6 +64,16 @@ public class EmployeesServices {
 
         if (employee.isPresent()) {
             return ResponseEntity.ok(employee.get());
+        }
+
+        return ResponseEntity.notFound().build();
+    }
+
+    public ResponseEntity<Employees> findByEmail(Principal principal) {
+        Optional<Employees> employeeProfile = employeesRepository.findByEmail(principal.getName());
+
+        if (employeeProfile.isPresent()) {
+            return ResponseEntity.ok(employeeProfile.get());
         }
 
         return ResponseEntity.notFound().build();
