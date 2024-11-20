@@ -1,5 +1,6 @@
 package com.loggingsystem.springjwtauth.controller;
 
+import com.loggingsystem.springjwtauth.dto.EmployeeResponseDTO;
 import com.loggingsystem.springjwtauth.model.Employees;
 import com.loggingsystem.springjwtauth.repository.EmployeesRepository;
 import com.loggingsystem.springjwtauth.service.EmployeesServices;
@@ -23,7 +24,7 @@ public class EmployeesController {
     }
 
     @GetMapping
-    private ResponseEntity<List<Employees>> findAll (Pageable pageable) {
+    private ResponseEntity<List<EmployeeResponseDTO>> findAll (Pageable pageable) {
         return employeesServices.findAll(pageable);
     }
 

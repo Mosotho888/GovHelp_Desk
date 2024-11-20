@@ -1,5 +1,6 @@
 package com.loggingsystem.springjwtauth.service;
 
+import com.loggingsystem.springjwtauth.dto.EmployeeResponseDTO;
 import com.loggingsystem.springjwtauth.model.Employees;
 import com.loggingsystem.springjwtauth.repository.EmployeesRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 import java.security.Principal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,13 +34,17 @@ public class EmployeesServices {
 
     public ResponseEntity<Void> createEmployee(Employees newEmployeeRequest, UriComponentsBuilder ucb) {
         String encodedPassword = passwordEncoder.encode(newEmployeeRequest.getPassword());
+
         Employees newEmployee = new Employees(null,
                 encodedPassword,
                 newEmployeeRequest.getFirst_name(),
                 newEmployeeRequest.getLast_name(),
                 newEmployeeRequest.getEmail(),
                 newEmployeeRequest.getPhone_number(),
+                LocalDateTime.now(),
+                null,
                 "USER");
+
 
         Employees savedEmployee = employeesRepository.save(newEmployee);
 
@@ -49,14 +55,20 @@ public class EmployeesServices {
         return ResponseEntity.created(locationOfNewLocation).build();
     }
 
-    public ResponseEntity<List<Employees>> findAll(Pageable pageable) {
+    public ResponseEntity<List<EmployeeResponseDTO>> findAll(Pageable pageable) {
         Page<Employees> page = employeesRepository.findAll(PageRequest.of(
                 pageable.getPageNumber(),
                 pageable.getPageSize(),
                 pageable.getSortOr(Sort.by(Sort.Direction.ASC, "id"))
         ));
 
-        return ResponseEntity.ok(page.getContent());
+        // Map Employees to employeeResponseDTO
+        List<EmployeeResponseDTO> employeeResponseDTOs = page.getContent()
+                .stream()
+                .map(EmployeeResponseDTO::new) // Assuming a constructor exists for mapping
+                .toList();
+
+        return ResponseEntity.ok(employeeResponseDTOs);
     }
 
     public ResponseEntity<Employees> findById(Long id) {

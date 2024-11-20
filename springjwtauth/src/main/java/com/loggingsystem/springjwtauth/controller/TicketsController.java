@@ -1,6 +1,8 @@
 package com.loggingsystem.springjwtauth.controller;
 
+import com.loggingsystem.springjwtauth.dto.CommentResponseDTO;
 import com.loggingsystem.springjwtauth.dto.TicketRequestDTO;
+import com.loggingsystem.springjwtauth.dto.TicketResponseDTO;
 import com.loggingsystem.springjwtauth.model.Employees;
 import com.loggingsystem.springjwtauth.model.TicketComments;
 import com.loggingsystem.springjwtauth.model.Tickets;
@@ -29,7 +31,7 @@ public class TicketsController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Tickets>> findAll(Pageable pageable) {
+    public ResponseEntity<List<TicketResponseDTO>> findAll(Pageable pageable) {
         return ticketsServices.findAll(pageable);
     }
 
@@ -43,8 +45,14 @@ public class TicketsController {
         return ticketsServices.addCommentToTicket(id, comment, principal);
     }
 
-//    @GetMapping("/{id}/comments")
-//    @PutMapping("/{id}")
-//    @DeleteMapping("/{id}")
+    @GetMapping("/{id}/comments")
+    public ResponseEntity<List<CommentResponseDTO>> findAllCommentsByTicketsId(@PathVariable Long id){
+        return ticketsServices.findAllCommentsByTicketId(id);
+    }
+
+    @GetMapping("/assigned")
+    public ResponseEntity<List<TicketResponseDTO>> findAllTicketsByAssignedTechnician(Principal principal) {
+        return ticketsServices.findAllTicketsByAssignedTechnician(principal);
+    }
 
 }
