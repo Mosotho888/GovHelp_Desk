@@ -1,6 +1,7 @@
 package com.loggingsystem.springjwtauth.service;
 
 import com.loggingsystem.springjwtauth.dto.CommentResponseDTO;
+import com.loggingsystem.springjwtauth.dto.StatusRequestDTO;
 import com.loggingsystem.springjwtauth.dto.TicketRequestDTO;
 import com.loggingsystem.springjwtauth.dto.TicketResponseDTO;
 import com.loggingsystem.springjwtauth.model.*;
@@ -130,21 +131,8 @@ public class TicketsServices {
 
         List<TicketComments> ticketComments = ticketCommentsRepository.findAllByTickets_id(id);
         List<CommentResponseDTO> commentResponseDTOs = ticketComments.stream().map(CommentResponseDTO::new).toList();
+
         return ResponseEntity.ok(commentResponseDTOs);
-//        Optional<Tickets> optionalTickets = ticketsRepository.findById(id);
-//
-//        if (optionalTickets.isPresent()) {
-//            Tickets ticket = optionalTickets.get();
-//
-//            List<CommentResponseDTO> commentResponseDTO = ticket.getComments()
-//                    .stream()
-//                    .map(CommentResponseDTO::new)
-//                    .toList();
-//
-//            return ResponseEntity.ok(commentResponseDTO);
-//        }
-//
-//        return ResponseEntity.notFound().build();
     }
 
     public ResponseEntity<List<TicketResponseDTO>> findAllTicketsByAssignedTechnician(Principal principal) {
@@ -160,5 +148,31 @@ public class TicketsServices {
         }
 
         return ResponseEntity.notFound().build();
+    }
+
+    public ResponseEntity<Void> updateStatus(Long ticketId, StatusRequestDTO status_id, Principal principal) {
+        Optional<Tickets> optionalTickets = ticketsRepository.findById(ticketId);
+        Optional<Status> optionalStatus = statusRepository.findById(status_id.getStatus_id());
+
+        if (optionalTickets.isEmpty()) {
+            throw new RuntimeException("Ticket Not Found");
+        }
+
+        if (optionalStatus.isEmpty()) {
+            throw new RuntimeException("Status Not Found");
+        }
+
+        Tickets ticket = optionalTickets.get();
+        Status status = optionalStatus.get();
+
+        if (!ticket.getAssignedTechnician().getEmail().equals(principal.getName())) {
+            throw new RuntimeException("User is not authorized to update this ticket");
+        }
+
+        ticket.setStatus(status);
+        ticket.setUpdated_at(LocalDateTime.now());
+        ticketsRepository.save(ticket);
+
+        return ResponseEntity.ok().build();
     }
 }

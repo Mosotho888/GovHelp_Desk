@@ -90,4 +90,21 @@ public class EmployeesServices {
 
         return ResponseEntity.notFound().build();
     }
+
+    public ResponseEntity<List<EmployeeResponseDTO>> findAllTechnicians(Pageable pageable) {
+        String role = "ADMIN";
+
+        Page<Employees> page = employeesRepository.findAllByRole(role, PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                pageable.getSortOr(Sort.by(Sort.Direction.ASC, "id"))
+        ));
+
+        List<EmployeeResponseDTO> employeeResponseDTOs = page.getContent()
+                .stream()
+                .map(EmployeeResponseDTO::new) // Assuming a constructor exists for mapping
+                .toList();
+
+        return ResponseEntity.ok(employeeResponseDTOs);
+    }
 }

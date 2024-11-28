@@ -20,7 +20,7 @@ public class StatusController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Status>> findAll(Pageable pageable) {
+    public ResponseEntity<List<Status>> findAllStatues(Pageable pageable) {
         return statusService.findAll(pageable);
     }
 }

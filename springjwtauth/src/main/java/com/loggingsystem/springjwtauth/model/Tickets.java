@@ -49,6 +49,9 @@ public class Tickets {
     @Column(name = "created_at")
     private LocalDateTime created_at;
 
+    @Column(name = "updated_at")
+    private LocalDateTime updated_at;
+
     @OneToMany(mappedBy = "tickets", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<TicketComments> comments = new ArrayList<>();
 

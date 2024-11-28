@@ -26,6 +26,7 @@ public class TicketResponseDTO {
     private Category category;
     private Priority priority;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private List<CommentResponseDTO> comments;
 
     public TicketResponseDTO(Tickets tickets) {
@@ -39,6 +40,7 @@ public class TicketResponseDTO {
         this.category = tickets.getCategory();
         this.priority = tickets.getPriority();
         this.createdAt = tickets.getCreated_at();
+        this.updatedAt = tickets.getUpdated_at();
         this.comments = tickets.getComments().stream().map(CommentResponseDTO::new).toList();
     }
 }

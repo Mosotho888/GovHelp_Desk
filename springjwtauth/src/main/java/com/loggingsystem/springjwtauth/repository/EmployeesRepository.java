@@ -11,4 +11,5 @@ import java.util.Optional;
 
 public interface EmployeesRepository extends CrudRepository<Employees, Long>, PagingAndSortingRepository<Employees, Long> {
     Optional<Employees> findByEmail(String email);
+    Page<Employees> findAllByRole(String role, PageRequest pageRequest);
 }
