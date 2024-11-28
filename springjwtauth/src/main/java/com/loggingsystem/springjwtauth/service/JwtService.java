@@ -1,6 +1,7 @@
 package com.loggingsystem.springjwtauth.service;
 
-import com.loggingsystem.springjwtauth.jwtUtil.JwtHelper;
+import com.loggingsystem.springjwtauth.jwtUtil.JwtCreator;
+//import com.loggingsystem.springjwtauth.jwtUtil.JwtHelper;
 import com.loggingsystem.springjwtauth.model.JwtRequest;
 import com.loggingsystem.springjwtauth.model.JwtResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -8,6 +9,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -18,28 +22,45 @@ import java.util.Collections;
 public class JwtService {
     private final AuthenticationManager authenticationManager;
     private final EmployeeUserDetailsService employeeUserDetailsService;
-    private final JwtHelper jwtHelper;
+    private final JwtCreator jwtCreator;
 
-    public JwtService(AuthenticationManager authenticationManager, EmployeeUserDetailsService employeeUserDetailsService, JwtHelper jwtHelper) {
+    public JwtService(AuthenticationManager authenticationManager, EmployeeUserDetailsService employeeUserDetailsService, JwtCreator jwtCreator) {
         this.authenticationManager = authenticationManager;
         this.employeeUserDetailsService = employeeUserDetailsService;
-        this.jwtHelper = jwtHelper;
+        this.jwtCreator = jwtCreator;
     }
 
     public ResponseEntity<JwtResponse> generateToken (JwtRequest jwtRequest) {
-        try {
+        // This token is different that JWT
+        UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(
+                jwtRequest.getUseremail(), jwtRequest.getPassword()
+        );
 
-            this.authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(jwtRequest.getUseremail(), jwtRequest.getPassword()));
-            UserDetails userDetails = employeeUserDetailsService.loadUserByUsername(jwtRequest.getUseremail());
-            String token = jwtHelper.createToken(Collections.emptyMap(), userDetails.getUsername());
+        // this will fault if credentials are not valid
+        Authentication authentication = authenticationManager.authenticate(token);
 
-            log.info("token: {}", token);
+        SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            return ResponseEntity.ok(JwtResponse.builder()
-                    .token(token)
-                    .build());
-        } catch (BadCredentialsException e) {
-            throw new BadCredentialsException(e.getMessage());
-        }
+        String jwtToken = jwtCreator.generateToken((User) authentication.getPrincipal());
+
+        return ResponseEntity.ok(JwtResponse
+                .builder()
+                .token(jwtToken)
+                .build());
+
+//        try {
+//
+//            this.authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(jwtRequest.getUseremail(), jwtRequest.getPassword()));
+//            UserDetails userDetails = employeeUserDetailsService.loadUserByUsername(jwtRequest.getUseremail());
+//            String token = jwtHelper.createToken(Collections.emptyMap(), userDetails.getUsername());
+//
+//            log.info("token: {}", token);
+//
+//            return ResponseEntity.ok(JwtResponse.builder()
+//                    .token(token)
+//                    .build());
+//        } catch (BadCredentialsException e) {
+//            throw new BadCredentialsException(e.getMessage());
+//        }
     }
 }

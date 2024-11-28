@@ -20,7 +20,7 @@ public class Tickets {
 
     @ManyToOne
     @JoinColumn(name = "assigned_user_id")
-    private Employees assigned_technician;
+    private Employees assignedTechnician;
 
     @ManyToOne
     @JoinColumn(name = "status_id")
@@ -45,7 +45,12 @@ public class Tickets {
     @ManyToOne
     @JoinColumn(name = "priority_id")
     private Priority priority;
+
+    @Column(name = "created_at")
     private LocalDateTime created_at;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updated_at;
 
     @OneToMany(mappedBy = "tickets", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<TicketComments> comments = new ArrayList<>();

@@ -35,8 +35,9 @@ public class EmployeeUserDetailsService implements UserDetailsService {
                     .roles(employeeDetails.getRole())
                     .build();
 
-        } else {
-            throw new UsernameNotFoundException("User not found with email: " + email);
         }
+
+        throw new UsernameNotFoundException("User not found with email: " + email);
+
     }
 }

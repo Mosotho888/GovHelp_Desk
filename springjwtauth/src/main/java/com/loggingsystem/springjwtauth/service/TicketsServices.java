@@ -1,6 +1,9 @@
 package com.loggingsystem.springjwtauth.service;
 
+import com.loggingsystem.springjwtauth.dto.CommentResponseDTO;
+import com.loggingsystem.springjwtauth.dto.StatusRequestDTO;
 import com.loggingsystem.springjwtauth.dto.TicketRequestDTO;
+import com.loggingsystem.springjwtauth.dto.TicketResponseDTO;
 import com.loggingsystem.springjwtauth.model.*;
 import com.loggingsystem.springjwtauth.repository.*;
 import jakarta.validation.Valid;
@@ -15,6 +18,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 import java.security.Principal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -48,7 +52,7 @@ public class TicketsServices {
         newTicket.setId(null);
 
         if (assignedTechnician.isPresent()) {
-            newTicket.setAssigned_technician(assignedTechnician.get());
+            newTicket.setAssignedTechnician(assignedTechnician.get());
         }
 
         if (assignedStatus.isPresent()) {
@@ -67,6 +71,7 @@ public class TicketsServices {
         if (assignedPriority.isPresent()) {
             newTicket.setPriority(assignedPriority.get());
         }
+        newTicket.setCreated_at(LocalDateTime.now());
 
         Tickets savedTicket = ticketsRepository.save(newTicket);
 
@@ -77,14 +82,19 @@ public class TicketsServices {
         return ResponseEntity.created(newLocation).build();
     }
 
-    public ResponseEntity<List<Tickets>> findAll(Pageable pageable) {
+    public ResponseEntity<List<TicketResponseDTO>> findAll(Pageable pageable) {
         Page<Tickets> page = ticketsRepository.findAll(PageRequest.of(
                 pageable.getPageNumber(),
                 pageable.getPageSize(),
                 pageable.getSortOr(Sort.by(Sort.Direction.ASC, "id"))
         ));
 
-        return ResponseEntity.ok(page.getContent());
+        List<TicketResponseDTO> ticketResponseDTOs = page.getContent()
+                .stream()
+                .map(TicketResponseDTO::new)
+                .toList();
+
+        return ResponseEntity.ok(ticketResponseDTOs);
     }
 
     public ResponseEntity<Tickets> findById(Long id) {
@@ -112,9 +122,57 @@ public class TicketsServices {
             ticketCommentsRepository.save(comments);
 
             return ResponseEntity.status(HttpStatus.CREATED).build();
-
         }
 
         return ResponseEntity.notFound().build();
+    }
+
+    public ResponseEntity<List<CommentResponseDTO>> findAllCommentsByTicketId(Long id) {
+
+        List<TicketComments> ticketComments = ticketCommentsRepository.findAllByTickets_id(id);
+        List<CommentResponseDTO> commentResponseDTOs = ticketComments.stream().map(CommentResponseDTO::new).toList();
+
+        return ResponseEntity.ok(commentResponseDTOs);
+    }
+
+    public ResponseEntity<List<TicketResponseDTO>> findAllTicketsByAssignedTechnician(Principal principal) {
+        Optional<Employees> optionalEmployee = employeesRepository.findByEmail(principal.getName());
+
+        if (optionalEmployee.isPresent()) {
+            Employees employee = optionalEmployee.get();
+
+            List<Tickets> tickets = ticketsRepository.findAllByAssignedTechnician(employee);
+            List<TicketResponseDTO> ticketResponseDTOs = tickets.stream().map(TicketResponseDTO::new).toList();
+
+            return ResponseEntity.ok(ticketResponseDTOs);
+        }
+
+        return ResponseEntity.notFound().build();
+    }
+
+    public ResponseEntity<Void> updateStatus(Long ticketId, StatusRequestDTO status_id, Principal principal) {
+        Optional<Tickets> optionalTickets = ticketsRepository.findById(ticketId);
+        Optional<Status> optionalStatus = statusRepository.findById(status_id.getStatus_id());
+
+        if (optionalTickets.isEmpty()) {
+            throw new RuntimeException("Ticket Not Found");
+        }
+
+        if (optionalStatus.isEmpty()) {
+            throw new RuntimeException("Status Not Found");
+        }
+
+        Tickets ticket = optionalTickets.get();
+        Status status = optionalStatus.get();
+
+        if (!ticket.getAssignedTechnician().getEmail().equals(principal.getName())) {
+            throw new RuntimeException("User is not authorized to update this ticket");
+        }
+
+        ticket.setStatus(status);
+        ticket.setUpdated_at(LocalDateTime.now());
+        ticketsRepository.save(ticket);
+
+        return ResponseEntity.ok().build();
     }
 }

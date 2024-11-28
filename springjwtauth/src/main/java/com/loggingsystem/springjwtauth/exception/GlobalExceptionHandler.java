@@ -1,4 +1,4 @@
-package com.loggingsystem.springjwtauth.controller;
+package com.loggingsystem.springjwtauth.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

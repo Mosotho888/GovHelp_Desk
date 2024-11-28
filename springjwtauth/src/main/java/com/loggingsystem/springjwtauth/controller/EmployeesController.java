@@ -1,5 +1,6 @@
 package com.loggingsystem.springjwtauth.controller;
 
+import com.loggingsystem.springjwtauth.dto.EmployeeResponseDTO;
 import com.loggingsystem.springjwtauth.model.Employees;
 import com.loggingsystem.springjwtauth.repository.EmployeesRepository;
 import com.loggingsystem.springjwtauth.service.EmployeesServices;
@@ -23,18 +24,23 @@ public class EmployeesController {
     }
 
     @GetMapping
-    private ResponseEntity<List<Employees>> findAll (Pageable pageable) {
+    private ResponseEntity<List<EmployeeResponseDTO>> findAllEmployees (Pageable pageable) {
         return employeesServices.findAll(pageable);
     }
 
     @GetMapping("/{id}")
-    private ResponseEntity<Employees> findById (@PathVariable Long id) {
+    private ResponseEntity<Employees> findEmployeeById (@PathVariable Long id) {
         return employeesServices.findById(id);
     }
 
     @GetMapping("/profile")
-    private ResponseEntity<Employees> findByEmail(Principal principal) {
+    private ResponseEntity<Employees> findEmployeeByEmail(Principal principal) {
         return employeesServices.findByEmail(principal);
+    }
+
+    @GetMapping("/technicians")
+    private ResponseEntity<List<EmployeeResponseDTO>> findAllTechnicians(Pageable pageable) {
+        return employeesServices.findAllTechnicians(pageable);
     }
 //    @PutMapping("/profile")
 //    @PostMapping("/{id}/roles")
