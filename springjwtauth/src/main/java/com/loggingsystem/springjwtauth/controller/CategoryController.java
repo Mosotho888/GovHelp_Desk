@@ -21,6 +21,6 @@ public class CategoryController {
 
     @GetMapping
     public ResponseEntity<List<Category>> findAllCatetories(Pageable pageable) {
-        return categoryService.findAll(pageable);
+        return categoryService.findAllCategories(pageable);
     }
 }

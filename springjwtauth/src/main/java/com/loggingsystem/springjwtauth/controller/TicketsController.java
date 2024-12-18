@@ -4,8 +4,6 @@ import com.loggingsystem.springjwtauth.dto.CommentResponseDTO;
 import com.loggingsystem.springjwtauth.dto.StatusRequestDTO;
 import com.loggingsystem.springjwtauth.dto.TicketRequestDTO;
 import com.loggingsystem.springjwtauth.dto.TicketResponseDTO;
-import com.loggingsystem.springjwtauth.model.Employees;
-import com.loggingsystem.springjwtauth.model.Status;
 import com.loggingsystem.springjwtauth.model.TicketComments;
 import com.loggingsystem.springjwtauth.model.Tickets;
 import com.loggingsystem.springjwtauth.service.TicketsServices;
@@ -35,14 +33,14 @@ public class TicketsController {
 
     @CrossOrigin(origins = "http://localhost:3000")  // Allow only this origin
     @GetMapping
-    public ResponseEntity<List<TicketResponseDTO>> findAll(Pageable pageable) {
-        return ticketsServices.findAll(pageable);
+    public ResponseEntity<List<TicketResponseDTO>> findAllTickets(Pageable pageable) {
+        return ticketsServices.findAllTickets(pageable);
     }
 
     @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping("/{id}")
     private ResponseEntity<Tickets> findTicketsById (@PathVariable Long id) {
-        return ticketsServices.findById(id);
+        return ticketsServices.findTicketById(id);
     }
 
     @PostMapping("/{id}/comments")

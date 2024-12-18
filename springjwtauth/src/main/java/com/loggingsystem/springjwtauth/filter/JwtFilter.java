@@ -1,27 +1,21 @@
 package com.loggingsystem.springjwtauth.filter;
 
 import com.loggingsystem.springjwtauth.jwtUtil.JwtCreator;
-//import com.loggingsystem.springjwtauth.jwtUtil.JwtHelper;
 import com.loggingsystem.springjwtauth.service.EmployeeUserDetailsService;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Objects;
 
 
 @Component
@@ -54,9 +48,13 @@ public class JwtFilter extends OncePerRequestFilter {
         }
 
         if (token != null && jwtCreator.isTokenValid(token)) {
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(jwtCreator.getClaims(token).getSubject());
+            Claims claims = jwtCreator.getClaims(token);
+            String username = claims.getSubject();
+
+            UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+            log.info("UserDetails authorities: " + userDetails.getAuthorities());
             Authentication authentication = new UsernamePasswordAuthenticationToken(
-                    jwtCreator.getClaims(token).getSubject(),
+                    userDetails,
                     null,
                     userDetails.getAuthorities()
 

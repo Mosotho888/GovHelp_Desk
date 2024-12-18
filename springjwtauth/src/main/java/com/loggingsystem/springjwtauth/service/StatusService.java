@@ -13,13 +13,13 @@ import java.util.List;
 
 @Service
 public class StatusService {
-    private StatusRepository statusRepository;
+    private final StatusRepository statusRepository;
 
     public StatusService(StatusRepository statusRepository) {
         this.statusRepository = statusRepository;
     }
 
-    public ResponseEntity<List<Status>> findAll(Pageable pageable) {
+    public ResponseEntity<List<Status>> findAllStatus(Pageable pageable) {
         Page<Status> page = statusRepository.findAll(PageRequest.of(
                         pageable.getPageNumber(),
                         pageable.getPageSize(),

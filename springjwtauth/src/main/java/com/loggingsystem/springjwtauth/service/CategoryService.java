@@ -13,13 +13,13 @@ import java.util.List;
 
 @Service
 public class CategoryService {
-    private CategoryRepository categoryRepository;
+    private final CategoryRepository categoryRepository;
 
     public CategoryService(CategoryRepository categoryRepository) {
         this.categoryRepository = categoryRepository;
     }
 
-    public ResponseEntity<List<Category>> findAll(Pageable pageable) {
+    public ResponseEntity<List<Category>> findAllCategories(Pageable pageable) {
         Page<Category> page = categoryRepository.findAll(PageRequest.of(
                 pageable.getPageNumber(),
                 pageable.getPageSize(),
