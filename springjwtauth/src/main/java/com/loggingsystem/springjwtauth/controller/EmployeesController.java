@@ -25,22 +25,22 @@ public class EmployeesController {
 
     @GetMapping
     private ResponseEntity<List<EmployeeResponseDTO>> findAllEmployees (Pageable pageable) {
-        return employeesServices.findAllEmployees(pageable);
+        return employeesServices.getAllEmployees(pageable);
     }
 
     @GetMapping("/{id}")
     private ResponseEntity<Employees> findEmployeeById (@PathVariable Long id) {
-        return employeesServices.findEmployeeById(id);
+        return employeesServices.getEmployeeById(id);
     }
 
     @GetMapping("/profile")
     private ResponseEntity<Employees> findEmployeeByEmail(Principal principal) {
-        return employeesServices.findEmployeeByEmail(principal.getName());
+        return employeesServices.getEmployeeProfileByEmail(principal.getName());
     }
 
     @GetMapping("/technicians")
     private ResponseEntity<List<EmployeeResponseDTO>> findAllTechnicians(Pageable pageable) {
-        return employeesServices.findAllTechnicians(pageable);
+        return employeesServices.getAllTechnicians(pageable);
     }
 //    @PutMapping("/profile")
 //    @PostMapping("/{id}/roles")

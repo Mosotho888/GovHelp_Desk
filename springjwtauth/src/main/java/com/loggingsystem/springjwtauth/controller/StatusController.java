@@ -22,7 +22,7 @@ public class StatusController {
 
     @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping
-    public ResponseEntity<List<Status>> findAllStatues(Pageable pageable) {
-        return statusService.findAllStatus(pageable);
+    public ResponseEntity<List<Status>> getAllStatues(Pageable pageable) {
+        return statusService.getAllStatus(pageable);
     }
 }

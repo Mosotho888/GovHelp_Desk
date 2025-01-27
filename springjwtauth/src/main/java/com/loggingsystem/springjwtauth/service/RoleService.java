@@ -19,7 +19,7 @@ public class RoleService {
         this.roleRepository = roleRepository;
     }
 
-    public ResponseEntity<List<Role>> findAll(Pageable pageable) {
+    public ResponseEntity<List<Role>> getAllRoles(Pageable pageable) {
         Page<Role> page = roleRepository.findAll(PageRequest.of(
                 pageable.getPageNumber(),
                 pageable.getPageSize(),

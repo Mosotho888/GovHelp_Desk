@@ -19,7 +19,7 @@ public class StatusService {
         this.statusRepository = statusRepository;
     }
 
-    public ResponseEntity<List<Status>> findAllStatus(Pageable pageable) {
+    public ResponseEntity<List<Status>> getAllStatus(Pageable pageable) {
         Page<Status> page = statusRepository.findAll(PageRequest.of(
                         pageable.getPageNumber(),
                         pageable.getPageSize(),

@@ -20,7 +20,7 @@ public class PriorityService {
         this.priorityRepository = priorityRepository;
     }
 
-    public ResponseEntity<List<Priority>> findAll(Pageable pageable) {
+    public ResponseEntity<List<Priority>> getAllPriorities(Pageable pageable) {
         Page<Priority> page = priorityRepository.findAll(PageRequest.of(
                 pageable.getPageNumber(),
                 pageable.getPageSize(),

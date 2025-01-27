@@ -1,6 +1,7 @@
 package com.loggingsystem.springjwtauth.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,10 +18,13 @@ public class Employees {
     private Long id;
     @Column(name = "pwd")
     private String password;
+    @NotNull(message = "first name is required")
     @Column(name = "first_name")
     private String first_name;
+    @NotNull(message = "last name is required")
     @Column(name = "last_name")
     private String last_name;
+    @NotNull(message = "email is required")
     @Column(name = "email", nullable = false, unique = true)
     private String email;
     @Column(name = "phone_number")

@@ -20,7 +20,7 @@ public class CategoryController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Category>> findAllCatetories(Pageable pageable) {
-        return categoryService.findAllCategories(pageable);
+    public ResponseEntity<List<Category>> getAllCatetories(Pageable pageable) {
+        return categoryService.getAllCategories(pageable);
     }
 }

@@ -21,6 +21,6 @@ public class PriorityController {
 
     @GetMapping
     public ResponseEntity<List<Priority>> findAllPriorities(Pageable pageable) {
-        return priorityService.findAll(pageable);
+        return priorityService.getAllPriorities(pageable);
     }
 }

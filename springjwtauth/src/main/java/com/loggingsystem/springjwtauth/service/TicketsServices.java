@@ -91,7 +91,7 @@ public class TicketsServices {
         return ResponseEntity.created(newLocation).build();
     }
 
-    public ResponseEntity<List<TicketResponseDTO>> findAllTickets(Pageable pageable) {
+    public ResponseEntity<List<TicketResponseDTO>> getAllTickets(Pageable pageable) {
         log.info("Fetching all tickets with pagination: {}", pageable);
         Page<Tickets> page = ticketsRepository.findAll(PageRequest.of(
                 pageable.getPageNumber(),
@@ -109,7 +109,7 @@ public class TicketsServices {
         return ResponseEntity.ok(ticketResponseDTOs);
     }
 
-    public ResponseEntity<Tickets> findTicketById(Long id) {
+    public ResponseEntity<Tickets> getTicketById(Long id) {
         log.info("Fetching ticket with ID: {}", id);
         Optional<Tickets> ticket = ticketsRepository.findById(id);
 
@@ -145,7 +145,7 @@ public class TicketsServices {
         return ResponseEntity.notFound().build();
     }
 
-    public ResponseEntity<List<CommentResponseDTO>> findAllCommentsByTicketId(Long id) {
+    public ResponseEntity<List<CommentResponseDTO>> getAllCommentsByTicketId(Long id) {
         log.info("Fetching all comments for ticket ID: {}", id);
         List<TicketComments> ticketComments = ticketCommentsRepository.findAllByTickets_id(id);
         List<CommentResponseDTO> commentResponseDTOs = ticketComments.stream().map(CommentResponseDTO::new).toList();
@@ -154,7 +154,7 @@ public class TicketsServices {
         return ResponseEntity.ok(commentResponseDTOs);
     }
 
-    public ResponseEntity<List<TicketResponseDTO>> findAllTicketsByAssignedTechnician(Principal principal) {
+    public ResponseEntity<List<TicketResponseDTO>> getAllTicketsByAssignedTechnician(Principal principal) {
         log.info("Fetching all tickets assigned to technician: {}", principal.getName());
         Optional<Employees> optionalEmployee = employeesRepository.findByEmail(principal.getName());
 

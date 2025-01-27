@@ -23,7 +23,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-//@EnableGlobalMethodSecurity(securedEnabled = true)
 @EnableMethodSecurity
 public class SecurityConfig {
 
@@ -41,6 +40,19 @@ public class SecurityConfig {
         this.jwtFilter = jwtFilter;
         this.authUserDetailsService = authUserDetailsService;
         this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
+    }
+
+    @Bean
+    public SecurityFilterChain configure (HttpSecurity http) throws Exception {
+        return http.csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(req -> req.requestMatchers("/api/auth/*")
+                        .permitAll()
+                        .anyRequest()
+                        .authenticated())
+                //.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                //.exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
+                .build();
     }
 
     @Bean
@@ -63,16 +75,4 @@ public class SecurityConfig {
                 .build();
     }
 
-    @Bean
-    public SecurityFilterChain configure (HttpSecurity http) throws Exception {
-        return http.csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(req -> req.requestMatchers("/api/auth/*")
-                        .permitAll()
-                        .anyRequest()
-                        .authenticated())
-                //.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-                //.exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
-                 .build();
-    }
 }

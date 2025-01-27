@@ -19,7 +19,7 @@ public class CategoryService {
         this.categoryRepository = categoryRepository;
     }
 
-    public ResponseEntity<List<Category>> findAllCategories(Pageable pageable) {
+    public ResponseEntity<List<Category>> getAllCategories(Pageable pageable) {
         Page<Category> page = categoryRepository.findAll(PageRequest.of(
                 pageable.getPageNumber(),
                 pageable.getPageSize(),

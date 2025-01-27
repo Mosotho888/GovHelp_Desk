@@ -25,9 +25,9 @@ public class AuthenticateController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<Void> registerEmployee(@Valid @RequestBody Employees newEmployeeRequest, UriComponentsBuilder ucb) {
+    public ResponseEntity<Void> registerEmployee(@Valid @RequestBody Employees newEmployeeRequest) {
 
-        return employeesServices.createEmployee(newEmployeeRequest, ucb);
+        return employeesServices.createEmployee(newEmployeeRequest);
     }
 
     @PostMapping("/login")

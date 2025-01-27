@@ -4,6 +4,7 @@ import com.loggingsystem.springjwtauth.jwtUtil.JwtCreator;
 //import com.loggingsystem.springjwtauth.jwtUtil.JwtHelper;
 import com.loggingsystem.springjwtauth.model.JwtRequest;
 import com.loggingsystem.springjwtauth.model.JwtResponse;
+import io.jsonwebtoken.ExpiredJwtException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -52,7 +53,11 @@ public class JwtService {
         } catch (BadCredentialsException exception) {
             log.error("Authentication failed for user: {}. Invalid credentials provided.", jwtRequest.getUseremail());
             throw exception; // Propagate the exception for handling at a higher level
-        } catch (Exception exception) {
+        } catch (ExpiredJwtException exception) {
+            log.error("JWT token expired");
+            throw exception;
+        }
+        catch (Exception exception) {
             log.error("An unexpected error occurred during token generation for user: {}: {}",
                     jwtRequest.getUseremail(), exception.getMessage());
             throw exception; // Propagate the exception for handling at a higher level
