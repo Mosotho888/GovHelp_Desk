@@ -1,25 +1,22 @@
 package com.loggingsystem.springjwtauth.model;
 
-import lombok.Getter;
-import org.springframework.http.HttpStatus;
+import lombok.Data;
 
 import java.time.LocalDateTime;
 
-@Getter
+@Data
 public class ErrorResponse {
-    private final LocalDateTime timestamp;
-    private final String errCode;
-    private final String message;
-    private final int httpStatusCode;
-    private final String httpStatus;
-    private final String path;
+    private LocalDateTime timestamp;
+    private int status;
+    private String error;
+    private String message;
+    private String path;
 
-    public ErrorResponse(String errCode, String message, HttpStatus httpStatus, String path) {
-        this.timestamp = LocalDateTime.now();
-        this.errCode = errCode;
+    public ErrorResponse(LocalDateTime timestamp, int status, String error, String message, String path) {
+        this.timestamp = timestamp;
+        this.status = status;
+        this.error = error;
         this.message = message;
-        this.httpStatusCode = httpStatus.value();
-        this.httpStatus = httpStatus.getReasonPhrase();
         this.path = path;
     }
 }

@@ -1,23 +1,18 @@
 package com.loggingsystem.springjwtauth.exception;
 
 import lombok.Getter;
-import org.springframework.http.HttpStatus;
 
 @Getter
 public enum ErrorMessages {
-    STATUS_NOT_FOUND("ERR_404_STATUS", "Status Not Found", HttpStatus.NOT_FOUND),
-    USER_ALREADY_EXISTS("ERR_409_USER", "User Already Exists", HttpStatus.CONFLICT),
-    USERNAME_NOT_FOUND("ERR_404_USER", "User Not Found With The Specified Email", HttpStatus.NOT_FOUND),
-    TICKET_NOT_FOUND("ERR_404_TICKET", "Ticket Not Found", HttpStatus.NOT_FOUND),
-    TECHNICIAN_NOT_AUTHORIZED_TO_UPDATE_TICKET("ERR_403_TECHNICIAN", "Technician is not authorized to update this ticket", HttpStatus.FORBIDDEN);
+    STATUS_NOT_FOUND("Status Not Found"),
+    USER_ALREADY_EXISTS("User Already Exists"),
+    USERNAME_NOT_FOUND("User Not Found With The Specified Email"),
+    TICKET_NOT_FOUND("Ticket Not Found"),
+    TECHNICIAN_NOT_AUTHORIZED_TO_UPDATE_TICKET("Technician is not authorized to update this ticket");
 
-    private final String code;
     private final String message;
-    private final HttpStatus status;
 
-    ErrorMessages(String code, String message, HttpStatus status) {
-        this.code = code;
+    ErrorMessages(String message) {
         this.message = message;
-        this.status = status;
     }
 }
