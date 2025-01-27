@@ -49,7 +49,7 @@ public class TicketsServices {
         this.ticketCommentsRepository = ticketCommentsRepository;
     }
 
-    public ResponseEntity<Void> createTicket(@Valid TicketRequestDTO ticketRequest, Principal principal, UriComponentsBuilder ucb) {
+    public ResponseEntity<Void> createTicket(TicketRequestDTO ticketRequest, Principal principal, UriComponentsBuilder ucb) {
         log.info("Creating a new ticket by user: {}", principal.getName());
         Optional<Employees> assignedTechnician = employeesRepository.findById(ticketRequest.getAssigned_user_id());
         Optional<Status> assignedStatus = statusRepository.findById(ticketRequest.getStatus_id());

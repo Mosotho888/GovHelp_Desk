@@ -30,16 +30,15 @@ public class SecurityConfig {
 
     private final EmployeeUserDetailsService authUserDetailsService;
 
-    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+//    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @Autowired
     public SecurityConfig(@Lazy JwtFilter jwtFilter,
-                          @Lazy EmployeeUserDetailsService authUserDetailsService,
-                          JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint) {
+                          @Lazy EmployeeUserDetailsService authUserDetailsService) {
 
         this.jwtFilter = jwtFilter;
         this.authUserDetailsService = authUserDetailsService;
-        this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
+//        this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
     }
 
     @Bean
