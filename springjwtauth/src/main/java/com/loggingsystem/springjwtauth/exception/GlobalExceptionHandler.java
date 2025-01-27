@@ -17,49 +17,42 @@ public class GlobalExceptionHandler {
     @ResponseBody
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErrorResponse handleUserAlreadyExistsException(UserAlreadyExistsException exception, WebRequest request) {
-        return new ErrorResponse(
-                LocalDateTime.now(),
-                HttpStatus.CONFLICT.value(),
-                HttpStatus.CONFLICT.name(),
-                exception.getMessage(),
-                request.getDescription(false).replace("uri=", "")
-        );
+        return createErrorResponse(exception, HttpStatus.CONFLICT, request);
     }
 
     @ExceptionHandler(UsernameNotFoundException.class)
     @ResponseBody
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponse handleUserNotFoundException(UsernameNotFoundException exception, WebRequest request) {
-        return new ErrorResponse(
-                LocalDateTime.now(),
-                HttpStatus.NOT_FOUND.value(),
-                HttpStatus.NOT_FOUND.name(),
-                exception.getMessage(),
-                request.getDescription(false).replace("uri=", "")
-        );
+        return createErrorResponse(exception, HttpStatus.NOT_FOUND, request);
     }
 
     @ExceptionHandler(TechnicianNotAuthorizedToUpdateTicketException.class)
     @ResponseBody
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public ErrorResponse handleTechnicianNotAuthorizedToUpdateTicketException(TechnicianNotAuthorizedToUpdateTicketException exception, WebRequest request) {
-        return new ErrorResponse(
-                LocalDateTime.now(),
-                HttpStatus.FORBIDDEN.value(),
-                HttpStatus.FOUND.name(),
-                exception.getMessage(),
-                request.getDescription(false).replace("uri=", "")
-        );
+        return createErrorResponse(exception, HttpStatus.FORBIDDEN, request);
     }
 
     @ExceptionHandler(TicketNotFoundException.class)
     @ResponseBody
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponse handleTicketNotFoundException(TicketNotFoundException exception, WebRequest request) {
+        return createErrorResponse(exception, HttpStatus.NOT_FOUND, request);
+    }
+
+    @ExceptionHandler(PriorityNotFoundException.class)
+    @ResponseBody
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handlePriorityNotFoundException(PriorityNotFoundException exception, WebRequest request) {
+        return createErrorResponse(exception, HttpStatus.NOT_FOUND, request);
+    }
+
+    private ErrorResponse createErrorResponse(Exception exception, HttpStatus status, WebRequest request) {
         return new ErrorResponse(
                 LocalDateTime.now(),
-                HttpStatus.NOT_FOUND.value(),
-                HttpStatus.NOT_FOUND.name(),
+                status.value(),
+                status.getReasonPhrase(),
                 exception.getMessage(),
                 request.getDescription(false).replace("uri=", "")
         );

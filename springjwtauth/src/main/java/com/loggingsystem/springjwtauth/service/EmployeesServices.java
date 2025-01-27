@@ -176,7 +176,7 @@ public class EmployeesServices {
      * @return the Employee entity.
      * @throws UsernameNotFoundException if the employee is not found.
      */
-    private Employees getEmployee(Long id) {
+    public Employees getEmployee(Long id) {
         Optional<Employees> optionalEmployees = employeesRepository.findById(id);
 
         if (optionalEmployees.isPresent()) {
@@ -196,7 +196,7 @@ public class EmployeesServices {
      * @throws UsernameNotFoundException if the employee is not found.
      */
     @NotNull
-    private Employees getEmployeeByEmail(String email) {
+    public Employees getEmployeeByEmail(String email) {
         Optional<Employees> employeeProfile = employeesRepository.findByEmail(email);
 
         if (employeeProfile.isPresent()) {
@@ -208,4 +208,6 @@ public class EmployeesServices {
         log.warn("No employee found with email: {}", email);
         throw new UsernameNotFoundException();
     }
+
+
 }

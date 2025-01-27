@@ -11,6 +11,7 @@ import com.loggingsystem.springjwtauth.model.*;
 import com.loggingsystem.springjwtauth.repository.*;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -32,54 +33,29 @@ import java.util.Optional;
 @Slf4j
 public class TicketsServices {
     private final TicketsRepository ticketsRepository;
-    private final EmployeesRepository employeesRepository;
-    private final PriorityRepository priorityRepository;
-    private final CategoryRepository categoryRepository;
-    private final StatusRepository statusRepository;
+    private final EmployeesServices employeesServices;
+    private final PriorityService priorityService;
+    private final CategoryService categoryService;
+    private final StatusService statusService;
     private final TicketCommentsRepository ticketCommentsRepository;
 
-    public TicketsServices(TicketsRepository ticketsRepository, EmployeesRepository employeesRepository,
-                           PriorityRepository priorityRepository, CategoryRepository categoryRepository,
-                           StatusRepository statusRepository, TicketCommentsRepository ticketCommentsRepository) {
+    public TicketsServices(TicketsRepository ticketsRepository, EmployeesServices employeesServices, PriorityService priorityService, CategoryService categoryService, StatusService statusService, TicketCommentsRepository ticketCommentsRepository) {
         this.ticketsRepository = ticketsRepository;
-        this.employeesRepository = employeesRepository;
-        this.priorityRepository = priorityRepository;
-        this.categoryRepository = categoryRepository;
-        this.statusRepository = statusRepository;
+        this.employeesServices = employeesServices;
+        this.priorityService = priorityService;
+        this.categoryService = categoryService;
+        this.statusService = statusService;
         this.ticketCommentsRepository = ticketCommentsRepository;
     }
 
     public ResponseEntity<Void> createTicket(TicketRequestDTO ticketRequest, Principal principal, UriComponentsBuilder ucb) {
         log.info("Creating a new ticket by user: {}", principal.getName());
-        Optional<Employees> assignedTechnician = employeesRepository.findById(ticketRequest.getAssigned_user_id());
-        Optional<Status> assignedStatus = statusRepository.findById(ticketRequest.getStatus_id());
-        Optional<Category> assignedCategory = categoryRepository.findById(ticketRequest.getCategory_id());
-        Optional<Priority> assignedPriority = priorityRepository.findById(ticketRequest.getPriority_id());
+        Employees assignedTechnician = employeesServices.getEmployee(ticketRequest.getAssigned_user_id());
+        Status assignedStatus = statusService.getStatus(ticketRequest.getStatus_id());
+        Category assignedCategory = categoryService.getCategory(ticketRequest.getCategory_id());
+        Priority assignedPriority = priorityService.getPriority(ticketRequest.getPriority_id());
 
-        Tickets newTicket = new Tickets();
-        newTicket.setId(null);
-
-        if (assignedTechnician.isPresent()) {
-            newTicket.setAssignedTechnician(assignedTechnician.get());
-        }
-
-        if (assignedStatus.isPresent()) {
-            newTicket.setStatus(assignedStatus.get());
-        }
-
-        newTicket.setDescription(ticketRequest.getDescription());
-        newTicket.setResolution(ticketRequest.getResolution());
-        newTicket.setAttachments(ticketRequest.getAttachments());
-        newTicket.setOwner(principal.getName());
-
-        if (assignedCategory.isPresent()) {
-            newTicket.setCategory(assignedCategory.get());
-        }
-
-        if (assignedPriority.isPresent()) {
-            newTicket.setPriority(assignedPriority.get());
-        }
-        newTicket.setCreated_at(LocalDateTime.now());
+        Tickets newTicket = buildTicket(ticketRequest, principal, assignedTechnician, assignedStatus, assignedCategory, assignedPriority);
 
         Tickets savedTicket = ticketsRepository.save(newTicket);
         log.info("Ticket created successfully with ID: {}", savedTicket.getId());
@@ -91,6 +67,25 @@ public class TicketsServices {
         return ResponseEntity.created(newLocation).build();
     }
 
+    @NotNull
+    private static Tickets buildTicket(TicketRequestDTO ticketRequest, Principal principal, Employees assignedTechnician, Status assignedStatus, Category assignedCategory, Priority assignedPriority) {
+        Tickets newTicket = new Tickets();
+        newTicket.setId(null);
+
+        newTicket.setAssignedTechnician(assignedTechnician);
+        newTicket.setStatus(assignedStatus);
+
+        newTicket.setDescription(ticketRequest.getDescription());
+        newTicket.setResolution(ticketRequest.getResolution());
+        newTicket.setAttachments(ticketRequest.getAttachments());
+        newTicket.setOwner(principal.getName());
+        newTicket.setCategory(assignedCategory);
+        newTicket.setPriority(assignedPriority);
+
+        newTicket.setCreated_at(LocalDateTime.now());
+        return newTicket;
+    }
+
     public ResponseEntity<List<TicketResponseDTO>> getAllTickets(Pageable pageable) {
         log.info("Fetching all tickets with pagination: {}", pageable);
         Page<Tickets> page = ticketsRepository.findAll(PageRequest.of(
@@ -99,10 +94,7 @@ public class TicketsServices {
                 pageable.getSortOr(Sort.by(Sort.Direction.ASC, "id"))
         ));
 
-        List<TicketResponseDTO> ticketResponseDTOs = page.getContent()
-                .stream()
-                .map(TicketResponseDTO::new)
-                .toList();
+        List<TicketResponseDTO> ticketResponseDTOs = mapToTicketResponseDTO(page.getContent());
 
         log.info("Fetched {} tickets.", ticketResponseDTOs.size());
 
@@ -110,39 +102,23 @@ public class TicketsServices {
     }
 
     public ResponseEntity<Tickets> getTicketById(Long id) {
-        log.info("Fetching ticket with ID: {}", id);
-        Optional<Tickets> ticket = ticketsRepository.findById(id);
+        Tickets ticket = getTicket(id);
 
-        if (ticket.isPresent()) {
-            log.info("Ticket found with ID: {}", id);
-            return ResponseEntity.ok(ticket.get());
-        }
-
-        log.warn("Ticket not found with ID: {}", id);
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(ticket);
     }
 
     public ResponseEntity<Void> addCommentToTicket(Long ticketId, TicketComments comments, Principal principal) {
         log.info("Adding comment to ticket ID: {} by user: {}", ticketId, principal.getName());
-        Optional<Tickets> optionalTickets = ticketsRepository.findById(ticketId);
-        Optional<Employees> optionalEmployee = employeesRepository.findByEmail(principal.getName());
+        Tickets ticket = getTicket(ticketId);
+        Employees employee = employeesServices.getEmployeeByEmail(principal.getName());
 
-        if (optionalTickets.isPresent() && optionalEmployee.isPresent()) {
-            Tickets tickets = optionalTickets.get();
-            Employees employee = optionalEmployee.get();
+        comments.setTickets(ticket);
+        comments.setCommenter(employee);
 
-            comments.setTickets(tickets);
-            comments.setCommenter(employee);
-            //comments.setCreated_at(LocalDateTime.now());
+        ticketCommentsRepository.save(comments);
 
-            ticketCommentsRepository.save(comments);
-
-            log.info("Comment added successfully to ticket ID: {}", ticketId);
-            return ResponseEntity.status(HttpStatus.CREATED).build();
-        }
-
-        log.warn("Ticket or employee not found for adding comment. Ticket ID: {}, User: {}", ticketId, principal.getName());
-        return ResponseEntity.notFound().build();
+        log.info("Comment added successfully to ticket ID: {}", ticketId);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     public ResponseEntity<List<CommentResponseDTO>> getAllCommentsByTicketId(Long id) {
@@ -156,41 +132,21 @@ public class TicketsServices {
 
     public ResponseEntity<List<TicketResponseDTO>> getAllTicketsByAssignedTechnician(Principal principal) {
         log.info("Fetching all tickets assigned to technician: {}", principal.getName());
-        Optional<Employees> optionalEmployee = employeesRepository.findByEmail(principal.getName());
+        Employees employee = employeesServices.getEmployeeByEmail(principal.getName());
 
-        if (optionalEmployee.isPresent()) {
-            Employees employee = optionalEmployee.get();
+        List<Tickets> tickets = ticketsRepository.findAllByAssignedTechnician(employee);
+        List<TicketResponseDTO> ticketResponseDTOs = mapToTicketResponseDTO(tickets);
 
-            List<Tickets> tickets = ticketsRepository.findAllByAssignedTechnician(employee);
-            List<TicketResponseDTO> ticketResponseDTOs = tickets.stream().map(TicketResponseDTO::new).toList();
-
-            log.info("Fetched {} tickets assigned to technician: {}", ticketResponseDTOs.size(), principal.getName());
-            return ResponseEntity.ok(ticketResponseDTOs);
-        }
-
-        log.warn("Technician not found for email: {}", principal.getName());
-        return ResponseEntity.notFound().build();
+        log.info("Fetched {} tickets assigned to technician: {}", ticketResponseDTOs.size(), principal.getName());
+        return ResponseEntity.ok(ticketResponseDTOs);
     }
 
-    public ResponseEntity<Void> updateStatus(Long ticketId, StatusRequestDTO status_id, Principal principal) {
+    public ResponseEntity<Void> updateStatus(Long ticketId, StatusRequestDTO statusId, Principal principal) {
         log.info("Updating status for ticket ID: {} by user: {}", ticketId, principal.getName());
-        Optional<Tickets> optionalTickets = ticketsRepository.findById(ticketId);
-        Optional<Status> optionalStatus = statusRepository.findById(status_id.getStatus_id());
+        Tickets ticket = getTicket(ticketId);
+        Status status = statusService.getStatus(statusId.getStatus_id());
 
-        if (optionalTickets.isEmpty()) {
-            log.error("Ticket not found with ID: {}", ticketId);
-            throw new TicketNotFoundException();
-        }
-
-        if (optionalStatus.isEmpty()) {
-            log.error("Status not found with ID: {}", status_id.getStatus_id());
-            throw new StatusNotFoundException();
-        }
-
-        Tickets ticket = optionalTickets.get();
-        Status status = optionalStatus.get();
-
-        if (!ticket.getAssignedTechnician().getEmail().equals(principal.getName())) {
+        if (!isTicketAssignedToCurrentUser(principal.getName(), ticket.getAssignedTechnician().getEmail())) {
             log.error("User: {} is not authorized to update ticket ID: {}", principal.getName(), ticketId);
             throw new TechnicianNotAuthorizedToUpdateTicketException();
         }
@@ -201,5 +157,31 @@ public class TicketsServices {
 
         log.info("Status updated successfully for ticket ID: {}", ticketId);
         return ResponseEntity.ok().build();
+    }
+
+    private static boolean isTicketAssignedToCurrentUser(String currentTechnicianEmail, String assignedTechnicianEmail) {
+        return assignedTechnicianEmail.equals(currentTechnicianEmail);
+    }
+
+    @NotNull
+    private static List<TicketResponseDTO> mapToTicketResponseDTO(List<Tickets> page) {
+        return page
+                .stream()
+                .map(TicketResponseDTO::new)
+                .toList();
+    }
+
+    @NotNull
+    private Tickets getTicket(Long ticketId) {
+        log.info("Fetching ticket with ID: {}", ticketId);
+        Optional<Tickets> optionalTicket = ticketsRepository.findById(ticketId);
+
+        if (optionalTicket.isPresent()) {
+            log.info("Ticket found with ID: {}", ticketId);
+            return optionalTicket.get();
+        }
+
+        log.warn("Ticket not found with ID: {}", ticketId);
+        throw new TicketNotFoundException();
     }
 }
