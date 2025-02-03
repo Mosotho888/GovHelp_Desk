@@ -45,6 +45,36 @@ git clone https://github.com/Mosotho888/GovHelp_Desk.git
 cd helpdesk_system_api
 ```
 
+### Configure Database
+
+Update application.properties with your PostgreSQL credentials:
+
+```bash
+spring.datasource.url=jdbc:postgresql://localhost:5432/helpdesk_db
+spring.datasource.username=your_username
+spring.datasource.password=your_password
+```
+
+### Configure RabbitMQ
+
+```bash
+spring.rabbitmq.host=localhost
+spring.rabbitmq.port=5672
+spring.rabbitmq.username=guest
+spring.rabbitmq.password=guest
+```
+
+### Configure JavaMailSender
+
+```bash
+spring.mail.host=smtp.example.com
+spring.mail.port=587
+spring.mail.username=your_email@example.com
+spring.mail.password=your_email_password
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+```
+
 ## API Endpoints
 
 ### Authentication
