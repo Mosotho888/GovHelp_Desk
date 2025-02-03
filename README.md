@@ -41,7 +41,7 @@ Ensure you have the following installed:
 ### Clone the Repository
 
 ```bash
-git clone [[https://github.com/your-repo/helpdesk_system_api.git](https://github.com/Mosotho888/GovHelp_Desk.git)]
+git clone https://github.com/Mosotho888/GovHelp_Desk.git
 cd helpdesk_system_api
 ```
 
