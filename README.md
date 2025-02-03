@@ -55,4 +55,8 @@ Ensure you have the following installed:
 | GET    | `/api/tickets`     | Retrieve all tickets                      |
 | GET    | `/api/tickets/{id}` | Get ticket details by ID                    |
 | PUT    | `/api/tickets/{id}` | Update a ticket                           |
-| DELETE | `/api/tickets/{id}` | Delete a ticket                           |
+| POST   | `/api/tickets/{id}/comments` | Add a comment to a ticket                                                   |
+| PUT    | `/api/tickets/{id}/status` | Update the status of a ticket                                               |
+| GET    | `/api/tickets/{id}/comments` | Retrieve all comments for a specific ticket                               |
+| GET    | `/api/tickets/assigned` | Retrieve all tickets assigned to the currently authenticated technician |
+
