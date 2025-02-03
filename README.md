@@ -75,6 +75,32 @@ spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
 ```
 
+## Build and Run the Application
+
+### Using Maven
+
+```Bash
+mvn clean install
+mvn spring-boot:run
+```
+
+### Using Docker
+```Bash
+docker-compose up --build
+```
+
+or
+
+```bash
+./run.sh
+```
+
+and to stop
+
+```bash
+./stop.sh
+```
+
 ## API Endpoints
 
 ### Authentication
