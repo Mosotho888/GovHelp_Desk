@@ -4,8 +4,6 @@ import com.loggingsystem.springjwtauth.dto.CommentResponseDTO;
 import com.loggingsystem.springjwtauth.dto.StatusRequestDTO;
 import com.loggingsystem.springjwtauth.dto.TicketRequestDTO;
 import com.loggingsystem.springjwtauth.dto.TicketResponseDTO;
-import com.loggingsystem.springjwtauth.model.Employees;
-import com.loggingsystem.springjwtauth.model.Status;
 import com.loggingsystem.springjwtauth.model.TicketComments;
 import com.loggingsystem.springjwtauth.model.Tickets;
 import com.loggingsystem.springjwtauth.service.TicketsServices;
@@ -35,14 +33,14 @@ public class TicketsController {
 
     @CrossOrigin(origins = "http://localhost:3000")  // Allow only this origin
     @GetMapping
-    public ResponseEntity<List<TicketResponseDTO>> findAll(Pageable pageable) {
-        return ticketsServices.findAll(pageable);
+    public ResponseEntity<List<TicketResponseDTO>> getAllTickets(Pageable pageable) {
+        return ticketsServices.getAllTickets(pageable);
     }
 
     @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping("/{id}")
-    private ResponseEntity<Tickets> findTicketsById (@PathVariable Long id) {
-        return ticketsServices.findById(id);
+    private ResponseEntity<Tickets> getTicketById (@PathVariable Long id) {
+        return ticketsServices.getTicketById(id);
     }
 
     @PostMapping("/{id}/comments")
@@ -56,15 +54,16 @@ public class TicketsController {
         return ticketsServices.updateStatus(id, status, principal);
     }
 
+    @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping("/{id}/comments")
-    public ResponseEntity<List<CommentResponseDTO>> findAllCommentsByTicketsId(@PathVariable Long id){
-        return ticketsServices.findAllCommentsByTicketId(id);
+    public ResponseEntity<List<CommentResponseDTO>> getAllCommentsByTicketsId(@PathVariable Long id){
+        return ticketsServices.getAllCommentsByTicketId(id);
     }
 
     @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping("/assigned")
-    public ResponseEntity<List<TicketResponseDTO>> findAllTicketsByAssignedTechnician(Principal principal) {
-        return ticketsServices.findAllTicketsByAssignedTechnician(principal);
+    public ResponseEntity<List<TicketResponseDTO>> getAllTicketsByAssignedTechnician(Principal principal) {
+        return ticketsServices.getAllTicketsByAssignedTechnician(principal);
     }
 
 }

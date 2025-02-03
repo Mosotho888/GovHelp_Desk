@@ -20,7 +20,7 @@ public class RoleController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Role>> findAllRoles(Pageable pageable) {
-        return roleService.findAll(pageable);
+    public ResponseEntity<List<Role>> getAllRoles(Pageable pageable) {
+        return roleService.getAllRoles(pageable);
     }
 }

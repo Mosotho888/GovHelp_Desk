@@ -1,6 +1,7 @@
 package com.loggingsystem.springjwtauth.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -12,6 +13,7 @@ public class Status {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @NotNull(message = "status name is required")
     @Column(nullable = false, unique = true)
     private String status_name;
 

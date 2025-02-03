@@ -1,6 +1,7 @@
 package com.loggingsystem.springjwtauth.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -12,8 +13,10 @@ public class Priority {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @NotNull(message = "level is required")
     @Column(name = "level")
     private String level;
+    @NotNull(message = "description is required")
     @Column(name = "description")
     private String description;
 

@@ -13,13 +13,13 @@ import java.util.List;
 
 @Service
 public class RoleService {
-    private RoleRepository roleRepository;
+    private final RoleRepository roleRepository;
 
     public RoleService(RoleRepository roleRepository) {
         this.roleRepository = roleRepository;
     }
 
-    public ResponseEntity<List<Role>> findAll(Pageable pageable) {
+    public ResponseEntity<List<Role>> getAllRoles(Pageable pageable) {
         Page<Role> page = roleRepository.findAll(PageRequest.of(
                 pageable.getPageNumber(),
                 pageable.getPageSize(),

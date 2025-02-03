@@ -1,9 +1,9 @@
 package com.loggingsystem.springjwtauth.service;
 
 import com.loggingsystem.springjwtauth.jwtUtil.JwtCreator;
-//import com.loggingsystem.springjwtauth.jwtUtil.JwtHelper;
 import com.loggingsystem.springjwtauth.model.JwtRequest;
 import com.loggingsystem.springjwtauth.model.JwtResponse;
+import io.jsonwebtoken.ExpiredJwtException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -12,55 +12,51 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
-
-import java.util.Collections;
 
 @Service
 @Slf4j
 public class JwtService {
     private final AuthenticationManager authenticationManager;
-    private final EmployeeUserDetailsService employeeUserDetailsService;
     private final JwtCreator jwtCreator;
 
-    public JwtService(AuthenticationManager authenticationManager, EmployeeUserDetailsService employeeUserDetailsService, JwtCreator jwtCreator) {
+    public JwtService(AuthenticationManager authenticationManager, JwtCreator jwtCreator) {
         this.authenticationManager = authenticationManager;
-        this.employeeUserDetailsService = employeeUserDetailsService;
         this.jwtCreator = jwtCreator;
     }
 
     public ResponseEntity<JwtResponse> generateToken (JwtRequest jwtRequest) {
         // This token is different that JWT
+        log.info("Initiating token generation for user: {}", jwtRequest.getUseremail());
         UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(
                 jwtRequest.getUseremail(), jwtRequest.getPassword()
         );
 
-        // this will fault if credentials are not valid
-        Authentication authentication = authenticationManager.authenticate(token);
+        try {
+            // this will fault if credentials are not valid
+            Authentication authentication = authenticationManager.authenticate(token);
+            log.info("Authentication successful for user: {}", jwtRequest.getUseremail());
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        String jwtToken = jwtCreator.generateToken((User) authentication.getPrincipal());
+            String jwtToken = jwtCreator.generateToken((User) authentication.getPrincipal());
+            log.info("JWT token generated successfully for user: {}", jwtRequest.getUseremail());
 
-        return ResponseEntity.ok(JwtResponse
-                .builder()
-                .token(jwtToken)
-                .build());
-
-//        try {
-//
-//            this.authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(jwtRequest.getUseremail(), jwtRequest.getPassword()));
-//            UserDetails userDetails = employeeUserDetailsService.loadUserByUsername(jwtRequest.getUseremail());
-//            String token = jwtHelper.createToken(Collections.emptyMap(), userDetails.getUsername());
-//
-//            log.info("token: {}", token);
-//
-//            return ResponseEntity.ok(JwtResponse.builder()
-//                    .token(token)
-//                    .build());
-//        } catch (BadCredentialsException e) {
-//            throw new BadCredentialsException(e.getMessage());
-//        }
+            return ResponseEntity.ok(JwtResponse
+                    .builder()
+                    .token(jwtToken)
+                    .build());
+        } catch (BadCredentialsException exception) {
+            log.error("Authentication failed for user: {}. Invalid credentials provided.", jwtRequest.getUseremail());
+            throw exception; // Propagate the exception for handling at a higher level
+        } catch (ExpiredJwtException exception) {
+            log.error("JWT token expired");
+            throw exception;
+        }
+        catch (Exception exception) {
+            log.error("An unexpected error occurred during token generation for user: {}: {}",
+                    jwtRequest.getUseremail(), exception.getMessage());
+            throw exception; // Propagate the exception for handling at a higher level
+        }
     }
 }

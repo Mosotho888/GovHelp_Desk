@@ -2,6 +2,7 @@ package com.loggingsystem.springjwtauth.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -24,6 +25,7 @@ public class TicketComments {
     @ManyToOne
     @JoinColumn(name = "commenter_id")
     private Employees commenter;
+    @NotNull(message = "comment is required")
     private String comment;
     private LocalDateTime created_at;
 

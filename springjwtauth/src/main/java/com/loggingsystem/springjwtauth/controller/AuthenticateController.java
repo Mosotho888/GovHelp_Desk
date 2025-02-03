@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.util.UriComponentsBuilder;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -25,9 +24,9 @@ public class AuthenticateController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<Void> registerEmployee(@Valid @RequestBody Employees newEmployeeRequest, UriComponentsBuilder ucb) {
+    public ResponseEntity<Void> registerEmployee(@Valid @RequestBody Employees newEmployeeRequest) {
 
-        return employeesServices.createEmployee(newEmployeeRequest, ucb);
+        return employeesServices.createEmployee(newEmployeeRequest);
     }
 
     @PostMapping("/login")
@@ -36,4 +35,5 @@ public class AuthenticateController {
     }
 
     //@PostMapping("/logout")
+    //PostMapping("/refresh")
 }
