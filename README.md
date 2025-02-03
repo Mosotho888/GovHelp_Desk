@@ -35,19 +35,19 @@ Ensure you have the following installed:
 *   Java 17+
 *   PostgreSQL (Running locally or via Docker)
 *   RabbitMQ (For message queue processing)
-*   Maven
+*   Maven 4.0.0
 *   Docker (optional)
 
 ### Clone the Repository
 
 ```bash
 git clone https://github.com/Mosotho888/GovHelp_Desk.git
-cd helpdesk_system_api
+cd GovHelp_Desk
 ```
 
 ### Configure Database
 
-Update application.properties with your PostgreSQL credentials:
+Update src/main/resources/application.properties with your PostgreSQL credentials:
 
 ```bash
 spring.datasource.url=jdbc:postgresql://localhost:5432/helpdesk_db
@@ -102,6 +102,8 @@ and to stop
 ```
 
 ## API Endpoints
+
+All API endpoints accept JSON requests and return JSON responses unless otherwise specified.
 
 ### Authentication
 
