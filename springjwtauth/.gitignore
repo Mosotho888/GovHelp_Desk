@@ -34,6 +34,7 @@ src/main/resources/application.properties
 *.yml
 springjwtauth/compose.yml
 *.env
+springjwtauth/.env
 
 ### VS Code ###
 .vscode/

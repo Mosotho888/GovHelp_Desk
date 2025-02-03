@@ -11,9 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -23,9 +21,8 @@ import java.io.IOException;
  * This filter extracts the token from the HTTP Authorization header, validates it, and then sets the
  * authenticated user in the Spring Security context if the token is valid.
  */
-@Component
 @Slf4j
-public class JwtFilter extends OncePerRequestFilter {
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     public static final String AUTHORIZATION = "Authorization";
 
@@ -34,12 +31,12 @@ public class JwtFilter extends OncePerRequestFilter {
     private final JwtCreator jwtCreator;
 
     /**
-     * Constructor for injecting dependencies into the JwtFilter.
+     * Constructor for injecting dependencies into the JwtAuthenticationFilter.
      *
      * @param userDetailsService service to load user details from the database.
      * @param jwtCreator utility class to handle JWT creation and validation.
      */
-    public JwtFilter(EmployeeUserDetailsService userDetailsService, JwtCreator jwtCreator) {
+    public JwtAuthenticationFilter(EmployeeUserDetailsService userDetailsService, JwtCreator jwtCreator) {
         this.userDetailsService = userDetailsService;
         this.jwtCreator = jwtCreator;
     }
@@ -74,7 +71,7 @@ public class JwtFilter extends OncePerRequestFilter {
      * @return the JWT token, or null if not found.
      */
     private String extractTokenFromHeader(HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
+        String authHeader = request.getHeader(AUTHORIZATION);
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             return authHeader.substring(7);

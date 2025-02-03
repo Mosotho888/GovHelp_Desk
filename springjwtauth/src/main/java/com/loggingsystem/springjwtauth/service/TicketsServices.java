@@ -1,26 +1,19 @@
 package com.loggingsystem.springjwtauth.service;
 
-import com.loggingsystem.springjwtauth.dto.CommentResponseDTO;
-import com.loggingsystem.springjwtauth.dto.StatusRequestDTO;
-import com.loggingsystem.springjwtauth.dto.TicketRequestDTO;
-import com.loggingsystem.springjwtauth.dto.TicketResponseDTO;
-import com.loggingsystem.springjwtauth.exception.StatusNotFoundException;
+import com.loggingsystem.springjwtauth.dto.*;
 import com.loggingsystem.springjwtauth.exception.TechnicianNotAuthorizedToUpdateTicketException;
 import com.loggingsystem.springjwtauth.exception.TicketNotFoundException;
 import com.loggingsystem.springjwtauth.model.*;
 import com.loggingsystem.springjwtauth.repository.*;
-import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.expression.spel.ast.Assign;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
@@ -38,14 +31,16 @@ public class TicketsServices {
     private final CategoryService categoryService;
     private final StatusService statusService;
     private final TicketCommentsRepository ticketCommentsRepository;
+    private final MessageSender messageSender;
 
-    public TicketsServices(TicketsRepository ticketsRepository, EmployeesServices employeesServices, PriorityService priorityService, CategoryService categoryService, StatusService statusService, TicketCommentsRepository ticketCommentsRepository) {
+    public TicketsServices(TicketsRepository ticketsRepository, EmployeesServices employeesServices, PriorityService priorityService, CategoryService categoryService, StatusService statusService, TicketCommentsRepository ticketCommentsRepository, MessageSender messageSender) {
         this.ticketsRepository = ticketsRepository;
         this.employeesServices = employeesServices;
         this.priorityService = priorityService;
         this.categoryService = categoryService;
         this.statusService = statusService;
         this.ticketCommentsRepository = ticketCommentsRepository;
+        this.messageSender = messageSender;
     }
 
     public ResponseEntity<Void> createTicket(TicketRequestDTO ticketRequest, Principal principal, UriComponentsBuilder ucb) {
@@ -64,26 +59,14 @@ public class TicketsServices {
                 .buildAndExpand(savedTicket.getId())
                 .toUri();
 
+        EmailNotificationDTO emailRequest = new EmailNotificationDTO(savedTicket, null);
+        messageSender.sendTicketCreationMessage(emailRequest);
+        messageSender.sendTechnicianAssignmentMessage(emailRequest);
+
+        log.info("Email notification request sent for ticket: {}", savedTicket.getId());
+
+
         return ResponseEntity.created(newLocation).build();
-    }
-
-    @NotNull
-    private static Tickets buildTicket(TicketRequestDTO ticketRequest, Principal principal, Employees assignedTechnician, Status assignedStatus, Category assignedCategory, Priority assignedPriority) {
-        Tickets newTicket = new Tickets();
-        newTicket.setId(null);
-
-        newTicket.setAssignedTechnician(assignedTechnician);
-        newTicket.setStatus(assignedStatus);
-
-        newTicket.setDescription(ticketRequest.getDescription());
-        newTicket.setResolution(ticketRequest.getResolution());
-        newTicket.setAttachments(ticketRequest.getAttachments());
-        newTicket.setOwner(principal.getName());
-        newTicket.setCategory(assignedCategory);
-        newTicket.setPriority(assignedPriority);
-
-        newTicket.setCreated_at(LocalDateTime.now());
-        return newTicket;
     }
 
     public ResponseEntity<List<TicketResponseDTO>> getAllTickets(Pageable pageable) {
@@ -116,6 +99,11 @@ public class TicketsServices {
         comments.setCommenter(employee);
 
         ticketCommentsRepository.save(comments);
+
+        EmailNotificationDTO emailRequest = new EmailNotificationDTO(ticket, comments.getComment());
+        messageSender.sendTicketCommentMessage(emailRequest);
+
+        log.info("Email notification request sent for comment: {}", comments.getId());
 
         log.info("Comment added successfully to ticket ID: {}", ticketId);
         return ResponseEntity.status(HttpStatus.CREATED).build();
@@ -155,6 +143,9 @@ public class TicketsServices {
         ticket.setUpdated_at(LocalDateTime.now());
         ticketsRepository.save(ticket);
 
+        EmailNotificationDTO emailRequest = new EmailNotificationDTO(ticket, null);
+        messageSender.sendTicketStatusChangeMessage(emailRequest);
+
         log.info("Status updated successfully for ticket ID: {}", ticketId);
         return ResponseEntity.ok().build();
     }
@@ -172,7 +163,7 @@ public class TicketsServices {
     }
 
     @NotNull
-    private Tickets getTicket(Long ticketId) {
+    public Tickets getTicket(Long ticketId) {
         log.info("Fetching ticket with ID: {}", ticketId);
         Optional<Tickets> optionalTicket = ticketsRepository.findById(ticketId);
 
@@ -183,5 +174,24 @@ public class TicketsServices {
 
         log.warn("Ticket not found with ID: {}", ticketId);
         throw new TicketNotFoundException();
+    }
+
+    @NotNull
+    private static Tickets buildTicket(TicketRequestDTO ticketRequest, Principal principal, Employees assignedTechnician, Status assignedStatus, Category assignedCategory, Priority assignedPriority) {
+        Tickets newTicket = new Tickets();
+        newTicket.setId(null);
+
+        newTicket.setAssignedTechnician(assignedTechnician);
+        newTicket.setStatus(assignedStatus);
+
+        newTicket.setDescription(ticketRequest.getDescription());
+        newTicket.setResolution(ticketRequest.getResolution());
+        newTicket.setAttachments(ticketRequest.getAttachments());
+        newTicket.setOwner(principal.getName());
+        newTicket.setCategory(assignedCategory);
+        newTicket.setPriority(assignedPriority);
+
+        newTicket.setCreated_at(LocalDateTime.now());
+        return newTicket;
     }
 }

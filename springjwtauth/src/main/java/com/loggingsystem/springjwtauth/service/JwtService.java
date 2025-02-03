@@ -1,7 +1,6 @@
 package com.loggingsystem.springjwtauth.service;
 
 import com.loggingsystem.springjwtauth.jwtUtil.JwtCreator;
-//import com.loggingsystem.springjwtauth.jwtUtil.JwtHelper;
 import com.loggingsystem.springjwtauth.model.JwtRequest;
 import com.loggingsystem.springjwtauth.model.JwtResponse;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -13,10 +12,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
-
-import java.util.Collections;
 
 @Service
 @Slf4j

@@ -39,7 +39,7 @@ public class TicketsController {
 
     @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping("/{id}")
-    private ResponseEntity<Tickets> getTicketsById (@PathVariable Long id) {
+    private ResponseEntity<Tickets> getTicketById (@PathVariable Long id) {
         return ticketsServices.getTicketById(id);
     }
 
