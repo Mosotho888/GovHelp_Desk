@@ -47,6 +47,15 @@ Ensure you have the following installed:
 | POST   | `/api/auth/register` | Register a new user                       |
 | POST   | `/api/auth/login`  | Authenticate user & return JWT           |
 
+### Employee Management
+
+| Method | Endpoint           | Description                                                                   |
+| :----- | :----------------- | :---------------------------------------------------------------------------- |
+| GET    | `/api/employees`    | Retrieve all employees (paginated)                                          |
+| GET    | `/api/employees/{id}` | Retrieve employee by ID                                                       |
+| GET    | `/api/employees/profile` | Retrieve the profile of the currently authenticated employee              |
+| GET    | `/api/employees/technicians` | Retrieve all technicians (paginated)                                       |
+
 ### Ticket Management
 
 | Method | Endpoint          | Description                               |
@@ -60,3 +69,26 @@ Ensure you have the following installed:
 | GET    | `/api/tickets/{id}/comments` | Retrieve all comments for a specific ticket                               |
 | GET    | `/api/tickets/assigned` | Retrieve all tickets assigned to the currently authenticated technician |
 
+### Category Management
+
+| Method | Endpoint        | Description                               |
+| :----- | :-------------- | :---------------------------------------- |
+| GET    | `/api/category` | Retrieve all categories (paginated)       |
+
+### Priority Management
+
+| Method | Endpoint        | Description                               |
+| :----- | :-------------- | :---------------------------------------- |
+| GET    | `/api/priority` | Retrieve all priorities (paginated)       |
+
+### Role Management
+
+| Method | Endpoint      | Description                           |
+| :----- | :------------ | :------------------------------------ |
+| GET    | `/api/role` | Retrieve all roles (paginated)       |
+
+### Status Management
+
+| Method | Endpoint      | Description                           |
+| :----- | :------------ | :------------------------------------ |
+| GET    | `/api/status` | Retrieve all statuses (paginated)      |
