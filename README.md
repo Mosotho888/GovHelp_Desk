@@ -25,6 +25,7 @@ The Helpdesk System API is a backend service built with Java Spring Boot and Pos
 *   **Automated Email Updates:** JavaMailSender and RabbitMQ handle ticket creation, assignment, comment additions, and status change updates.
 *   **API Security:** Protect endpoints using Spring Security and JWT.
 *   **Error Handling:** Global exception handling for robust error responses.
+*   **API Documentation:** Postman for endpoint testing.
 
 ## Setup & Installation
 
