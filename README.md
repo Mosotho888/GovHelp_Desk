@@ -92,3 +92,23 @@ Ensure you have the following installed:
 | Method | Endpoint      | Description                           |
 | :----- | :------------ | :------------------------------------ |
 | GET    | `/api/status` | Retrieve all statuses (paginated)      |
+
+## Security
+
+*   Uses JWT-based authentication
+*   Secure password storage with BCrypt
+*   Restricted access to sensitive endpoints using Spring Security
+
+## Future Enhancements
+
+*   Implement ticket prioritization and SLA tracking.
+*   Handle unsuccessful email
+*   Develop a front-end dashboard for support staff and users.
+
+## License
+
+This project is licensed under the MIT License.
+
+## Contact
+
+For support, contact Tebogo Mofokeng at tebohogivenmofokeng@gmail.com.
