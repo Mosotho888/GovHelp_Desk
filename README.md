@@ -38,6 +38,13 @@ Ensure you have the following installed:
 *   Maven
 *   Docker (optional)
 
+### Clone the Repository
+
+```bash
+git clone [https://github.com/your-repo/helpdesk_system_api.git]
+cd helpdesk_system_api
+```
+
 ## API Endpoints
 
 ### Authentication
