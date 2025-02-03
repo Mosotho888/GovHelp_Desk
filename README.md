@@ -37,3 +37,22 @@ Ensure you have the following installed:
 *   RabbitMQ (For message queue processing)
 *   Maven
 *   Docker (optional)
+
+## API Endpoints
+
+### Authentication
+
+| Method | Endpoint          | Description                               |
+| :----- | :---------------- | :---------------------------------------- |
+| POST   | `/api/auth/register` | Register a new user                       |
+| POST   | `/api/auth/login`  | Authenticate user & return JWT           |
+
+### Ticket Management
+
+| Method | Endpoint          | Description                               |
+| :----- | :---------------- | :---------------------------------------- |
+| POST   | `/api/tickets`     | Create a new support ticket               |
+| GET    | `/api/tickets`     | Retrieve all tickets                      |
+| GET    | `/api/tickets/{id}` | Get ticket details by ID                    |
+| PUT    | `/api/tickets/{id}` | Update a ticket                           |
+| DELETE | `/api/tickets/{id}` | Delete a ticket                           |
