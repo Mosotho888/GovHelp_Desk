@@ -1,10 +1,10 @@
 package com.loggingsystem.springjwtauth.eventHandlers;
 
-import com.loggingsystem.springjwtauth.dto.EmailNotificationDTO;
-import com.loggingsystem.springjwtauth.model.EmailNotification;
-import com.loggingsystem.springjwtauth.model.Tickets;
-import com.loggingsystem.springjwtauth.repository.EmailNotificationRepository;
-import com.loggingsystem.springjwtauth.service.TicketsServices;
+import com.loggingsystem.springjwtauth.common.util.TicketUtils;
+import com.loggingsystem.springjwtauth.emailnotification.dto.EmailNotificationDTO;
+import com.loggingsystem.springjwtauth.emailnotification.model.EmailNotification;
+import com.loggingsystem.springjwtauth.ticket.model.Tickets;
+import com.loggingsystem.springjwtauth.emailnotification.repository.EmailNotificationRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -21,21 +21,21 @@ import java.time.LocalDateTime;
 @Slf4j
 public class TechnicianAssignmentListener {
     private final EmailNotificationRepository emailNotificationRepository;
-    private final TicketsServices ticketsService;
+    private final TicketUtils ticketUtils;
     private final JavaMailSender mailSender;
 
     private static final Logger logger = LoggerFactory.getLogger(TechnicianAssignmentListener.class);
 
-    public TechnicianAssignmentListener(EmailNotificationRepository emailNotificationRepository, TicketsServices ticketsService, JavaMailSender mailSender) {
+    public TechnicianAssignmentListener(EmailNotificationRepository emailNotificationRepository, TicketUtils ticketUtils, JavaMailSender mailSender) {
         this.emailNotificationRepository = emailNotificationRepository;
-        this.ticketsService = ticketsService;
+        this.ticketUtils = ticketUtils;
         this.mailSender = mailSender;
     }
 
     @RabbitListener(queues = "${spring.rabbitmq.technician-assignment-queue}")
     public void handleTechnicianAssignmentMessage(EmailNotificationDTO request) {
 
-        Tickets ticket = ticketsService.getTicket(request.getTicketId());
+        Tickets ticket = ticketUtils.getTicket(request.getTicketId());
 
         EmailNotification notification = createEmailNotification(request, ticket);
         logger.info("Email Notification Details:");

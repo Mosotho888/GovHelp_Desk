@@ -10,7 +10,12 @@ public enum ErrorMessages {
     TICKET_NOT_FOUND("Ticket Not Found"),
     TECHNICIAN_NOT_AUTHORIZED_TO_UPDATE_TICKET("Technician is not authorized to update this ticket"),
     PRIORITY_NOT_FOUND("Priority Not Found"),
-    CATEGORY_NOT_FOUND("Category Not Found");
+    CATEGORY_NOT_FOUND("Category Not Found"),
+    TOKEN_EXPIRED("Token expired. Please login again"),
+    TOKEN_INVALID("Token Invalid"),
+    SIGNATURE_MISMATCH("The Token Does Not Match"),
+    CATEGORY_ALREADY_EXISTS("Category Already Exist"),
+    PRIORITY_ALREADY_EXISTS("Priority Already Exists");
 
     private final String message;
 

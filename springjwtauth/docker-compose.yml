@@ -1,0 +1,77 @@
+# INFRASTRUCTURE NAME
+name: "spring-boot-dev"
+
+# SERVICE NETWORKS
+networks:
+  spring-boot-api-network:
+    driver: bridge
+
+# SERVICES
+services:
+  spring-boot-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    image: tebohogiven/spring-boot-app:0.0.1
+    environment:
+      SPRING_APPLICATION_NAME: springjwtauth
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO}
+      SPRING_JPA_SHOW_SQL: ${SPRING_JPA_SHOW_SQL}
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: ${SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT}
+      SPRING_JPA_OPEN_IN_VIEW: ${SPRING_JPA_OPEN_IN_VIEW}
+      JWT_SECRETKEY: ${JWT_SECRETKEY}
+      JWT_VALIDITY: ${JWT_VALIDITY}
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST}
+      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: ${SPRING_RABBITMQ_PORT}
+      SPRING_RABBITMQ_USERNAME: ${SPRING_RABBITMQ_USERNAME}
+      SPRING_RABBITMQ_PASSWORD: ${SPRING_RABBITMQ_PASSWORD}
+      TECHNICIAN_ASSIGNMENT_QUEUE: ${TECHNICIAN_ASSIGNMENT_QUEUE}
+      TICKET_STATUS_CHANGE_QUEUE: ${TICKET_STATUS_CHANGE_QUEUE}
+      TICKET_COMMENT_QUEUE: ${TICKET_COMMENT_QUEUE}
+      TICKET_CREATION_QUEUE: ${TICKET_CREATION_QUEUE}
+      TECHNICIAN_ASSIGNMENT_EXCHANGE: ${TECHNICIAN_ASSIGNMENT_EXCHANGE}
+      TICKET_STATUS_CHANGE_EXCHANGE: ${TICKET_STATUS_CHANGE_EXCHANGE}
+      TICKET_COMMENT_EXCHANGE: ${TICKET_COMMENT_EXCHANGE}
+      TICKET_CREATION_EXCHANGE: ${TICKET_CREATION_EXCHANGE}
+      TECHNICIAN_ASSIGNED_ROUTING_KEY: ${TECHNICIAN_ASSIGNED_ROUTING_KEY}
+      TICKET_STATUS_CHANGED_ROUTING_KEY: ${TICKET_STATUS_CHANGED_ROUTING_KEY}
+      TICKET_COMMENT_ADDED_ROUTING_KEY: ${TICKET_COMMENT_ADDED_ROUTING_KEY}
+      TICKET_CREATED_ROUTING_KEY: ${TICKET_CREATED_ROUTING_KEY}
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_DATA_JPA: ${LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_DATA_JPA}
+    restart: always
+    networks:
+      - spring-boot-api-network
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - spring-boot-api-network
+    healthcheck: # ✅ Check if RabbitMQ is ready
+      test: [ "CMD", "rabbitmqctl", "status" ]
+      interval: 10s
+      retries: 5
+      start_period: 10s
+
+# VOLUMES (Removed Postgres Since It's Hosted on Railway)
+volumes:
+  postgres_data:

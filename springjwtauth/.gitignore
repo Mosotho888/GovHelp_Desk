@@ -31,8 +31,6 @@ build/
 
 # Ignore application properties file
 src/main/resources/application.properties
-*.yml
-springjwtauth/compose.yml
 *.env
 springjwtauth/.env
 

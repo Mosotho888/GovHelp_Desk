@@ -6,6 +6,9 @@ WORKDIR /opt/app
 COPY .mvn/ .mvn
 COPY mvnw pom.xml ./
 
+# ✅ Grant execute permissions to mvnw
+RUN chmod +x mvnw
+
 # Download dependencies offline
 RUN ./mvnw dependency:go-offline
 # Copy source files and build the project
