@@ -10,25 +10,19 @@ import java.util.Properties;
 
 @Configuration
 public class MailConfig {
-    @Value("${SPRING_MAIL_HOST}")
-    private String host;
+    private final MailProperties mailProperties;
 
-    @Value("${SPRING_MAIL_PORT}")
-    private int port;
-
-    @Value("${SPRING_MAIL_USERNAME}")
-    private String username;
-
-    @Value("${SPRING_MAIL_PASSWORD}")
-    private String password;
+    public MailConfig(MailProperties mailProperties) {
+        this.mailProperties = mailProperties;
+    }
 
     @Bean
     public JavaMailSender javaMailSender() {
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
-        mailSender.setHost(host);
-        mailSender.setPort(port);
-        mailSender.setUsername(username);
-        mailSender.setPassword(password);
+        mailSender.setHost(mailProperties.getHost());
+        mailSender.setPort(mailProperties.getPort());
+        mailSender.setUsername(mailProperties.getUsername());
+        mailSender.setPassword(mailProperties.getPassword());
 
         Properties props = mailSender.getJavaMailProperties();
         props.put("mail.smtp.auth", "true");
