@@ -24,8 +24,6 @@ public class TechnicianAssignmentListener {
     private final TicketUtils ticketUtils;
     private final JavaMailSender mailSender;
 
-    private static final Logger logger = LoggerFactory.getLogger(TechnicianAssignmentListener.class);
-
     public TechnicianAssignmentListener(EmailNotificationRepository emailNotificationRepository, TicketUtils ticketUtils, JavaMailSender mailSender) {
         this.emailNotificationRepository = emailNotificationRepository;
         this.ticketUtils = ticketUtils;
@@ -38,11 +36,7 @@ public class TechnicianAssignmentListener {
         Tickets ticket = ticketUtils.getTicket(request.getTicketId());
 
         EmailNotification notification = createEmailNotification(request, ticket);
-        logger.info("Email Notification Details:");
-        logger.info("Body Length: {}", notification.getBody().length());  // Crucial!
-        logger.info("Recipient Length: {}", notification.getRecipient().length()); // Check these too
-        logger.info("Subject Length: {}", notification.getSubject().length()); // Just in case
-        logger.info("Ticket ID: {}", request.getTicketId());
+
         emailNotificationRepository.save(notification);
 
         try {
