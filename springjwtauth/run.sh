@@ -10,7 +10,8 @@ docker network inspect spring-boot-api-network > /dev/null 2>&1 || \
     docker network create spring-boot-api-network
 
 # Build and start the Docker containers using Docker Compose
-docker-compose -f compose.yml up --build -d
+#docker-compose -f docker-compose.yml up --build -d
+docker build -t tebohogiven/spring-boot-app:0.0.1 -f Dockerfile .
 
 # Output the status of the containers
 docker-compose ps

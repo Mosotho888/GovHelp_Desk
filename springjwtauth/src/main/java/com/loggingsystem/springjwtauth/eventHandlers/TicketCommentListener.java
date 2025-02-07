@@ -1,12 +1,12 @@
 package com.loggingsystem.springjwtauth.eventHandlers;
 
-import com.loggingsystem.springjwtauth.dto.EmailNotificationDTO;
-import com.loggingsystem.springjwtauth.model.EmailNotification;
-import com.loggingsystem.springjwtauth.model.Employees;
-import com.loggingsystem.springjwtauth.model.Tickets;
-import com.loggingsystem.springjwtauth.repository.EmailNotificationRepository;
-import com.loggingsystem.springjwtauth.service.EmployeesServices;
-import com.loggingsystem.springjwtauth.service.TicketsServices;
+import com.loggingsystem.springjwtauth.common.util.TicketUtils;
+import com.loggingsystem.springjwtauth.emailnotification.dto.EmailNotificationDTO;
+import com.loggingsystem.springjwtauth.emailnotification.model.EmailNotification;
+import com.loggingsystem.springjwtauth.employee.model.Employees;
+import com.loggingsystem.springjwtauth.ticket.model.Tickets;
+import com.loggingsystem.springjwtauth.emailnotification.repository.EmailNotificationRepository;
+import com.loggingsystem.springjwtauth.employee.service.EmployeesServices;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -21,20 +21,20 @@ import java.time.LocalDateTime;
 @Slf4j
 public class TicketCommentListener {
     private final EmailNotificationRepository emailNotificationRepository;
-    private final TicketsServices ticketsService;
+    private final TicketUtils ticketUtils;
     private final EmployeesServices employeesService;
     private final JavaMailSender mailSender;
 
-    public TicketCommentListener(EmailNotificationRepository emailNotificationRepository, TicketsServices ticketsService, EmployeesServices employeesService, JavaMailSender mailSender) {
+    public TicketCommentListener(EmailNotificationRepository emailNotificationRepository, TicketUtils ticketUtils, EmployeesServices employeesService, JavaMailSender mailSender) {
         this.emailNotificationRepository = emailNotificationRepository;
-        this.ticketsService = ticketsService;
+        this.ticketUtils = ticketUtils;
         this.employeesService = employeesService;
         this.mailSender = mailSender;
     }
 
     @RabbitListener(queues = "${spring.rabbitmq.ticket-comment-queue}")
     public void handleTicketCommentMessage(EmailNotificationDTO request) {
-        Tickets ticket = ticketsService.getTicket(request.getTicketId());
+        Tickets ticket = ticketUtils.getTicket(request.getTicketId());
         Employees employee = employeesService.getEmployeeByEmail(request.getNormalUserEmail());
 
         EmailNotification notification = createEmailNotification(request, ticket, employee);
