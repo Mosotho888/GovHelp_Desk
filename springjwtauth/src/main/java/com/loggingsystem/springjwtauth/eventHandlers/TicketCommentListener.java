@@ -10,6 +10,7 @@ import com.loggingsystem.springjwtauth.employee.service.EmployeesServices;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -25,6 +26,7 @@ public class TicketCommentListener {
     private final EmployeesServices employeesService;
     private final JavaMailSender mailSender;
 
+    @Autowired
     public TicketCommentListener(EmailNotificationRepository emailNotificationRepository, TicketUtils ticketUtils, EmployeesServices employeesService, JavaMailSender mailSender) {
         this.emailNotificationRepository = emailNotificationRepository;
         this.ticketUtils = ticketUtils;

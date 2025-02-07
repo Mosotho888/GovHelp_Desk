@@ -7,9 +7,8 @@ import com.loggingsystem.springjwtauth.ticket.model.Tickets;
 import com.loggingsystem.springjwtauth.emailnotification.repository.EmailNotificationRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -24,6 +23,7 @@ public class TechnicianAssignmentListener {
     private final TicketUtils ticketUtils;
     private final JavaMailSender mailSender;
 
+    @Autowired
     public TechnicianAssignmentListener(EmailNotificationRepository emailNotificationRepository, TicketUtils ticketUtils, JavaMailSender mailSender) {
         this.emailNotificationRepository = emailNotificationRepository;
         this.ticketUtils = ticketUtils;
