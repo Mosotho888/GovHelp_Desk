@@ -26,7 +26,6 @@ public class TicketCommentListener {
     private final EmployeesServices employeesService;
     private final JavaMailSender mailSender;
 
-    @Autowired
     public TicketCommentListener(EmailNotificationRepository emailNotificationRepository, TicketUtils ticketUtils, EmployeesServices employeesService, JavaMailSender mailSender) {
         this.emailNotificationRepository = emailNotificationRepository;
         this.ticketUtils = ticketUtils;
