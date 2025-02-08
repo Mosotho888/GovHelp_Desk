@@ -23,7 +23,6 @@ public class TechnicianAssignmentListener {
     private final TicketUtils ticketUtils;
     private final JavaMailSender mailSender;
 
-    @Autowired
     public TechnicianAssignmentListener(EmailNotificationRepository emailNotificationRepository, TicketUtils ticketUtils, JavaMailSender mailSender) {
         this.emailNotificationRepository = emailNotificationRepository;
         this.ticketUtils = ticketUtils;
