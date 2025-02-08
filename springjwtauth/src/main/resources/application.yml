@@ -1,0 +1,61 @@
+spring:
+  application:
+    name: springjwtauth
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO}
+    show-sql: ${SPRING_JPA_SHOW_SQL}
+    properties:
+      hibernate:
+        dialect: ${SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT}
+    open-in-view: ${SPRING_JPA_OPEN_IN_VIEW}
+
+  mail:
+    host: ${SPRING_MAIL_HOST}
+    port: ${SPRING_MAIL_PORT}
+    username: ${SPRING_MAIL_USERNAME}
+    password: ${SPRING_MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH}
+          starttls:
+            enable: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE}
+
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST}
+    port: ${SPRING_RABBITMQ_PORT}
+    username: ${SPRING_RABBITMQ_USERNAME}
+    password: ${SPRING_RABBITMQ_PASSWORD}
+
+    technician-assignment-queue: ${SPRING_RABBITMQ_TECHNICIAN_ASSIGNMENT_QUEUE}
+    ticket-status-change-queue: ${SPRING_RABBITMQ_TICKET_STATUS_CHANGE_QUEUE}
+    ticket-comment-queue: ${SPRING_RABBITMQ_TICKET_COMMENT_QUEUE}
+    ticket-creation-queue: ${SPRING_RABBITMQ_TICKET_CREATION_QUEUE}
+
+    technician-assignment-exchange: ${SPRING_RABBITMQ_TECHNICIAN_ASSIGNMENT_EXCHANGE}
+    ticket-status-change-exchange: ${SPRING_RABBITMQ_TICKET_STATUS_CHANGE_EXCHANGE}
+    ticket-comment-exchange: ${SPRING_RABBITMQ_TICKET_COMMENT_EXCHANGE}
+    ticket-creation-exchange: ${SPRING_RABBITMQ_TICKET_CREATION_EXCHANGE}
+
+    technician-assigned-routing-key: ${SPRING_RABBITMQ_TECHNICIAN_ASSIGNED_ROUTING_KEY}
+    ticket-status-changed-routing-key: ${SPRING_RABBITMQ_TICKET_STATUS_CHANGED_ROUTING_KEY}
+    ticket-comment-added-routing-key: ${SPRING_RABBITMQ_TICKET_COMMENT_ADDED_ROUTING_KEY}
+    ticket-created-routing-key: ${SPRING_RABBITMQ_TICKET_CREATED_ROUTING_KEY}
+
+jwt:
+  secretKey: ${JWT_SECRETKEY}
+  validity: ${JWT_VALIDITY}
+
+logging:
+  level:
+    org:
+      springframework:
+        data:
+          jpa: ${LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_DATA_JPA}
