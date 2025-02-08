@@ -60,7 +60,7 @@ public class CreateTicketService {
 
         EmailNotificationDTO emailRequest = new EmailNotificationDTO(savedTicket, null);
         messageSender.sendTicketCreationMessage(emailRequest);
-        messageSender.sendTechnicianAssignmentMessage(emailRequest);
+//        messageSender.sendTechnicianAssignmentMessage(emailRequest);
 
         log.info("Email notification request sent for ticket: {}", savedTicket.getId());
 
