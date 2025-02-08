@@ -36,7 +36,7 @@ public class TicketCommentListener {
         this.rabbitMQProperties = rabbitMQProperties;
     }
 
-    @RabbitListener(queues = "#{rabbitMQProperties.getTicketCommentQueue()}")
+    @RabbitListener(queues = "ticket_comment_queue")
     public void handleTicketCommentMessage(EmailNotificationDTO request) {
         Tickets ticket = ticketUtils.getTicket(request.getTicketId());
         Employees employee = employeesService.getEmployeeByEmail(request.getNormalUserEmail());

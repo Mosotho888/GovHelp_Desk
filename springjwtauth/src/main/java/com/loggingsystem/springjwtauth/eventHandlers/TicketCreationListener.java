@@ -35,7 +35,7 @@ public class TicketCreationListener {
         this.rabbitMQProperties = rabbitMQProperties;
     }
 
-    @RabbitListener(queues = "#{rabbitMQProperties.getTicketCreationQueue()}")
+    @RabbitListener(queues = "ticket_creation_queue")
     public void handleTicketCreationMessage(EmailNotificationDTO request) {
 
         Tickets ticket = ticketUtils.getTicket(request.getTicketId());

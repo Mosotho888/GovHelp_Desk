@@ -35,7 +35,7 @@ public class TicketStatusChangeListener {
         this.rabbitMQProperties = rabbitMQProperties;
     }
 
-    @RabbitListener(queues = "#{rabbitMQProperties.getTicketStatusChangeQueue()}")
+    @RabbitListener(queues = "ticket_status_change_queue")
     public void handleTicketStatusChangeMessage(EmailNotificationDTO request) {
         Tickets ticket = ticketUtils.getTicket(request.getTicketId());
         Employees employee = employeesService.getEmployeeByEmail(request.getNormalUserEmail());
