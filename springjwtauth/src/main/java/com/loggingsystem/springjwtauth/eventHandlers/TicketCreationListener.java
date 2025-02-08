@@ -32,7 +32,7 @@ public class TicketCreationListener {
         this.mailSender = mailSender;
     }
 
-    @RabbitListener(queues = "#{ticketCreationQueue}")
+    @RabbitListener(queues = "${spring.rabbitmq.ticket-creation-queue}")
     public void handleTicketCreationMessage(EmailNotificationDTO request) {
 
         Tickets ticket = ticketUtils.getTicket(request.getTicketId());

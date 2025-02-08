@@ -34,7 +34,7 @@ public class TicketCommentListener {
         this.mailSender = mailSender;
     }
 
-    @RabbitListener(queues = "#{ticketCommentQueue}")
+    @RabbitListener(queues = "${spring.rabbitmq.ticket-comment-queue}")
     public void handleTicketCommentMessage(EmailNotificationDTO request) {
         Tickets ticket = ticketUtils.getTicket(request.getTicketId());
         Employees employee = employeesService.getEmployeeByEmail(request.getNormalUserEmail());
