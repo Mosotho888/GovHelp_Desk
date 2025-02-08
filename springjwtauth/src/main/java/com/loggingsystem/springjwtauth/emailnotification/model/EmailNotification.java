@@ -22,7 +22,7 @@ public class EmailNotification {
     private String recipient;
     @Column(name = "subject")
     private String subject;
-    @Column(name = "body", columnDefinition = "TEXT")
+    @Column(name = "body", columnDefinition = "LONGVARCHAR")
     private String body;
     @Column(name = "sent_at")
     private LocalDateTime sentAt;
