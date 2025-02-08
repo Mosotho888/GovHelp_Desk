@@ -30,7 +30,7 @@ public class RabbitMQConfig {
     }
     @Bean
     public Queue ticketAssignmentQueue() {
-        log.info("TAQ: {}", properties.getTicketStatusChangeExchange());
+        log.info("TAQ: {}", properties.getTechnicianAssignmentQueue());
         return new Queue(properties.getTechnicianAssignmentQueue(), false);
     }
 
