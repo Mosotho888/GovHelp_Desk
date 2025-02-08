@@ -1,0 +1,55 @@
+spring:
+  application:
+    name: springjwtauth
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: ${HIBERNATE_DIALECT}
+    open-in-view: false
+
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  rabbitmq:
+    host: rabbitmq
+    port: ${RABBITMQ_PORT}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+
+    technician-assignment-queue: ${TECHNICIAN_ASSIGNMENT_QUEUE}
+    ticket-status-change-queue: ${TICKET_STATUS_CHANGE_QUEUE}
+    ticket-comment-queue: ${TICKET_COMMENT_QUEUE}
+    ticket-creation-queue: ${TICKET_CREATION_QUEUE}
+
+    technician-assignment-exchange: ${TECHNICIAN_ASSIGNMENT_EXCHANGE}
+    ticket-status-change-exchange: ${TICKET_STATUS_CHANGE_EXCHANGE}
+    ticket-comment-exchange: ${TICKET_COMMENT_EXCHANGE}
+    ticket-creation-exchange: ${TICKET_CREATION_EXCHANGE}
+
+    technician-assigned-routing-key: ${TECHNICIAN_ASSIGNED_ROUTING_KEY}
+    ticket-status-changed-routing-key: ${TICKET_STATUS_CHANGED_ROUTING_KEY}
+    ticket-comment-added-routing-key: ${TICKET_COMMENT_ADDED_ROUTING_KEY}
+    ticket-created-routing-key: ${TICKET_CREATED_ROUTING_KEY}
+
+jwt:
+  secretKey: ${JWT_SECRET_KEY}
+  validity: ${JWT_VALIDITY}
+
