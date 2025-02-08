@@ -32,7 +32,7 @@ public class TicketStatusChangeListener {
         this.mailSender = mailSender;
     }
 
-    @RabbitListener(queues = "#{ticketStatusChangeQueue}")
+    @RabbitListener(queues = "${spring.rabbitmq.ticket-status-change-queue}")
     public void handleTicketStatusChangeMessage(EmailNotificationDTO request) {
         Tickets ticket = ticketUtils.getTicket(request.getTicketId());
         Employees employee = employeesService.getEmployeeByEmail(request.getNormalUserEmail());

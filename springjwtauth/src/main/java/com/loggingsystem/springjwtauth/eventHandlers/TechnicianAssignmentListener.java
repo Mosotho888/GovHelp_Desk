@@ -1,7 +1,6 @@
 package com.loggingsystem.springjwtauth.eventHandlers;
 
 import com.loggingsystem.springjwtauth.common.util.TicketUtils;
-import com.loggingsystem.springjwtauth.config.messaging.RabbitMQProperties;
 import com.loggingsystem.springjwtauth.emailnotification.dto.EmailNotificationDTO;
 import com.loggingsystem.springjwtauth.emailnotification.model.EmailNotification;
 import com.loggingsystem.springjwtauth.ticket.model.Tickets;
@@ -24,16 +23,14 @@ public class TechnicianAssignmentListener {
     private final TicketUtils ticketUtils;
     private final JavaMailSender mailSender;
 
+    @Autowired
     public TechnicianAssignmentListener(EmailNotificationRepository emailNotificationRepository, TicketUtils ticketUtils, JavaMailSender mailSender) {
         this.emailNotificationRepository = emailNotificationRepository;
         this.ticketUtils = ticketUtils;
         this.mailSender = mailSender;
     }
 
-    @Autowired
-
-
-    @RabbitListener(queues = "#{technicianAssignmentQueue}")
+    @RabbitListener(queues = "${spring.rabbitmq.technician-assignment-queue}")
     public void handleTechnicianAssignmentMessage(EmailNotificationDTO request) {
 
         Tickets ticket = ticketUtils.getTicket(request.getTicketId());
