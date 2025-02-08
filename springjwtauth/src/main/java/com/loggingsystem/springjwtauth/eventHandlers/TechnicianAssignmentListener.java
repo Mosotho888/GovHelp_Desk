@@ -33,7 +33,7 @@ public class TechnicianAssignmentListener {
         this.mailSender = mailSender;
     }
 
-    @RabbitListener(queues = "#{rabbitMQProperties.technicianAssignmentQueue}")
+    @RabbitListener(queues = "technician_assignment_queue")
     public void handleTechnicianAssignmentMessage(EmailNotificationDTO request) {
 
 //        spring.rabbitmq.queues.technicianAssignmentQueue
