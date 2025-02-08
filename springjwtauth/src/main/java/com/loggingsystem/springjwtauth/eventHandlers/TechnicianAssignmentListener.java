@@ -1,6 +1,7 @@
 package com.loggingsystem.springjwtauth.eventHandlers;
 
 import com.loggingsystem.springjwtauth.common.util.TicketUtils;
+import com.loggingsystem.springjwtauth.config.messaging.RabbitMQProperties;
 import com.loggingsystem.springjwtauth.emailnotification.dto.EmailNotificationDTO;
 import com.loggingsystem.springjwtauth.emailnotification.model.EmailNotification;
 import com.loggingsystem.springjwtauth.ticket.model.Tickets;
@@ -9,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -19,17 +21,19 @@ import java.time.LocalDateTime;
 @Component
 @Slf4j
 public class TechnicianAssignmentListener {
+    private final RabbitMQProperties rabbitMQProperties;
     private final EmailNotificationRepository emailNotificationRepository;
     private final TicketUtils ticketUtils;
     private final JavaMailSender mailSender;
 
-    public TechnicianAssignmentListener(EmailNotificationRepository emailNotificationRepository, TicketUtils ticketUtils, JavaMailSender mailSender) {
+    public TechnicianAssignmentListener(RabbitMQProperties rabbitMQProperties, EmailNotificationRepository emailNotificationRepository, TicketUtils ticketUtils, JavaMailSender mailSender) {
+        this.rabbitMQProperties = rabbitMQProperties;
         this.emailNotificationRepository = emailNotificationRepository;
         this.ticketUtils = ticketUtils;
         this.mailSender = mailSender;
     }
 
-    @RabbitListener(queues = "${spring.rabbitmq.technician-assignment-queue}")
+    @RabbitListener(queues = "#{rabbitMQProperties.getTechnicianAssignmentQueue()}")
     public void handleTechnicianAssignmentMessage(EmailNotificationDTO request) {
 
         Tickets ticket = ticketUtils.getTicket(request.getTicketId());

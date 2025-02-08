@@ -1,15 +1,18 @@
 package com.loggingsystem.springjwtauth.config.messaging;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.support.converter.DefaultJackson2JavaTypeMapper;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@Slf4j
 public class RabbitMQConfig {
     private final RabbitMQProperties properties;
 
@@ -62,6 +65,7 @@ public class RabbitMQConfig {
 
     @Bean
     public DirectExchange ticketCreationExchange() {
+        log.info("config TCEx: {}", properties.getTicketCreationExchange());
         return new DirectExchange(properties.getTicketCreationExchange());
     }
 
