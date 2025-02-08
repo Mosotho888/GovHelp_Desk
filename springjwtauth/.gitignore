@@ -30,6 +30,7 @@ build/
 !**/src/test/**/build/
 
 # Ignore application properties file
+springjwtauth/src/main/resources/application.yml
 *.env
 springjwtauth/.env
 
