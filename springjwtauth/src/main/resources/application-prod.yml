@@ -1,0 +1,55 @@
+spring:
+  application:
+    name: springjwtauth
+
+  datasource:
+    url: jdbc:postgresql://monorail.proxy.rlwy.net:46237/railway
+    username: postgres
+    password: mcdhEMCMlvLcBsPrcQXnIVPVVsVQAPOR
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: testmessagespring@gmail.com
+    password: bxfnffxwsvcxwyhz
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: guest
+    password: guest
+
+    technician-assignment-queue: technician_assignment_queue
+    ticket-status-change-queue: ticket_status_change_queue
+    ticket-comment-queue: ticket_comment_queue
+    ticket-creation-queue: ticket_creation_queue
+
+    technician-assignment-exchange: technician_assignment_exchange
+    ticket-status-change-exchange: ticket_status_change_exchange
+    ticket-comment-exchange: ticket_comment_exchange
+    ticket-creation-exchange: ticket_creation_exchange
+
+    technician-assigned-routing-key: technician.assigned
+    ticket-status-changed-routing-key: ticket.status.changed
+    ticket-comment-added-routing-key: ticket.comment.added
+    ticket-created-routing-key: ticket.created
+
+jwt:
+  secretKey: 5JzoMbk6E5qIqHSuBTgeQCARtUsxAkBiHwdjXOSW8kWdXzYmP3X51C0
+  validity: 86400000
+
