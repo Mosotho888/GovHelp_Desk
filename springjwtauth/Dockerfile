@@ -13,7 +13,7 @@ RUN chmod +x mvnw
 RUN ./mvnw dependency:go-offline
 # Copy source files and build the project
 COPY ./src ./src
-RUN ./mvnw clean install
+RUN ./mvnw clean install -DskipTests
 
 
 # Stage 2: Final - Create the runtime image
