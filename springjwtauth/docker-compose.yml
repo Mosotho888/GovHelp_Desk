@@ -17,11 +17,13 @@ services:
     image: tebohogiven/spring-boot-app:0.0.1
     environment:
       SPRING_APPLICATION_NAME: springjwtauth
-      SPRING_DATASOURCE_URL: jdbc:${{GovHelpDesk_db.DATABASE_URL}}
+      SPRING_DATASOURCE_URL: ${{GovHelpDesk_db.DATABASE_URL}}
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
 #      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
 #      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_JPA_SHOW_SQL: true
+
       SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: ${HIBERNATE_DIALECT}
       SPRING_JPA_OPEN_IN_VIEW: false
       JWT_SECRETKEY: ${JWT_SECRET_KEY}
