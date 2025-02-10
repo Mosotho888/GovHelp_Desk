@@ -35,8 +35,6 @@ public class TechnicianAssignmentListener {
 
     @RabbitListener(queues = "technician_assignment_queue")
     public void handleTechnicianAssignmentMessage(EmailNotificationDTO request) {
-
-//        spring.rabbitmq.queues.technicianAssignmentQueue
         Tickets ticket = ticketUtils.getTicket(request.getTicketId());
 
         EmailNotification notification = createEmailNotification(request, ticket);
