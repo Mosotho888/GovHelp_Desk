@@ -18,6 +18,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.security.Principal;
 import java.util.List;
 
+@CrossOrigin(origins = "http://localhost:3000")
 @RestController
 @RequestMapping("/api/tickets")
 public class TicketsController {
