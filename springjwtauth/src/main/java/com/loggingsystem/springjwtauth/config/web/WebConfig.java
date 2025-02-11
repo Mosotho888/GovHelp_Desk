@@ -12,7 +12,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")  // Adjust the path to match your API endpoints
-                .allowedOrigins("http://localhost:3000")  // Allow frontend origin
+                .allowedOrigins("http://localhost:3000", "https://govhelpdesk-production.up.railway.app/")  // Allow frontend origin
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")  // Allowed HTTP methods
                 .allowedHeaders("*")  // Allow all headers
                 .allowCredentials(true);  // Allow credentials (cookies, authorization headers, etc.)
