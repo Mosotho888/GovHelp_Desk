@@ -16,13 +16,12 @@ public class WebConfig {
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {
             @Override
-            public void addCorsMappings(@NotNull CorsRegistry registry) {
+            public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")  // Adjust the path to match your API endpoints
-                        .allowedOrigins("http://localhost:3000", "https://govhelpdesk-production.up.railway.app/")  // Allow frontend origin
-                        .allowedMethods("*")  // Allowed HTTP methods
-                        .allowedHeaders("*")  // Allow all headers
-                        .allowCredentials(true)
-                        .maxAge(Duration.ofMinutes(5L).toMinutes());  // Allow credentials (cookies, authorization headers, etc.)
+                        .allowedOrigins("http://localhost:3000")  // Allow frontend origin
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")  // Allowed HTTP methods
+                        .allowedHeaders("Authorization", "Content-Type")  // Allow all headers
+                        .allowCredentials(true);
             }
         };
     }

@@ -18,7 +18,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.security.Principal;
 import java.util.List;
 
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "http://localhost:3000", allowedHeaders = "*")
 @RestController
 @RequestMapping("/api/tickets")
 public class TicketsController {
@@ -40,19 +40,16 @@ public class TicketsController {
         this.updatedTicketStatusService = updatedTicketStatusService;
     }
 
-    @CrossOrigin(origins = "http://localhost:3000")
     @PostMapping
     public ResponseEntity<Void> createTicket(@Valid @RequestBody TicketRequestDTO ticketRequest, Principal principal, UriComponentsBuilder ucb) {
         return createTicketService.createTicket(ticketRequest, principal, ucb);
     }
 
-    @CrossOrigin(origins = "http://localhost:3000")  // Allow only this origin
     @GetMapping
     public ResponseEntity<List<TicketResponseDTO>> getAllTickets(Pageable pageable) {
         return getAllTicketsService.getAllTickets(pageable);
     }
 
-    @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping("/{id}")
     private ResponseEntity<TicketResponseDTO> getTicketById (@PathVariable Long id) {
         return getTicketByIdService.getTicketById(id);
@@ -63,19 +60,16 @@ public class TicketsController {
         return addCommentToTicketService.addCommentToTicket(id, comment, principal);
     }
 
-    @CrossOrigin(origins = "http://localhost:3000")
     @PutMapping("/{id}/status")
     public ResponseEntity<Void> updateStatus(@PathVariable Long id, @RequestBody StatusRequestDTO status, Principal principal) {
         return updatedTicketStatusService.updateStatus(id, status, principal);
     }
 
-    @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping("/{id}/comments")
     public ResponseEntity<List<CommentResponseDTO>> getAllCommentsByTicketsId(@PathVariable Long id){
         return getAllCommentsByTicketIdService.getAllCommentsByTicketId(id);
     }
 
-    @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping("/assigned")
     public ResponseEntity<List<AssignedTicketsDTO>> getAllTicketsByAssignedTechnician(Principal principal) {
         return getAllTicketsByAssignedTechnicianService.getAllTicketsByAssignedTechnician(principal);
