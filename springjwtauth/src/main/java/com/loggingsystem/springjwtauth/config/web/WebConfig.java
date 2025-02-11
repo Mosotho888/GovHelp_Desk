@@ -6,6 +6,8 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.time.Duration;
+
 @Configuration
 public class WebConfig {
 
@@ -18,7 +20,8 @@ public class WebConfig {
                         .allowedOrigins("http://localhost:3000", "https://govhelpdesk-production.up.railway.app/")  // Allow frontend origin
                         .allowedMethods("*")  // Allowed HTTP methods
                         .allowedHeaders("*")  // Allow all headers
-                        .allowCredentials(true);  // Allow credentials (cookies, authorization headers, etc.)
+                        .allowCredentials(true)
+                        .maxAge(Duration.ofMinutes(5L).toMinutes());  // Allow credentials (cookies, authorization headers, etc.)
             }
         };
     }
