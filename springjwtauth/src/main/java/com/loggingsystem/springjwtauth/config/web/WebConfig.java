@@ -18,7 +18,7 @@ public class WebConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")  // Adjust the path to match your API endpoints
-                        .allowedOrigins("http://localhost:3000")  // Allow frontend origin
+                        .allowedOrigins("http://localhost:3000",  "https://govhelpdesk-production.up.railway.app")  // Allow frontend origin
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")  // Allowed HTTP methods
                         .allowedHeaders("Authorization", "Content-Type")  // Allow all headers
                         .allowCredentials(true);
