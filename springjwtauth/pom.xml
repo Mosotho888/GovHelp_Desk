@@ -9,7 +9,7 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.loggingsystem</groupId>
-	<artifactId>springjwtauth</artifactId>
+	<artifactId>helpdeskapi</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>springjwtauth</name>
 	<description>Creating application for users to be able to log problems to IT</description>

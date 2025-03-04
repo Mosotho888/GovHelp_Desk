@@ -1,17 +1,17 @@
-package com.loggingsystem.springjwtauth.auth.service;
+package com.loggingsystem.springjwtauth.auth.service.impl;
 
 import com.loggingsystem.springjwtauth.auth.jwt.JwtUtil;
-import com.loggingsystem.springjwtauth.auth.dto.JwtRequest;
-import com.loggingsystem.springjwtauth.auth.dto.JwtResponse;
+import com.loggingsystem.springjwtauth.auth.dto.SignUpRequest;
+import com.loggingsystem.springjwtauth.auth.dto.LoginResponse;
+import com.loggingsystem.springjwtauth.auth.service.AuthenticationService;
+import com.loggingsystem.springjwtauth.employee.dto.EmployeeResponse;
 import com.loggingsystem.springjwtauth.employee.exception.UserAlreadyExistsException;
 import com.loggingsystem.springjwtauth.employee.model.Employees;
 import com.loggingsystem.springjwtauth.employee.repository.EmployeesRepository;
-import io.jsonwebtoken.ExpiredJwtException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,20 +23,21 @@ import java.time.LocalDateTime;
 
 @Service
 @Slf4j
-public class JwtService {
+public class AuthServiceImpl implements AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
     private final EmployeesRepository employeesRepository;
 
-    public JwtService(AuthenticationManager authenticationManager, JwtUtil jwtUtil, PasswordEncoder passwordEncoder, EmployeesRepository employeesRepository) {
+    public AuthServiceImpl(AuthenticationManager authenticationManager, JwtUtil jwtUtil, PasswordEncoder passwordEncoder, EmployeesRepository employeesRepository) {
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         this.passwordEncoder = passwordEncoder;
         this.employeesRepository = employeesRepository;
     }
 
-    public ResponseEntity<JwtResponse> generateToken (JwtRequest jwtRequest) {
+    @Override
+    public ResponseEntity<LoginResponse> login(SignUpRequest jwtRequest) {
         // This token is different that JWT
         log.info("Initiating token generation for user: {}", jwtRequest.getUserEmail());
         UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
@@ -52,7 +53,7 @@ public class JwtService {
         String jwtToken = jwtUtil.generateToken((User) authentication.getPrincipal());
         log.info("JWT token generated successfully for user: {}", jwtRequest.getUserEmail());
 
-        return ResponseEntity.ok(JwtResponse
+        return ResponseEntity.ok(LoginResponse
                 .builder()
                 .token(jwtToken)
                 .build());
@@ -66,7 +67,8 @@ public class JwtService {
      * @param newEmployee the employee data to be used to create a new employee.
      * @return ResponseEntity with HTTP status CREATED.
      */
-    public ResponseEntity<Void> registerEmployee(Employees newEmployee) {
+    @Override
+    public ResponseEntity<EmployeeResponse> registerEmployee(Employees newEmployee) {
         log.info("Attempting to create a new employee with email: {}", newEmployee.getEmail());
         checkWhetherEmployeeAlreadyExist(newEmployee);
 
@@ -80,7 +82,9 @@ public class JwtService {
         Employees savedEmployee = employeesRepository.save(newEmployee);
         log.info("Employee with email {} saved successfully", savedEmployee.getEmail());
 
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+        EmployeeResponse employeeResponse = new EmployeeResponse(savedEmployee);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(employeeResponse);
     }
 
     /**

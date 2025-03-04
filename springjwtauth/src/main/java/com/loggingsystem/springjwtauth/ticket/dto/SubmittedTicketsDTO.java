@@ -1,8 +1,7 @@
 package com.loggingsystem.springjwtauth.ticket.dto;
 
 import com.loggingsystem.springjwtauth.category.model.Category;
-import com.loggingsystem.springjwtauth.employee.dto.EmployeeResponseDTO;
-import com.loggingsystem.springjwtauth.employee.model.Employees;
+import com.loggingsystem.springjwtauth.employee.dto.EmployeeResponse;
 import com.loggingsystem.springjwtauth.priority.model.Priority;
 import com.loggingsystem.springjwtauth.status.model.Status;
 import lombok.Data;
@@ -12,7 +11,7 @@ import java.time.LocalDateTime;
 @Data
 public class SubmittedTicketsDTO {
     private Long id;
-    private EmployeeResponseDTO assignedTechnician;
+    private EmployeeResponse assignedTechnician;
     private Category category;
     private String description;
     private Status status;

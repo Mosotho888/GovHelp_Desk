@@ -2,6 +2,7 @@ package com.loggingsystem.springjwtauth.role.controller;
 
 import com.loggingsystem.springjwtauth.role.model.Role;
 import com.loggingsystem.springjwtauth.role.service.RoleService;
+import com.loggingsystem.springjwtauth.role.service.impl.RoleServiceImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;

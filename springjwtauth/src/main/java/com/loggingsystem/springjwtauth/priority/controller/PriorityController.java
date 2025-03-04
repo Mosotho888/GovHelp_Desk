@@ -2,6 +2,7 @@ package com.loggingsystem.springjwtauth.priority.controller;
 
 import com.loggingsystem.springjwtauth.priority.model.Priority;
 import com.loggingsystem.springjwtauth.priority.service.PriorityService;
+import com.loggingsystem.springjwtauth.priority.service.impl.PriorityServiceImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;

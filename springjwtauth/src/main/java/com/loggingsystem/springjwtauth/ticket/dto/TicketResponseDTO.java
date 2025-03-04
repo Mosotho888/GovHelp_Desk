@@ -1,6 +1,6 @@
 package com.loggingsystem.springjwtauth.ticket.dto;
 
-import com.loggingsystem.springjwtauth.employee.dto.EmployeeResponseDTO;
+import com.loggingsystem.springjwtauth.employee.dto.EmployeeResponse;
 import com.loggingsystem.springjwtauth.status.model.Status;
 import com.loggingsystem.springjwtauth.ticketcomment.dto.CommentResponseDTO;
 import com.loggingsystem.springjwtauth.category.model.Category;
@@ -19,11 +19,9 @@ import java.util.List;
 @Setter
 public class TicketResponseDTO {
     private Long id;
-    private EmployeeResponseDTO assignedTechnician;
+    private EmployeeResponse assignedTechnician;
     private Status status;
     private String description;
-    private String resolution;
-    private String attachmentsUrl;
     private String ownerEmail;
     private Category category;
     private Priority priority;
@@ -36,8 +34,6 @@ public class TicketResponseDTO {
         this.assignedTechnician = mapToEmployeeResponseDTO(tickets.getAssignedTechnician());
         this.status = tickets.getStatus();
         this.description = tickets.getDescription();
-        this.resolution = tickets.getResolution();
-        this.attachmentsUrl = tickets.getAttachments();
         this.ownerEmail = tickets.getOwner();
         this.category = tickets.getCategory();
         this.priority = tickets.getPriority();
@@ -46,7 +42,7 @@ public class TicketResponseDTO {
         this.comments = tickets.getComments().stream().map(CommentResponseDTO::new).toList();
     }
 
-    private EmployeeResponseDTO mapToEmployeeResponseDTO(Employees assignedTechnician) {
-        return new EmployeeResponseDTO(assignedTechnician);
+    private EmployeeResponse mapToEmployeeResponseDTO(Employees assignedTechnician) {
+        return new EmployeeResponse(assignedTechnician);
     }
 }

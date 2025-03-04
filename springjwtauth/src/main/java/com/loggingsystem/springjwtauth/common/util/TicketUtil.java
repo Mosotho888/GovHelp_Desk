@@ -3,7 +3,6 @@ package com.loggingsystem.springjwtauth.common.util;
 import com.loggingsystem.springjwtauth.employee.model.Employees;
 import com.loggingsystem.springjwtauth.ticket.dto.AssignedTicketsDTO;
 import com.loggingsystem.springjwtauth.ticket.dto.SubmittedTicketsDTO;
-import com.loggingsystem.springjwtauth.ticket.dto.TicketAssignedDTO;
 import com.loggingsystem.springjwtauth.ticket.dto.TicketResponseDTO;
 import com.loggingsystem.springjwtauth.ticket.exception.TicketNotFoundException;
 import com.loggingsystem.springjwtauth.ticket.model.Tickets;
@@ -12,17 +11,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 
-import java.security.Principal;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
 @Slf4j
-public class TicketUtils {
+public class TicketUtil {
     private final TicketsRepository ticketsRepository;
 
-    public TicketUtils(TicketsRepository ticketsRepository) {
+    public TicketUtil(TicketsRepository ticketsRepository) {
         this.ticketsRepository = ticketsRepository;
     }
 

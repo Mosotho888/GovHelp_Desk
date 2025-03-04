@@ -15,8 +15,6 @@ public class TicketAssignedDTO {
     private Long id;
     private String status;
     private String description;
-    private String resolution;
-    private String attachmentsUrl;
     private String ownerEmail;
     private Category category;
     private Priority priority;
@@ -28,8 +26,6 @@ public class TicketAssignedDTO {
         this.id = ticket.getId();
         this.status = ticket.getStatus().getStatus_name();
         this.description = ticket.getDescription();
-        this.resolution = ticket.getResolution();
-        this.attachmentsUrl = ticket.getAttachments();
         this.ownerEmail = ticket.getOwner();
         this.category = ticket.getCategory();
         this.priority = ticket.getPriority();

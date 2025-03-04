@@ -4,14 +4,14 @@ import com.loggingsystem.springjwtauth.employee.model.Employees;
 import lombok.Data;
 
 @Data
-public class EmployeeResponseDTO {
+public class EmployeeResponse {
     private Long id;
     private String firstName;
     private String lastName;
     private String email;
     private String role;
 
-    public EmployeeResponseDTO(Employees employee) {
+    public EmployeeResponse(Employees employee) {
         this.id = employee.getId();
         this.firstName = employee.getFirst_name();
         this.lastName = employee.getLast_name();

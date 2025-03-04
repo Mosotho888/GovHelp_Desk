@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.List;
 
 @Data
-public class EmployeeProfileResponseDTO {
+public class EmployeeProfileResponse {
 
     private Long id;
     private String first_name;
@@ -20,7 +20,7 @@ public class EmployeeProfileResponseDTO {
     private List<AssignedTicketsDTO> assignedTickets;
     private List<SubmittedTicketsDTO> submittedTickets;
 
-    public EmployeeProfileResponseDTO(Employees employees){
+    public EmployeeProfileResponse(Employees employees){
         this.id = employees.getId();
         this.first_name = employees.getFirst_name();
         this.last_name = employees.getLast_name();

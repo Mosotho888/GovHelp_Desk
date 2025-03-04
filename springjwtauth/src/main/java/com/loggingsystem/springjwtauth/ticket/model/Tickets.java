@@ -33,12 +33,6 @@ public class Tickets {
     @Column(name = "description")
     private String description;
 
-    @Column(name = "resolution")
-    private String resolution;
-
-    @Column(name = "attachments")
-    private String attachments;
-
     @Column(name = "owner")
     private String owner;
 
