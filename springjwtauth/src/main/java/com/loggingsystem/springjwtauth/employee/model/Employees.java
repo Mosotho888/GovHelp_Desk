@@ -20,34 +20,34 @@ public class Employees {
     private String password;
     @NotNull(message = "first name is required")
     @Column(name = "first_name")
-    private String first_name;
+    private String firstName;
     @NotNull(message = "last name is required")
     @Column(name = "last_name")
-    private String last_name;
+    private String lastName;
     @NotNull(message = "email is required")
     @Column(name = "email", nullable = false, unique = true)
     private String email;
     @Column(name = "phone_number")
-    private String phone_number;
+    private String phoneNumber;
     @Column(name= "created_at")
-    private LocalDateTime created_at;
+    private LocalDateTime createdAt;
     @Column(name="updated_at")
-    private LocalDateTime updated_at;
+    private LocalDateTime updatedAt;
     @Column(name = "role")
     private String role;
 
     public Employees() {
     }
 
-    public Employees(Long id, String password, String firstName, String lastName, String email, String phoneNumber, LocalDateTime created_at, LocalDateTime updated_at, String role) {
+    public Employees(Long id, String password, String firstName, String lastName, String email, String phoneNumber, LocalDateTime createdAt, LocalDateTime updatedAt, String role) {
         this.id = id;
         this.password = password;
-        this.first_name = firstName;
-        this.last_name = lastName;
+        this.firstName = firstName;
+        this.lastName = lastName;
         this.email = email;
-        this.phone_number = phoneNumber;
-        this.created_at = created_at;
-        this.updated_at = updated_at;
+        this.phoneNumber = phoneNumber;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
         this.role = role;
 
     }

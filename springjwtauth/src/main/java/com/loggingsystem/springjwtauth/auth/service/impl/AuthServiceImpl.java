@@ -1,9 +1,11 @@
 package com.loggingsystem.springjwtauth.auth.service.impl;
 
-import com.loggingsystem.springjwtauth.auth.jwt.JwtUtil;
-import com.loggingsystem.springjwtauth.auth.dto.SignUpRequest;
 import com.loggingsystem.springjwtauth.auth.dto.LoginResponse;
+import com.loggingsystem.springjwtauth.auth.dto.RegisterRequest;
+import com.loggingsystem.springjwtauth.auth.jwt.JwtUtil;
+import com.loggingsystem.springjwtauth.auth.dto.LoginRequest;
 import com.loggingsystem.springjwtauth.auth.service.AuthenticationService;
+import com.loggingsystem.springjwtauth.auth.service.RegisterRequestConverter;
 import com.loggingsystem.springjwtauth.employee.dto.EmployeeResponse;
 import com.loggingsystem.springjwtauth.employee.exception.UserAlreadyExistsException;
 import com.loggingsystem.springjwtauth.employee.model.Employees;
@@ -26,78 +28,56 @@ import java.time.LocalDateTime;
 public class AuthServiceImpl implements AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
-    private final PasswordEncoder passwordEncoder;
+    private final RegisterRequestConverter registerRequestConverter;
     private final EmployeesRepository employeesRepository;
 
-    public AuthServiceImpl(AuthenticationManager authenticationManager, JwtUtil jwtUtil, PasswordEncoder passwordEncoder, EmployeesRepository employeesRepository) {
+    public AuthServiceImpl(AuthenticationManager authenticationManager, JwtUtil jwtUtil, RegisterRequestConverter registerRequestConverter, EmployeesRepository employeesRepository) {
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
-        this.passwordEncoder = passwordEncoder;
+        this.registerRequestConverter = registerRequestConverter;
         this.employeesRepository = employeesRepository;
     }
 
     @Override
-    public ResponseEntity<LoginResponse> login(SignUpRequest jwtRequest) {
+    public ResponseEntity<LoginResponse> login(LoginRequest loginRequest) {
         // This token is different that JWT
-        log.info("Initiating token generation for user: {}", jwtRequest.getUserEmail());
+        log.info("Initiating token generation for user: {}", loginRequest.userEmail());
         UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
-                jwtRequest.getUserEmail(), jwtRequest.getPassword()
+                loginRequest.userEmail(), loginRequest.password()
         );
 
         // this will fault if credentials are not valid
         Authentication authentication = authenticationManager.authenticate(usernamePasswordAuthenticationToken);
-        log.info("Authentication successful for user: {}", jwtRequest.getUserEmail());
+        log.info("Authentication successful for user: {}", loginRequest.userEmail());
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         String jwtToken = jwtUtil.generateToken((User) authentication.getPrincipal());
-        log.info("JWT token generated successfully for user: {}", jwtRequest.getUserEmail());
+        log.info("JWT token generated successfully for user: {}",loginRequest.userEmail());
 
-        return ResponseEntity.ok(LoginResponse
-                .builder()
-                .token(jwtToken)
-                .build());
+        return ResponseEntity.ok(new LoginResponse(jwtToken));
 
     }
 
-    /**
-     * Creates a new employee. This method checks if the employee already exists by email,
-     * encodes the password, and saves the employee to the repository.
-     *
-     * @param newEmployee the employee data to be used to create a new employee.
-     * @return ResponseEntity with HTTP status CREATED.
-     */
     @Override
-    public ResponseEntity<EmployeeResponse> registerEmployee(Employees newEmployee) {
-        log.info("Attempting to create a new employee with email: {}", newEmployee.getEmail());
-        checkWhetherEmployeeAlreadyExist(newEmployee);
+    public ResponseEntity<EmployeeResponse> registerEmployee(RegisterRequest registerRequest) {
+        log.info("Attempting to create a new employee with email: {}", registerRequest.email());
+        checkWhetherEmployeeAlreadyExist(registerRequest.email());
 
-        String encodedPassword = passwordEncoder.encode(newEmployee.getPassword());
-        log.info("Password encoded successfully for email: {}", newEmployee.getEmail());
+        Employees employee = registerRequestConverter.convert(registerRequest);
 
-        newEmployee.setPassword(encodedPassword);
-        newEmployee.setCreated_at(LocalDateTime.now());
-        newEmployee.setRole("USER");
-
-        Employees savedEmployee = employeesRepository.save(newEmployee);
-        log.info("Employee with email {} saved successfully", savedEmployee.getEmail());
+        Employees savedEmployee = employeesRepository.save(employee);
 
         EmployeeResponse employeeResponse = new EmployeeResponse(savedEmployee);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(employeeResponse);
     }
 
-    /**
-     * Checks if an employee with the same email already exists in the system.
-     *
-     * @param newEmployee the request object containing employee details.
-     * @throws UserAlreadyExistsException if the employee with the same email already exists.
-     */
-    private void checkWhetherEmployeeAlreadyExist(Employees newEmployee) {
-        Boolean doesEmployeeExist = employeesRepository.existsByEmail(newEmployee.getEmail());
+    private void checkWhetherEmployeeAlreadyExist(String email) {
+        Boolean doesEmployeeExist = employeesRepository.existsByEmail(email);
 
         if (doesEmployeeExist) {
-            log.error("User with email {} already exists", newEmployee.getEmail());
+            log.error("User with email {} already exists", email);
             throw new UserAlreadyExistsException();
         }
     }

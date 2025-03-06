@@ -22,10 +22,10 @@ public class EmployeeProfileResponse {
 
     public EmployeeProfileResponse(Employees employees){
         this.id = employees.getId();
-        this.first_name = employees.getFirst_name();
-        this.last_name = employees.getLast_name();
+        this.first_name = employees.getFirstName();
+        this.last_name = employees.getLastName();
         this.email = employees.getEmail();
-        this.phone_number = employees.getPhone_number();
+        this.phone_number = employees.getPhoneNumber();
         this.role = employees.getRole();
     }
 

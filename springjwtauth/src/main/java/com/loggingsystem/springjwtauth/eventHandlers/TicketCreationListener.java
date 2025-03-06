@@ -109,7 +109,7 @@ public class TicketCreationListener {
 
                         Best Regards,
                         Support Team""",
-                employee.getFirst_name(), employee.getLast_name(), request.getTicketId(), request.getIssueDescription(),
+                employee.getFirstName(), employee.getLastName(), request.getTicketId(), request.getIssueDescription(),
                 request.getPriority(), request.getCategory(), request.getTechnicianName(), request.getTechnicianSurname(),
                 request.getCreatedAt()
         );

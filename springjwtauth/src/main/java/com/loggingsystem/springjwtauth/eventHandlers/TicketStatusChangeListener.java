@@ -104,7 +104,7 @@ public class TicketStatusChangeListener {
 
                         Best Regards,
                         Support Team""",
-                employee.getFirst_name(), employee.getLast_name(), request.getTicketId(),
+                employee.getFirstName(), employee.getLastName(), request.getTicketId(),
                 request.getTicketId(), request.getStatus(), request.getTechnicianName(), request.getTechnicianSurname(),
                 request.getUpdatedAt()
         );

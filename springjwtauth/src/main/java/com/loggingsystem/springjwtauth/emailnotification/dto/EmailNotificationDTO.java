@@ -29,8 +29,8 @@ public class EmailNotificationDTO implements Serializable {
     public EmailNotificationDTO(Tickets ticket, String comment) {
         this.technicianEmail = ticket.getAssignedTechnician().getEmail();
         this.normalUserEmail = ticket.getOwner();
-        this.technicianName = ticket.getAssignedTechnician().getFirst_name();
-        this.technicianSurname = ticket.getAssignedTechnician().getLast_name();
+        this.technicianName = ticket.getAssignedTechnician().getFirstName();
+        this.technicianSurname = ticket.getAssignedTechnician().getLastName();
         this.ticketId = ticket.getId();
         this.comment = comment;
         this.status = ticket.getStatus().getStatus_name();

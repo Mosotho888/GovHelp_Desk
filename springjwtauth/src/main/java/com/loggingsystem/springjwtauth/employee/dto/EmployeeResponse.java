@@ -13,8 +13,8 @@ public class EmployeeResponse {
 
     public EmployeeResponse(Employees employee) {
         this.id = employee.getId();
-        this.firstName = employee.getFirst_name();
-        this.lastName = employee.getLast_name();
+        this.firstName = employee.getFirstName();
+        this.lastName = employee.getLastName();
         this.email = employee.getEmail();
         this.role = employee.getRole();
     }
