@@ -3,12 +3,12 @@ package com.loggingsystem.springjwtauth.ticket.service.impl;
 import com.loggingsystem.springjwtauth.common.util.EmployeeUtil;
 import com.loggingsystem.springjwtauth.common.util.TicketUtil;
 import com.loggingsystem.springjwtauth.employee.model.Employees;
-import com.loggingsystem.springjwtauth.employee.service.EmployeeService;
 import com.loggingsystem.springjwtauth.ticket.dto.AssignedTicketsDTO;
-import com.loggingsystem.springjwtauth.ticket.dto.TicketResponseDTO;
+import com.loggingsystem.springjwtauth.ticket.dto.TicketResponse;
 import com.loggingsystem.springjwtauth.ticket.model.Tickets;
 import com.loggingsystem.springjwtauth.ticket.repository.TicketsRepository;
 import com.loggingsystem.springjwtauth.ticket.service.GetTicketService;
+import com.loggingsystem.springjwtauth.ticket.service.TicketToTicketResponseConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,15 +26,17 @@ public class GetTicketServiceImpl implements GetTicketService {
     private final TicketsRepository ticketsRepository;
     private final TicketUtil ticketUtil;
     private final EmployeeUtil employeeUtil;
+    private final TicketToTicketResponseConverter ticketToTicketResponseConverter;
 
-    public GetTicketServiceImpl(TicketsRepository ticketsRepository, TicketUtil ticketUtil, EmployeeUtil employeeUtil) {
+    public GetTicketServiceImpl(TicketsRepository ticketsRepository, TicketUtil ticketUtil, EmployeeUtil employeeUtil, TicketToTicketResponseConverter ticketToTicketResponseConverter) {
         this.ticketsRepository = ticketsRepository;
         this.ticketUtil = ticketUtil;
         this.employeeUtil = employeeUtil;
+        this.ticketToTicketResponseConverter = ticketToTicketResponseConverter;
     }
 
     @Override
-    public ResponseEntity<List<TicketResponseDTO>> getAllTickets(Pageable pageable) {
+    public ResponseEntity<List<TicketResponse>> getAllTickets(Pageable pageable) {
         log.info("Fetching all tickets with pagination: {}", pageable);
         Page<Tickets> page = ticketsRepository.findAll(PageRequest.of(
                 pageable.getPageNumber(),
@@ -42,18 +44,18 @@ public class GetTicketServiceImpl implements GetTicketService {
                 pageable.getSortOr(Sort.by(Sort.Direction.ASC, "id"))
         ));
 
-        List<TicketResponseDTO> ticketResponseDTOs = ticketUtil.mapToTicketResponseDTO(page.getContent());
+        List<TicketResponse> ticketResponses = ticketUtil.mapToTicketResponse(page.getContent());
 
-        log.info("Fetched {} tickets.", ticketResponseDTOs.size());
+        log.info("Fetched {} tickets.", ticketResponses.size());
 
-        return ResponseEntity.ok(ticketResponseDTOs);
+        return ResponseEntity.ok(ticketResponses);
     }
 
     @Override
-    public ResponseEntity<TicketResponseDTO> getTicketById(Long id) {
+    public ResponseEntity<TicketResponse> getTicketById(Long id) {
         Tickets ticket = ticketUtil.getTicket(id);
 
-        TicketResponseDTO ticketResponse = new TicketResponseDTO(ticket);
+        TicketResponse ticketResponse = ticketToTicketResponseConverter.convert(ticket);
 
         return ResponseEntity.ok(ticketResponse);
     }

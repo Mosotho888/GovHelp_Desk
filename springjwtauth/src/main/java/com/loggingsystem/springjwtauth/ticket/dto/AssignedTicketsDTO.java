@@ -3,7 +3,7 @@ package com.loggingsystem.springjwtauth.ticket.dto;
 import com.loggingsystem.springjwtauth.category.model.Category;
 import com.loggingsystem.springjwtauth.priority.model.Priority;
 import com.loggingsystem.springjwtauth.status.model.Status;
-import com.loggingsystem.springjwtauth.ticketcomment.dto.CommentResponseDTO;
+import com.loggingsystem.springjwtauth.ticketcomment.dto.CommentResponse;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -18,16 +18,16 @@ public class AssignedTicketsDTO {
     private Status status;
     private Priority priority;
     private LocalDateTime createdAt;
-    private List<CommentResponseDTO> comments;
+    private List<CommentResponse> comments;
 
-    public AssignedTicketsDTO(TicketResponseDTO ticketResponse) {
-        this.id = ticketResponse.getId();
-        this.ownerEmail = ticketResponse.getOwnerEmail();
-        this.category = ticketResponse.getCategory();
-        this.description = ticketResponse.getDescription();
-        this.status = ticketResponse.getStatus();
-        this.priority = ticketResponse.getPriority();
-        this.createdAt = ticketResponse.getCreatedAt();
-        this.comments = ticketResponse.getComments();
+    public AssignedTicketsDTO(TicketResponse ticketResponse) {
+        this.id = ticketResponse.id();
+        this.ownerEmail = ticketResponse.ownerEmail();
+        this.category = ticketResponse.category();
+        this.description = ticketResponse.description();
+        this.status = ticketResponse.status();
+        this.priority = ticketResponse.priority();
+        this.createdAt = ticketResponse.createdAt();
+        this.comments = ticketResponse.comments();
     }
 }

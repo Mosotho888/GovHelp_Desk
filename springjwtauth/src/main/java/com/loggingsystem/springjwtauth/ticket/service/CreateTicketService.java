@@ -1,11 +1,11 @@
 package com.loggingsystem.springjwtauth.ticket.service;
 
-import com.loggingsystem.springjwtauth.ticket.dto.TicketRequestDTO;
+import com.loggingsystem.springjwtauth.ticket.dto.TicketRequest;
+import com.loggingsystem.springjwtauth.ticket.dto.TicketResponse;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.security.Principal;
 
 public interface CreateTicketService {
-    ResponseEntity<Void> createTicket(TicketRequestDTO ticketRequest, Principal principal, UriComponentsBuilder ucb);
+    ResponseEntity<TicketResponse> createTicket(TicketRequest ticketRequest, Principal principal);
 }

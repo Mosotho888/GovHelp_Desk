@@ -1,14 +1,12 @@
 package com.loggingsystem.springjwtauth.category.service.impl;
 
-import com.loggingsystem.springjwtauth.category.dto.TicketsByCategoryIdResponseDTO;
+import com.loggingsystem.springjwtauth.category.dto.TicketsByCategoryResponse;
 import com.loggingsystem.springjwtauth.category.exception.CategoryAlreadyExistException;
 import com.loggingsystem.springjwtauth.category.exception.CategoryNotFoundException;
 import com.loggingsystem.springjwtauth.category.model.Category;
 import com.loggingsystem.springjwtauth.category.repository.CategoryRepository;
 import com.loggingsystem.springjwtauth.category.service.CategoryService;
-import com.loggingsystem.springjwtauth.ticket.dto.TicketResponseDTO;
-import com.loggingsystem.springjwtauth.ticket.model.Tickets;
-import com.loggingsystem.springjwtauth.ticket.repository.TicketsRepository;
+import com.loggingsystem.springjwtauth.category.service.TicketsByCategoryConverter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,17 +15,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Optional;
 
 @Service
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
-    private final TicketsRepository ticketsRepository;
+    private final TicketsByCategoryConverter ticketsByCategoryConverter;
 
-    public CategoryServiceImpl(CategoryRepository categoryRepository, TicketsRepository ticketsRepository) {
+    public CategoryServiceImpl(CategoryRepository categoryRepository, TicketsByCategoryConverter ticketsByCategoryConverter) {
         this.categoryRepository = categoryRepository;
-        this.ticketsRepository = ticketsRepository;
+        this.ticketsByCategoryConverter = ticketsByCategoryConverter;
     }
 
     // focus on paging
@@ -82,15 +79,12 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public ResponseEntity<TicketsByCategoryIdResponseDTO> getAllTicketsByCategoryId(Long categoryId) {
+    public ResponseEntity<TicketsByCategoryResponse> getAllTicketsByCategoryId(Long categoryId) {
         Category category = getCategory(categoryId);
-        List<Tickets> tickets = ticketsRepository.findAllByCategory(category);
 
-        List<TicketResponseDTO> ticketResponseDTO = tickets.stream().map(TicketResponseDTO::new).toList();
+        TicketsByCategoryResponse ticketsByCategoryResponse = ticketsByCategoryConverter.convert(category);
 
-        TicketsByCategoryIdResponseDTO ticketsByCategoryIdResponseDTO = new TicketsByCategoryIdResponseDTO(category, ticketResponseDTO);
-
-        return ResponseEntity.ok(ticketsByCategoryIdResponseDTO);
+        return ResponseEntity.ok(ticketsByCategoryResponse);
 
     }
 

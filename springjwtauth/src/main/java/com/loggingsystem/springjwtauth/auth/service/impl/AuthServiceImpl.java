@@ -10,6 +10,7 @@ import com.loggingsystem.springjwtauth.employee.dto.EmployeeResponse;
 import com.loggingsystem.springjwtauth.employee.exception.UserAlreadyExistsException;
 import com.loggingsystem.springjwtauth.employee.model.Employees;
 import com.loggingsystem.springjwtauth.employee.repository.EmployeesRepository;
+import com.loggingsystem.springjwtauth.employee.service.EmployeeToEmployeeResponseConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,10 +19,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 
 @Service
 @Slf4j
@@ -29,24 +28,24 @@ public class AuthServiceImpl implements AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final RegisterRequestConverter registerRequestConverter;
+    private final EmployeeToEmployeeResponseConverter employeeToEmployeeResponseConverter;
     private final EmployeesRepository employeesRepository;
 
-    public AuthServiceImpl(AuthenticationManager authenticationManager, JwtUtil jwtUtil, RegisterRequestConverter registerRequestConverter, EmployeesRepository employeesRepository) {
+    public AuthServiceImpl(AuthenticationManager authenticationManager, JwtUtil jwtUtil, RegisterRequestConverter registerRequestConverter, EmployeeToEmployeeResponseConverter employeeToEmployeeResponseConverter, EmployeesRepository employeesRepository) {
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         this.registerRequestConverter = registerRequestConverter;
+        this.employeeToEmployeeResponseConverter = employeeToEmployeeResponseConverter;
         this.employeesRepository = employeesRepository;
     }
 
     @Override
     public ResponseEntity<LoginResponse> login(LoginRequest loginRequest) {
-        // This token is different that JWT
         log.info("Initiating token generation for user: {}", loginRequest.userEmail());
         UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
                 loginRequest.userEmail(), loginRequest.password()
         );
 
-        // this will fault if credentials are not valid
         Authentication authentication = authenticationManager.authenticate(usernamePasswordAuthenticationToken);
         log.info("Authentication successful for user: {}", loginRequest.userEmail());
 
@@ -56,7 +55,6 @@ public class AuthServiceImpl implements AuthenticationService {
         log.info("JWT token generated successfully for user: {}",loginRequest.userEmail());
 
         return ResponseEntity.ok(new LoginResponse(jwtToken));
-
     }
 
     @Override
@@ -68,7 +66,7 @@ public class AuthServiceImpl implements AuthenticationService {
 
         Employees savedEmployee = employeesRepository.save(employee);
 
-        EmployeeResponse employeeResponse = new EmployeeResponse(savedEmployee);
+        EmployeeResponse employeeResponse = employeeToEmployeeResponseConverter.convert(savedEmployee);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(employeeResponse);
     }

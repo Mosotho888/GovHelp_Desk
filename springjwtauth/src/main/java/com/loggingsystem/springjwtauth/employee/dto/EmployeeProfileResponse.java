@@ -12,8 +12,8 @@ import java.util.List;
 public class EmployeeProfileResponse {
 
     private Long id;
-    private String first_name;
-    private String last_name;
+    private String firstName;
+    private String lastName;
     private String email;
     private String phone_number;
     private String role;
@@ -22,8 +22,8 @@ public class EmployeeProfileResponse {
 
     public EmployeeProfileResponse(Employees employees){
         this.id = employees.getId();
-        this.first_name = employees.getFirstName();
-        this.last_name = employees.getLastName();
+        this.firstName = employees.getFirstName();
+        this.lastName = employees.getLastName();
         this.email = employees.getEmail();
         this.phone_number = employees.getPhoneNumber();
         this.role = employees.getRole();

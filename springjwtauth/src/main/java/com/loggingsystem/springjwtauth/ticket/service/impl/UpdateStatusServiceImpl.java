@@ -45,7 +45,7 @@ public class UpdateStatusServiceImpl implements UpdateStatusService {
         }
 
         ticket.setStatus(status);
-        ticket.setUpdated_at(LocalDateTime.now());
+        ticket.setUpdatedAt(LocalDateTime.now());
         ticketsRepository.save(ticket);
 
         EmailNotificationDTO emailRequest = new EmailNotificationDTO(ticket, null);

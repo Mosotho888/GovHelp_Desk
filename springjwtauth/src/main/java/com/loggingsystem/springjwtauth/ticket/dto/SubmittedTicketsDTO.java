@@ -18,13 +18,13 @@ public class SubmittedTicketsDTO {
     private Priority priority;
     private LocalDateTime createdAt;
 
-    public SubmittedTicketsDTO(TicketResponseDTO ticketResponse) {
-        this.id = ticketResponse.getId();
-        this.assignedTechnician = ticketResponse.getAssignedTechnician();
-        this.category = ticketResponse.getCategory();
-        this.description = ticketResponse.getDescription();
-        this.status = ticketResponse.getStatus();
-        this.priority = ticketResponse.getPriority();
-        this.createdAt = ticketResponse.getCreatedAt();
+    public SubmittedTicketsDTO(TicketResponse ticketResponse) {
+        this.id = ticketResponse.id();
+        this.assignedTechnician = ticketResponse.assignedTechnician();
+        this.category = ticketResponse.category();
+        this.description = ticketResponse.description();
+        this.status = ticketResponse.status();
+        this.priority = ticketResponse.priority();
+        this.createdAt = ticketResponse.createdAt();
     }
 }
