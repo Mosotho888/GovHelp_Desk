@@ -1,83 +1,73 @@
 package com.loggingsystem.springjwtauth.ticket.controller;
 
 import com.loggingsystem.springjwtauth.ticket.dto.AssignedTicketsDTO;
-import com.loggingsystem.springjwtauth.ticket.dto.TicketAssignedDTO;
-import com.loggingsystem.springjwtauth.ticket.service.*;
-import com.loggingsystem.springjwtauth.ticketcomment.dto.CommentResponseDTO;
+import com.loggingsystem.springjwtauth.ticket.service.CommentTicketService;
+import com.loggingsystem.springjwtauth.ticket.service.CreateTicketService;
+import com.loggingsystem.springjwtauth.ticket.service.GetTicketService;
+import com.loggingsystem.springjwtauth.ticket.service.UpdateStatusService;
+import com.loggingsystem.springjwtauth.ticketcomment.dto.CommentResponse;
 import com.loggingsystem.springjwtauth.status.dto.StatusRequestDTO;
-import com.loggingsystem.springjwtauth.ticket.dto.TicketRequestDTO;
-import com.loggingsystem.springjwtauth.ticket.dto.TicketResponseDTO;
+import com.loggingsystem.springjwtauth.ticket.dto.TicketRequest;
+import com.loggingsystem.springjwtauth.ticket.dto.TicketResponse;
 import com.loggingsystem.springjwtauth.ticketcomment.model.TicketComments;
-import com.loggingsystem.springjwtauth.ticket.model.Tickets;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.security.Principal;
 import java.util.List;
 
+@CrossOrigin(origins = "http://localhost:3000", allowedHeaders = "*")
 @RestController
 @RequestMapping("/api/tickets")
 public class TicketsController {
+    private final UpdateStatusService updateStatusService;
+    private final GetTicketService getTicketService;
     private final CreateTicketService createTicketService;
-    private final GetAllTicketsService getAllTicketsService;
-    private final GetTicketByIdService getTicketByIdService;
-    private final AddCommentToTicketService addCommentToTicketService;
-    private final GetAllCommentsByTicketIdService getAllCommentsByTicketIdService;
-    private final GetAllTicketsByAssignedTechnicianService getAllTicketsByAssignedTechnicianService;
-    private final UpdatedTicketStatusService updatedTicketStatusService;
+    private final CommentTicketService commentTicketService;
 
-    public TicketsController(CreateTicketService createTicketService, GetAllTicketsService getAllTicketsService, GetTicketByIdService getTicketByIdService, AddCommentToTicketService addCommentToTicketService, GetAllCommentsByTicketIdService getAllCommentsByTicketIdService, GetAllTicketsByAssignedTechnicianService getAllTicketsByAssignedTechnicianService, UpdatedTicketStatusService updatedTicketStatusService) {
+    public TicketsController(UpdateStatusService updateStatusService, GetTicketService getTicketService, CreateTicketService createTicketService, CommentTicketService commentTicketService) {
+        this.updateStatusService = updateStatusService;
+        this.getTicketService = getTicketService;
         this.createTicketService = createTicketService;
-        this.getAllTicketsService = getAllTicketsService;
-        this.getTicketByIdService = getTicketByIdService;
-        this.addCommentToTicketService = addCommentToTicketService;
-        this.getAllCommentsByTicketIdService = getAllCommentsByTicketIdService;
-        this.getAllTicketsByAssignedTechnicianService = getAllTicketsByAssignedTechnicianService;
-        this.updatedTicketStatusService = updatedTicketStatusService;
+        this.commentTicketService = commentTicketService;
     }
 
-    @CrossOrigin(origins = "http://localhost:3000")
     @PostMapping
-    public ResponseEntity<Void> createTicket(@Valid @RequestBody TicketRequestDTO ticketRequest, Principal principal, UriComponentsBuilder ucb) {
-        return createTicketService.createTicket(ticketRequest, principal, ucb);
+    public ResponseEntity<TicketResponse> createTicket(@Valid @RequestBody TicketRequest ticketRequest, Principal principal) {
+        return createTicketService.createTicket(ticketRequest, principal);
     }
 
-    @CrossOrigin(origins = "http://localhost:3000")  // Allow only this origin
     @GetMapping
-    public ResponseEntity<List<TicketResponseDTO>> getAllTickets(Pageable pageable) {
-        return getAllTicketsService.getAllTickets(pageable);
+    public ResponseEntity<List<TicketResponse>> getAllTickets(Pageable pageable) {
+        return getTicketService.getAllTickets(pageable);
     }
 
-    @CrossOrigin(origins = "http://localhost:3000")
-    @GetMapping("/{id}")
-    private ResponseEntity<TicketResponseDTO> getTicketById (@PathVariable Long id) {
-        return getTicketByIdService.getTicketById(id);
+    @GetMapping("/{ticketId}")
+    private ResponseEntity<TicketResponse> getTicketById (@PathVariable Long ticketId) {
+        return getTicketService.getTicketById(ticketId);
     }
 
-    @PostMapping("/{id}/comments")
-    public ResponseEntity<Void> addCommentToTicket(@PathVariable Long id, @RequestBody TicketComments comment, Principal principal) {
-        return addCommentToTicketService.addCommentToTicket(id, comment, principal);
+    // return comment not Void
+    @PostMapping("/{ticketId}/comments")
+    public ResponseEntity<Void> addCommentToTicket(@PathVariable Long ticketId, @RequestBody TicketComments comment, Principal principal) {
+        return commentTicketService.addCommentToTicket(ticketId, comment, principal);
     }
 
-    @CrossOrigin(origins = "http://localhost:3000")
-    @PutMapping("/{id}/status")
-    public ResponseEntity<Void> updateStatus(@PathVariable Long id, @RequestBody StatusRequestDTO status, Principal principal) {
-        return updatedTicketStatusService.updateStatus(id, status, principal);
+    @PutMapping("/{ticketId}/status")
+    public ResponseEntity<Void> updateStatus(@PathVariable Long ticketId, @RequestBody StatusRequestDTO status, Principal principal) {
+        return updateStatusService.updateStatus(ticketId, status, principal);
     }
 
-    @CrossOrigin(origins = "http://localhost:3000")
-    @GetMapping("/{id}/comments")
-    public ResponseEntity<List<CommentResponseDTO>> getAllCommentsByTicketsId(@PathVariable Long id){
-        return getAllCommentsByTicketIdService.getAllCommentsByTicketId(id);
+    @GetMapping("/{ticketId}/comments")
+    public ResponseEntity<List<CommentResponse>> getAllCommentsByTicketsId(@PathVariable Long ticketId){
+        return commentTicketService.getAllCommentsByTicketId(ticketId);
     }
 
-    @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping("/assigned")
     public ResponseEntity<List<AssignedTicketsDTO>> getAllTicketsByAssignedTechnician(Principal principal) {
-        return getAllTicketsByAssignedTechnicianService.getAllTicketsByAssignedTechnician(principal);
+        return getTicketService.getAllTicketsByAssignedTechnician(principal);
     }
 
 }

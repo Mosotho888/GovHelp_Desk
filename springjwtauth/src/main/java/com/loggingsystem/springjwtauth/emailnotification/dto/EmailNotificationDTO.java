@@ -23,23 +23,20 @@ public class EmailNotificationDTO implements Serializable {
     private String updatedAt;
     private String issueDescription;
 
-    public EmailNotificationDTO() {
-    }
-
     public EmailNotificationDTO(Tickets ticket, String comment) {
         this.technicianEmail = ticket.getAssignedTechnician().getEmail();
-        this.normalUserEmail = ticket.getOwner();
-        this.technicianName = ticket.getAssignedTechnician().getFirst_name();
-        this.technicianSurname = ticket.getAssignedTechnician().getLast_name();
+        this.normalUserEmail = ticket.getOwnerEmail();
+        this.technicianName = ticket.getAssignedTechnician().getFirstName();
+        this.technicianSurname = ticket.getAssignedTechnician().getLastName();
         this.ticketId = ticket.getId();
         this.comment = comment;
         this.status = ticket.getStatus().getStatus_name();
         this.priority = ticket.getPriority().getLevel();
         this.category = ticket.getCategory().getName();
-        this.createdAt = ticket.getCreated_at().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        this.dueAt = ticket.getCreated_at().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        this.createdAt = ticket.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        this.dueAt = ticket.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
-        this.updatedAt = checkUpdateAtDate(ticket.getCreated_at());
+        this.updatedAt = checkUpdateAtDate(ticket.getUpdatedAt());
         this.issueDescription = ticket.getDescription();
     }
 

@@ -1,6 +1,6 @@
 package com.loggingsystem.springjwtauth.category.controller;
 
-import com.loggingsystem.springjwtauth.category.dto.TicketsByCategoryIdResponseDTO;
+import com.loggingsystem.springjwtauth.category.dto.TicketsByCategoryResponse;
 import com.loggingsystem.springjwtauth.category.model.Category;
 import com.loggingsystem.springjwtauth.category.service.CategoryService;
 import org.springframework.data.domain.Page;
@@ -8,8 +8,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
+@CrossOrigin(origins = "http://localhost:3000")
 @RestController
 @RequestMapping("/api/category")
 public class CategoryController {
@@ -45,7 +45,7 @@ public class CategoryController {
     }
 
     @GetMapping("/{categoryId}/tickets")
-    public ResponseEntity<TicketsByCategoryIdResponseDTO> getAllTicketsByCategoryId(@PathVariable Long categoryId) {
+    public ResponseEntity<TicketsByCategoryResponse> getAllTicketsByCategoryId(@PathVariable Long categoryId) {
         return categoryService.getAllTicketsByCategoryId(categoryId);
     }
     

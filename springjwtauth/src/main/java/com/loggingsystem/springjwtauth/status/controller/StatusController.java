@@ -2,6 +2,7 @@ package com.loggingsystem.springjwtauth.status.controller;
 
 import com.loggingsystem.springjwtauth.status.model.Status;
 import com.loggingsystem.springjwtauth.status.service.StatusService;
+import com.loggingsystem.springjwtauth.status.service.impl.StatusServiceImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@CrossOrigin(origins = "http://localhost:3000", allowedHeaders = "*")
 @RestController
 @RequestMapping("/api/status")
 public class StatusController {

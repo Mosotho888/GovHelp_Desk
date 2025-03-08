@@ -33,14 +33,8 @@ public class Tickets {
     @Column(name = "description")
     private String description;
 
-    @Column(name = "resolution")
-    private String resolution;
-
-    @Column(name = "attachments")
-    private String attachments;
-
     @Column(name = "owner")
-    private String owner;
+    private String ownerEmail;
 
     @ManyToOne
     @JoinColumn(name = "category_id")
@@ -51,10 +45,10 @@ public class Tickets {
     private Priority priority;
 
     @Column(name = "created_at")
-    private LocalDateTime created_at;
+    private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
-    private LocalDateTime updated_at;
+    private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "tickets", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<TicketComments> comments = new ArrayList<>();
