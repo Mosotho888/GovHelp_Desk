@@ -56,7 +56,7 @@ public class TicketsController {
     }
 
     @PutMapping("/{ticketId}/status")
-    public ResponseEntity<Void> updateStatus(@PathVariable Long ticketId, @RequestBody StatusRequestDTO status, Principal principal) {
+    public ResponseEntity<TicketResponse> updateStatus(@PathVariable Long ticketId, @RequestBody StatusRequestDTO status, Principal principal) {
         return updateStatusService.updateStatus(ticketId, status, principal);
     }
 

@@ -6,9 +6,11 @@ import com.loggingsystem.springjwtauth.emailnotification.service.MessageSenderSe
 import com.loggingsystem.springjwtauth.status.dto.StatusRequestDTO;
 import com.loggingsystem.springjwtauth.status.model.Status;
 import com.loggingsystem.springjwtauth.status.service.StatusService;
+import com.loggingsystem.springjwtauth.ticket.dto.TicketResponse;
 import com.loggingsystem.springjwtauth.ticket.exception.TechnicianNotAuthorizedToUpdateTicketException;
 import com.loggingsystem.springjwtauth.ticket.model.Tickets;
 import com.loggingsystem.springjwtauth.ticket.repository.TicketsRepository;
+import com.loggingsystem.springjwtauth.ticket.service.TicketToTicketResponseConverter;
 import com.loggingsystem.springjwtauth.ticket.service.UpdateStatusService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -25,16 +27,18 @@ public class UpdateStatusServiceImpl implements UpdateStatusService {
     private final StatusService statusService;
     private final MessageSenderService messageSenderService;
     private final TicketsRepository ticketsRepository;
+    private final TicketToTicketResponseConverter ticketToTicketResponseConverter;
 
-    public UpdateStatusServiceImpl(TicketUtil ticketUtil, StatusService statusService, MessageSenderService messageSenderService, TicketsRepository ticketsRepository) {
+    public UpdateStatusServiceImpl(TicketUtil ticketUtil, StatusService statusService, MessageSenderService messageSenderService, TicketsRepository ticketsRepository, TicketToTicketResponseConverter ticketToTicketResponseConverter) {
         this.ticketUtil = ticketUtil;
         this.statusService = statusService;
         this.messageSenderService = messageSenderService;
         this.ticketsRepository = ticketsRepository;
+        this.ticketToTicketResponseConverter = ticketToTicketResponseConverter;
     }
 
     @Override
-    public ResponseEntity<Void> updateStatus(Long ticketId, StatusRequestDTO statusId, Principal principal) {
+    public ResponseEntity<TicketResponse> updateStatus(Long ticketId, StatusRequestDTO statusId, Principal principal) {
         log.info("Updating status for ticket ID: {} by user: {}", ticketId, principal.getName());
         Tickets ticket = ticketUtil.getTicket(ticketId);
         Status status = statusService.getStatus(statusId.getStatus_id());
@@ -48,11 +52,13 @@ public class UpdateStatusServiceImpl implements UpdateStatusService {
         ticket.setUpdatedAt(LocalDateTime.now());
         ticketsRepository.save(ticket);
 
+        TicketResponse ticketResponse = ticketToTicketResponseConverter.convert(ticket);
+
         EmailNotificationDTO emailRequest = new EmailNotificationDTO(ticket, null);
         messageSenderService.sendTicketStatusChangeMessage(emailRequest);
 
         log.info("Status updated successfully for ticket ID: {}", ticketId);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(ticketResponse);
     }
 
     private static boolean isTicketAssignedToCurrentUser(String currentTechnicianEmail, String assignedTechnicianEmail) {
