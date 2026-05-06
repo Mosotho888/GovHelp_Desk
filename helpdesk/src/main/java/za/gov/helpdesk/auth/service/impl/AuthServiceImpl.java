@@ -4,7 +4,7 @@ import za.gov.helpdesk.auth.dto.LoginResponse;
 import za.gov.helpdesk.auth.dto.RegisterRequest;
 import za.gov.helpdesk.auth.jwt.JwtUtil;
 import za.gov.helpdesk.auth.dto.LoginRequest;
-import za.gov.helpdesk.auth.service.AuthenticationService;
+import za.gov.helpdesk.auth.service.AuthService;
 import za.gov.helpdesk.auth.service.RegisterRequestConverter;
 import za.gov.helpdesk.employee.dto.EmployeeResponse;
 import za.gov.helpdesk.employee.exception.UserAlreadyExistsException;
@@ -24,7 +24,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
-public class AuthServiceImpl implements AuthenticationService {
+public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final RegisterRequestConverter registerRequestConverter;

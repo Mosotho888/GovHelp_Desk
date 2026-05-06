@@ -6,7 +6,7 @@ import za.gov.helpdesk.auth.dto.RegisterRequest;
 import za.gov.helpdesk.employee.dto.EmployeeResponse;
 import org.springframework.http.ResponseEntity;
 
-public interface AuthenticationService {
+public interface AuthService {
 
     ResponseEntity<LoginResponse> login(LoginRequest loginRequest);
     ResponseEntity<EmployeeResponse> registerEmployee(RegisterRequest registerRequest);
