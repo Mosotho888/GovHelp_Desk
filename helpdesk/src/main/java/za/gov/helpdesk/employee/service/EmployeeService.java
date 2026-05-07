@@ -1,6 +1,6 @@
 package za.gov.helpdesk.employee.service;
 
-import za.gov.helpdesk.auth.dto.RegisterRequest;
+import za.gov.helpdesk.employee.dto.RegisterRequest;
 import za.gov.helpdesk.employee.dto.EmployeeProfileResponse;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;

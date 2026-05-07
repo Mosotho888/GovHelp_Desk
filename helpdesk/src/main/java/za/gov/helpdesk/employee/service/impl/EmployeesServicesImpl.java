@@ -1,7 +1,7 @@
 package za.gov.helpdesk.employee.service.impl;
 
 import org.springframework.http.HttpStatus;
-import za.gov.helpdesk.auth.dto.RegisterRequest;
+import za.gov.helpdesk.employee.dto.RegisterRequest;
 import za.gov.helpdesk.common.util.EmployeeUtil;
 import za.gov.helpdesk.common.util.TicketUtil;
 import za.gov.helpdesk.employee.dto.EmployeeProfileResponse;

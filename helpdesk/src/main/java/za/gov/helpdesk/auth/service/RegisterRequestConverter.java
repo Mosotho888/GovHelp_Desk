@@ -1,6 +1,6 @@
 package za.gov.helpdesk.auth.service;
 
-import za.gov.helpdesk.auth.dto.RegisterRequest;
+import za.gov.helpdesk.employee.dto.RegisterRequest;
 import za.gov.helpdesk.employee.model.Employees;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
@@ -27,7 +27,7 @@ public class RegisterRequestConverter implements Converter<RegisterRequest, Empl
         BeanUtils.copyProperties(registerRequest, employee);
 
         employee.setPassword(encodedPassword);
-        employee.setRole("USER");
+        employee.setRole(employee.getRole());
         employee.setCreatedAt(LocalDateTime.now());
 
         return employee;

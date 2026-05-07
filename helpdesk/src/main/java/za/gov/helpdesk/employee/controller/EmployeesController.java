@@ -3,7 +3,7 @@ package za.gov.helpdesk.employee.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import za.gov.helpdesk.auth.dto.RegisterRequest;
+import za.gov.helpdesk.employee.dto.RegisterRequest;
 import za.gov.helpdesk.employee.dto.EmployeeProfileResponse;
 import za.gov.helpdesk.employee.dto.EmployeeResponse;
 import za.gov.helpdesk.employee.service.EmployeeService;

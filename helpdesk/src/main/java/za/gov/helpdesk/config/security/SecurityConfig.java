@@ -28,12 +28,10 @@ import java.util.List;
 public class SecurityConfig {
     private final AuthUserDetailsService authUserDetailsService;
     private final JwtUtil jwtUtil;
-    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
-    public SecurityConfig(AuthUserDetailsService authUserDetailsService, JwtUtil jwtUtil, JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint) {
+    public SecurityConfig(AuthUserDetailsService authUserDetailsService, JwtUtil jwtUtil) {
         this.authUserDetailsService = authUserDetailsService;
         this.jwtUtil = jwtUtil;
-        this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
     }
 
     @Bean
@@ -52,7 +50,6 @@ public class SecurityConfig {
                         .anyRequest()
                         .authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                //.exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
