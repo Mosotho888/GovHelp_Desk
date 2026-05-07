@@ -1,6 +1,7 @@
 package za.gov.helpdesk.auth.jwt;
 
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.UnknownNullability;
 import org.springframework.security.core.userdetails.UserDetails;
 import za.gov.helpdesk.config.security.JwtProperties;
 import io.jsonwebtoken.Claims;
@@ -8,7 +9,6 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Component;
 import za.gov.helpdesk.employee.model.Employees;
 
@@ -36,7 +36,7 @@ public class JwtUtil {
         return buildToken(claims, user.getUsername(), jwtProperties.getValidity());
     }
 
-    public String generateRefreshToken(User user) {
+    public String generateRefreshToken(@UnknownNullability Employees user) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("type", "refresh");
 

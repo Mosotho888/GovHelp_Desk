@@ -1,13 +1,20 @@
 package za.gov.helpdesk.auth.service.impl;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.transaction.annotation.Transactional;
 import za.gov.helpdesk.auth.dto.AuthResponse;
+import za.gov.helpdesk.auth.dto.RefreshTokenRequest;
 import za.gov.helpdesk.auth.dto.RegisterRequest;
 import za.gov.helpdesk.auth.jwt.JwtUtil;
 import za.gov.helpdesk.auth.dto.LoginRequest;
 import za.gov.helpdesk.auth.service.AuthService;
 import za.gov.helpdesk.auth.service.RegisterRequestConverter;
+import za.gov.helpdesk.config.security.JwtProperties;
 import za.gov.helpdesk.employee.dto.EmployeeResponse;
 import za.gov.helpdesk.employee.exception.UserAlreadyExistsException;
+import za.gov.helpdesk.employee.exception.UserNotFoundException;
 import za.gov.helpdesk.employee.model.Employees;
 import za.gov.helpdesk.employee.repository.EmployeesRepository;
 import za.gov.helpdesk.employee.service.EmployeeToEmployeeResponseConverter;
@@ -24,59 +31,77 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
+    private static final int MAX_LOGIN_ATTEMPTS = 3;
+    private static final String TOKEN_REFRESH = "refresh";
     private final AuthenticationManager authenticationManager;
-    private final JwtUtil jwtUtil;
-    private final RegisterRequestConverter registerRequestConverter;
-    private final EmployeeToEmployeeResponseConverter employeeToEmployeeResponseConverter;
     private final EmployeesRepository employeesRepository;
-
-    public AuthServiceImpl(AuthenticationManager authenticationManager, JwtUtil jwtUtil, RegisterRequestConverter registerRequestConverter, EmployeeToEmployeeResponseConverter employeeToEmployeeResponseConverter, EmployeesRepository employeesRepository) {
-        this.authenticationManager = authenticationManager;
-        this.jwtUtil = jwtUtil;
-        this.registerRequestConverter = registerRequestConverter;
-        this.employeeToEmployeeResponseConverter = employeeToEmployeeResponseConverter;
-        this.employeesRepository = employeesRepository;
-    }
+    private final JwtUtil jwtUtil;
+    private final JwtProperties jwtProperties;
 
     @Override
-    public ResponseEntity<AuthResponse> login(LoginRequest loginRequest) {
-        log.info("Initiating token generation for user: {}", loginRequest.userEmail());
-        UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
-                loginRequest.userEmail(), loginRequest.password()
-        );
+    @Transactional
+    public AuthResponse login(LoginRequest loginRequest) {
+        Employees employee = employeesRepository.findByEmail(loginRequest.userEmail())
+                .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
-        Authentication authentication = authenticationManager.authenticate(usernamePasswordAuthenticationToken);
-        log.info("Authentication successful for user: {}", loginRequest.userEmail());
-
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        String jwtToken = jwtUtil.generateAccessToken((User) authentication.getPrincipal());
-        log.info("JWT token generated successfully for user: {}",loginRequest.userEmail());
-
-        return ResponseEntity.ok(new AuthResponse(jwtToken));
-    }
-
-    @Override
-    public ResponseEntity<EmployeeResponse> registerEmployee(RegisterRequest registerRequest) {
-        log.info("Attempting to create a new employee with email: {}", registerRequest.email());
-        checkWhetherEmployeeAlreadyExist(registerRequest.email());
-
-        Employees employee = registerRequestConverter.convert(registerRequest);
-
-        Employees savedEmployee = employeesRepository.save(employee);
-
-        EmployeeResponse employeeResponse = employeeToEmployeeResponseConverter.convert(savedEmployee);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(employeeResponse);
-    }
-
-    private void checkWhetherEmployeeAlreadyExist(String email) {
-        Boolean doesEmployeeExist = employeesRepository.existsByEmail(email);
-
-        if (doesEmployeeExist) {
-            log.error("User with email {} already exists", email);
-            throw new UserAlreadyExistsException();
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginRequest.userEmail(), loginRequest.password())
+            );
+        } catch (AuthenticationException ex) {
+            // Increment failed attempt counter
+            employee.setLoginAttempts(employee.getLoginAttempts() + 1);
+            if (employee.getLoginAttempts() >= MAX_LOGIN_ATTEMPTS) {
+                employee.setActive(false);
+            }
+            employeesRepository.save(employee);
+            throw ex;
         }
+
+        // Reset on successful login
+        employee.setLoginAttempts(0);
+        employeesRepository.save(employee);
+
+        return buildAuthResponse(employee);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AuthResponse refresh(RefreshTokenRequest refreshToken) {
+        String email = jwtUtil.extractEmail(refreshToken.getRefreshToken());
+
+        Employees employee = employeesRepository.findByEmail(email)
+                .orElseThrow(UserNotFoundException::new);
+
+        if (!TOKEN_REFRESH.equals(jwtUtil.extractTokenType(refreshToken.getRefreshToken()))
+                || jwtUtil.isTokenExpired(refreshToken.getRefreshToken())) {
+            throw new BadCredentialsException("Invalid or expired refresh token");
+        }
+
+        return buildAuthResponse(employee);
+    }
+
+    private AuthResponse buildAuthResponse(Employees employee) {
+        return AuthResponse.builder()
+                .accessToken(jwtUtil.generateAccessToken(employee))
+                .refreshToken(jwtUtil.generateRefreshToken(employee))
+                .expiresIn(jwtProperties.getValidity() / 1000)
+                .user(toEmployeeResponse(employee))
+                .build();
+    }
+
+    private EmployeeResponse toEmployeeResponse(Employees employee) {
+        return EmployeeResponse.builder()
+                .id(employee.getId())
+                .firstName(employee.getFirstName())
+                .lastName(employee.getLastName())
+                .email(employee.getEmail())
+                .role(employee.getRole())
+                .phoneNumber(employee.getPhoneNumber())
+                .active(employee.getActive())
+                .createdAt(employee.getCreatedAt())
+                .build();
     }
 }
