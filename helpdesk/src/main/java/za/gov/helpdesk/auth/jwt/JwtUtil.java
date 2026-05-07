@@ -1,7 +1,6 @@
 package za.gov.helpdesk.auth.jwt;
 
 import lombok.RequiredArgsConstructor;
-import org.jetbrains.annotations.UnknownNullability;
 import org.springframework.security.core.userdetails.UserDetails;
 import za.gov.helpdesk.config.security.JwtProperties;
 import io.jsonwebtoken.Claims;

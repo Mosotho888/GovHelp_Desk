@@ -6,26 +6,17 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.transaction.annotation.Transactional;
 import za.gov.helpdesk.auth.dto.AuthResponse;
 import za.gov.helpdesk.auth.dto.RefreshTokenRequest;
-import za.gov.helpdesk.auth.dto.RegisterRequest;
 import za.gov.helpdesk.auth.jwt.JwtUtil;
 import za.gov.helpdesk.auth.dto.LoginRequest;
 import za.gov.helpdesk.auth.service.AuthService;
-import za.gov.helpdesk.auth.service.RegisterRequestConverter;
 import za.gov.helpdesk.config.security.JwtProperties;
 import za.gov.helpdesk.employee.dto.EmployeeResponse;
-import za.gov.helpdesk.employee.exception.UserAlreadyExistsException;
 import za.gov.helpdesk.employee.exception.UserNotFoundException;
 import za.gov.helpdesk.employee.model.Employees;
 import za.gov.helpdesk.employee.repository.EmployeesRepository;
-import za.gov.helpdesk.employee.service.EmployeeToEmployeeResponseConverter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
 
 
