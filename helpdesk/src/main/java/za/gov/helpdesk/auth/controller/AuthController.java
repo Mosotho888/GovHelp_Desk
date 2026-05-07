@@ -27,16 +27,15 @@ public class AuthController {
     @Operation(summary = "Register user")
     public ResponseEntity<EmployeeResponse> registerEmployee(@Valid @RequestBody RegisterRequest registerRequest) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.registerEmployee(registerRequest));
-        return authService.registerEmployee(registerRequest);
+        //return authService.registerEmployee(registerRequest);
     }
 
     @PostMapping("/login")
     @Operation(summary = "Authenticate and receive JWT tokens")
     public ResponseEntity<LoginResponse> login (@Valid @RequestBody LoginRequest loginRequest) {
         return ResponseEntity.ok(authService.login(loginRequest));
-        return authService.login(loginRequest);
+        //return authService.login(loginRequest);
     }
 
-    //@PostMapping("/logout")
-    //PostMapping("/refresh")
+    PostMapping("/refresh")
 }
