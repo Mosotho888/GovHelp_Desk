@@ -1,5 +1,7 @@
 package za.gov.helpdesk.config.security;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import za.gov.helpdesk.auth.jwt.JwtAuthenticationFilter;
 import za.gov.helpdesk.auth.jwt.JwtUtil;
 import za.gov.helpdesk.auth.service.AuthUserDetailsService;
@@ -25,14 +27,10 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
-    private final AuthUserDetailsService authUserDetailsService;
-    private final JwtUtil jwtUtil;
-
-    public SecurityConfig(AuthUserDetailsService authUserDetailsService, JwtUtil jwtUtil) {
-        this.authUserDetailsService = authUserDetailsService;
-        this.jwtUtil = jwtUtil;
-    }
+    private final UserDetailsService userDetailsService;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain configure (HttpSecurity http) throws Exception {
@@ -50,14 +48,14 @@ public class SecurityConfig {
                         .anyRequest()
                         .authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
     @Bean
     public AuthenticationManager authenticationManager() {
         DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
-        authenticationProvider.setUserDetailsService(authUserDetailsService);
+        authenticationProvider.setUserDetailsService(userDetailsService);
         authenticationProvider.setPasswordEncoder(passwordEncoder());
 
         return new ProviderManager(authenticationProvider);
@@ -65,12 +63,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-    @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(authUserDetailsService, jwtUtil);
+        return new BCryptPasswordEncoder(12);
     }
 
 }
