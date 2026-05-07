@@ -1,6 +1,6 @@
 package za.gov.helpdesk.auth.service.impl;
 
-import za.gov.helpdesk.auth.dto.LoginResponse;
+import za.gov.helpdesk.auth.dto.AuthResponse;
 import za.gov.helpdesk.auth.dto.RegisterRequest;
 import za.gov.helpdesk.auth.jwt.JwtUtil;
 import za.gov.helpdesk.auth.dto.LoginRequest;
@@ -40,7 +40,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public ResponseEntity<LoginResponse> login(LoginRequest loginRequest) {
+    public ResponseEntity<AuthResponse> login(LoginRequest loginRequest) {
         log.info("Initiating token generation for user: {}", loginRequest.userEmail());
         UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
                 loginRequest.userEmail(), loginRequest.password()
@@ -54,7 +54,7 @@ public class AuthServiceImpl implements AuthService {
         String jwtToken = jwtUtil.generateAccessToken((User) authentication.getPrincipal());
         log.info("JWT token generated successfully for user: {}",loginRequest.userEmail());
 
-        return ResponseEntity.ok(new LoginResponse(jwtToken));
+        return ResponseEntity.ok(new AuthResponse(jwtToken));
     }
 
     @Override

@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import za.gov.helpdesk.auth.dto.LoginResponse;
+import za.gov.helpdesk.auth.dto.AuthResponse;
 import za.gov.helpdesk.auth.dto.RegisterRequest;
 import za.gov.helpdesk.auth.service.AuthService;
 import za.gov.helpdesk.employee.dto.EmployeeResponse;
@@ -32,7 +32,7 @@ public class AuthController {
 
     @PostMapping("/login")
     @Operation(summary = "Authenticate and receive JWT tokens")
-    public ResponseEntity<LoginResponse> login (@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<AuthResponse> login (@Valid @RequestBody LoginRequest loginRequest) {
         return ResponseEntity.ok(authService.login(loginRequest));
         //return authService.login(loginRequest);
     }
