@@ -1,5 +1,7 @@
 package za.gov.helpdesk.auth.service;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import za.gov.helpdesk.employee.exception.UserNotFoundException;
 import za.gov.helpdesk.employee.model.Employees;
 import za.gov.helpdesk.employee.repository.EmployeesRepository;
@@ -15,44 +17,14 @@ import java.util.Optional;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class AuthUserDetailsService implements UserDetailsService {
 
     private final EmployeesRepository employeesRepository;
 
-
-    public AuthUserDetailsService(EmployeesRepository employeesRepository) {
-        this.employeesRepository = employeesRepository;
-    }
-
     @Override
-    public UserDetails loadUserByUsername(String email) {
-        log.info("Attempting to load user by email: {}", email);
-
-        Employees employeeDetails = getEmployeeByEmail(email);
-
-        log.info("User found: {} with role: {}", employeeDetails.getEmail(), employeeDetails.getRole());
-
-        return createUserFromEmployeeDetails(employeeDetails);
-    }
-
-
-    @NotNull
-    private static UserDetails createUserFromEmployeeDetails(Employees employeeDetails) {
-        return User.withUsername(employeeDetails.getEmail())
-                .password(employeeDetails.getPassword())
-                .roles(employeeDetails.getRole())
-                .build();
-    }
-
-
-    private Employees getEmployeeByEmail(String email) {
-        Optional<Employees> optionalEmployees = employeesRepository.findByEmail(email);
-        
-        if (optionalEmployees.isPresent()) {
-            return optionalEmployees.get();
-        }
-
-        log.error("User not found for email: {}", email);
-        throw new UserNotFoundException();
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        return (UserDetails) employeesRepository.findByEmail(email)
+                .orElseThrow(UserNotFoundException::new);
     }
 }
