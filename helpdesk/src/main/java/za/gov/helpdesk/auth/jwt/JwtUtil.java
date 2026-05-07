@@ -54,9 +54,9 @@ public class JwtUtil {
 
     // ── Token Validation ──────────────────────────────────────
     public boolean isTokenValid(String token, UserDetails user) {
-        final String  username = extractUsername(token);
+        final String email = extractEmail(token);
 
-        return username.equals(user.getUsername()) && !isTokenExpired(token);
+        return email.equals(user.getUsername()) && !isTokenExpired(token);
     }
 
     public boolean isTokenExpired(String token) {
@@ -64,7 +64,7 @@ public class JwtUtil {
     }
 
     // ── Token Validation ──────────────────────────────────────
-    public String extractUsername(String token) {
+    public String extractEmail(String token) {
         return extractClaims(token).getSubject();
     }
 
