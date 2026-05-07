@@ -3,11 +3,9 @@ package za.gov.helpdesk.auth.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import za.gov.helpdesk.auth.dto.AuthResponse;
-import za.gov.helpdesk.auth.dto.RegisterRequest;
+import za.gov.helpdesk.auth.dto.RefreshTokenRequest;
 import za.gov.helpdesk.auth.service.AuthService;
-import za.gov.helpdesk.employee.dto.EmployeeResponse;
 import za.gov.helpdesk.auth.dto.LoginRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -21,14 +19,18 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @Tag(name = "Authentication", description = "Login and token management")
 public class AuthController {
+
     private final AuthService authService;
 
     @PostMapping("/login")
     @Operation(summary = "Authenticate and receive JWT tokens")
     public ResponseEntity<AuthResponse> login (@Valid @RequestBody LoginRequest loginRequest) {
         return ResponseEntity.ok(authService.login(loginRequest));
-        //return authService.login(loginRequest);
     }
 
-    //PostMapping("/refresh")
+    @PostMapping("/refresh")
+    @Operation(summary = "Exchange a refresh token for a new token")
+    public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        return ResponseEntity.ok(authService.refresh(request));
+    }
 }

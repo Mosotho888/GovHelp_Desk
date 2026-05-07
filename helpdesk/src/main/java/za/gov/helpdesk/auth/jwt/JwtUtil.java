@@ -36,7 +36,7 @@ public class JwtUtil {
         return buildToken(claims, user.getUsername(), jwtProperties.getValidity());
     }
 
-    public String generateRefreshToken(@UnknownNullability Employees user) {
+    public String generateRefreshToken(Employees user) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("type", "refresh");
 
