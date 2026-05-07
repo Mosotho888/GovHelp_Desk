@@ -1,8 +1,12 @@
 package za.gov.helpdesk.employee.service.impl;
 
+import org.springframework.http.HttpStatus;
+import za.gov.helpdesk.auth.dto.RegisterRequest;
 import za.gov.helpdesk.common.util.EmployeeUtil;
 import za.gov.helpdesk.common.util.TicketUtil;
 import za.gov.helpdesk.employee.dto.EmployeeProfileResponse;
+import za.gov.helpdesk.employee.dto.EmployeeResponse;
+import za.gov.helpdesk.employee.exception.UserAlreadyExistsException;
 import za.gov.helpdesk.employee.model.Employees;
 import za.gov.helpdesk.employee.repository.EmployeesRepository;
 import za.gov.helpdesk.employee.service.EmployeeService;
@@ -32,6 +36,42 @@ public class EmployeesServicesImpl implements EmployeeService {
         this.ticketUtil = ticketUtil;
         this.employeeUtil = employeeUtil;
     }
+
+    @Override
+    public EmployeeResponse registerEmployee(RegisterRequest registerRequest) {
+        log.info("Attempting to create a new employee with email: {}", registerRequest.email());
+        checkWhetherEmployeeAlreadyExist(registerRequest.email());
+
+        Employees employee = registerRequestConverter.convert(registerRequest);
+
+        Employees savedEmployee = employeesRepository.save(employee);
+
+        EmployeeResponse employeeResponse = employeeToEmployeeResponseConverter.convert(savedEmployee);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(employeeResponse);
+    }
+
+    private void checkWhetherEmployeeAlreadyExist(String email) {
+        Boolean doesEmployeeExist = employeesRepository.existsByEmail(email);
+
+        if (doesEmployeeExist) {
+            log.error("User with email {} already exists", email);
+            throw new UserAlreadyExistsException();
+        }
+    }@Override
+    public EmployeeResponse registerEmployee(RegisterRequest registerRequest) {
+        log.info("Attempting to create a new employee with email: {}", registerRequest.email());
+        checkWhetherEmployeeAlreadyExist(registerRequest.email());
+
+        Employees employee = registerRequestConverter.convert(registerRequest);
+
+        Employees savedEmployee = employeesRepository.save(employee);
+
+        EmployeeResponse employeeResponse = employeeToEmployeeResponseConverter.convert(savedEmployee);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(employeeResponse);
+    }
+
 
     /**
      * Retrieves all employees with pagination and sorting.

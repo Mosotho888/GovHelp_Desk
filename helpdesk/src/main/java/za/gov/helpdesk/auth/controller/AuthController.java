@@ -23,13 +23,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
     private final AuthService authService;
 
-    @PostMapping("/register")
-    @Operation(summary = "Register user")
-    public ResponseEntity<EmployeeResponse> registerEmployee(@Valid @RequestBody RegisterRequest registerRequest) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(authService.registerEmployee(registerRequest));
-        //return authService.registerEmployee(registerRequest);
-    }
-
     @PostMapping("/login")
     @Operation(summary = "Authenticate and receive JWT tokens")
     public ResponseEntity<AuthResponse> login (@Valid @RequestBody LoginRequest loginRequest) {
