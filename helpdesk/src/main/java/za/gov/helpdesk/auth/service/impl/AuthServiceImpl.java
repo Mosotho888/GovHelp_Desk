@@ -86,11 +86,11 @@ public class AuthServiceImpl implements AuthService {
     private EmployeeResponse toEmployeeResponse(Employees employee) {
         return EmployeeResponse.builder()
                 .id(employee.getId())
-                .firstName(employee.getFirstName())
-                .lastName(employee.getLastName())
+                .name(employee.getName())
                 .email(employee.getEmail())
                 .role(employee.getRole())
-                .phoneNumber(employee.getPhoneNumber())
+                .phone(employee.getPhone())
+                .timezone(employee.ge)
                 .active(employee.getActive())
                 .createdAt(employee.getCreatedAt())
                 .build();

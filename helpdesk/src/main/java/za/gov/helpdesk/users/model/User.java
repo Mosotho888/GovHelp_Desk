@@ -12,39 +12,39 @@ import java.util.Collection;
 import java.util.List;
 
 @Entity
-@Table(name = "employees")
+@Table(name = "users")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Employees implements UserDetails {
+public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @NotNull(message = "first name is required")
-    @Column(name = "first_name")
-    private String firstName;
-
-    @NotNull(message = "last name is required")
-    @Column(name = "last_name")
-    private String lastName;
+    @Column(name = "name")
+    private String name;
 
     @NotNull(message = "email is required")
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
-    @Column(name = "pwd")
-    private String password;
+    @Column(name = "password_hash", nullable = false)
+    private String passwordHash;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role")
     private Role role;
 
     @Column(name = "phone_number")
-    private String phoneNumber;
+    private String phone;
+
+    @Column(length = 60)
+    @Builder.Default
+    private String timezone = "Africa/Johanneburg";
 
     @Column(nullable = false)
     @Builder.Default

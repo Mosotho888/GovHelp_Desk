@@ -10,11 +10,11 @@ import java.time.LocalDateTime;
 @Builder
 public class EmployeeResponse {
     private Long id;
-    private String firstName;
-    private String lastName;
+    private String name;
     private String email;
     private Employees.Role role;
-    private String phoneNumber;
+    private String phone;
+    private String timezone;
     private boolean active;
     private LocalDateTime createdAt;
 }
