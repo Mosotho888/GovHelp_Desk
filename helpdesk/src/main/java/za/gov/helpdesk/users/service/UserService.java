@@ -1,16 +1,19 @@
 package za.gov.helpdesk.users.service;
 
+import org.springframework.data.domain.Page;
 import za.gov.helpdesk.users.dto.RegisterRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import za.gov.helpdesk.users.dto.UserProfileResponse;
+import za.gov.helpdesk.users.dto.UserResponse;
 
 import java.util.List;
 
-public interface EmployeeService {
-    ResponseEntity<List<za.gov.helpdesk.users.dto.UserProfileResponse>> getAllEmployees(Pageable pageable);
-    ResponseEntity<za.gov.helpdesk.users.dto.UserProfileResponse> getEmployeeById(Long employeeId);
-    ResponseEntity<za.gov.helpdesk.users.dto.UserProfileResponse> getEmployeeProfileByEmail(String email);
-    ResponseEntity<List<za.gov.helpdesk.users.dto.UserProfileResponse>> getAllTechnicians(Pageable pageable);
-    ResponseEntity<Void> deleteEmployeeById(Long employeeId);
-    za.gov.helpdesk.users.dto.UserResponse registerEmployee(RegisterRequest registerRequest);
+public interface UserService {
+
+    UserResponse createUser(CreateUserRequest request);
+    UserResponse getUserById(Long id);
+    Page<UserResponse> getAllUsers(Pageable pageable);
+    UserResponse updateUser(Long id, UpdateUserRequest request);
+    void deactivateUser(Long id);
 }

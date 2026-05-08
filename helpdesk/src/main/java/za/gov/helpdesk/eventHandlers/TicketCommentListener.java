@@ -14,6 +14,7 @@ import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
+import za.gov.helpdesk.users.model.User;
 
 import java.time.LocalDateTime;
 
@@ -75,7 +76,7 @@ public class TicketCommentListener {
     }
 
     @NotNull
-    private static EmailNotification createEmailNotification(EmailNotificationDTO request, Tickets ticket, za.gov.helpdesk.users.model.User employee) {
+    private static EmailNotification createEmailNotification(EmailNotificationDTO request, Tickets ticket, User employee) {
         EmailNotification notification = new EmailNotification();
         notification.setTicket(ticket);
         notification.setRecipient(request.getNormalUserEmail());
@@ -85,9 +86,9 @@ public class TicketCommentListener {
     }
 
     @NotNull
-    private static String getEmailBody(EmailNotificationDTO request, za.gov.helpdesk.users.model.User employee) {
+    private static String getEmailBody(EmailNotificationDTO request, User employee) {
         return String.format("""
-                        Dear %s %s,
+                        Dear %s,
 
                         A new comment has been added for ticket #%d.
 
@@ -98,7 +99,7 @@ public class TicketCommentListener {
 
                         Best Regards,
                         Support Team""",
-                employee.getFirstName(), employee.getLastName(), request.getTicketId(),
+                employee.getName(), request.getTicketId(),
                 request.getTicketId(), request.getComment()
         );
     }

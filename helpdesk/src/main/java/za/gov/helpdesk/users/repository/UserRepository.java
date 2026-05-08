@@ -8,8 +8,10 @@ import za.gov.helpdesk.users.model.User;
 
 import java.util.Optional;
 
-public interface UserRepository extends JpaRepository<za.gov.helpdesk.users.model.User, Long>, PagingAndSortingRepository<za.gov.helpdesk.users.model.User, Long> {
+public interface UserRepository extends JpaRepository<User, Long>, PagingAndSortingRepository<User, Long> {
+
     Optional<User> findByEmail(String email);
-    Boolean existsByEmail(String email);
-    Page<za.gov.helpdesk.users.model.User> findAllByRole(String role, PageRequest pageRequest);
+    boolean existsByEmail(String email);
+
+    Page<User> findAllByRole(String role, PageRequest pageRequest);
 }
