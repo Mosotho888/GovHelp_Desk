@@ -6,11 +6,12 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import za.gov.helpdesk.users.model.User;
 
 import java.time.LocalDateTime;
 
 @Component
-public class RegisterRequestConverter implements Converter<RegisterRequest, za.gov.helpdesk.users.model.User> {
+public class RegisterRequestConverter implements Converter<RegisterRequest, User> {
     private final PasswordEncoder passwordEncoder;
 
     public RegisterRequestConverter(PasswordEncoder passwordEncoder) {
@@ -18,17 +19,17 @@ public class RegisterRequestConverter implements Converter<RegisterRequest, za.g
     }
 
     @Override
-    public @NotNull za.gov.helpdesk.users.model.User convert(RegisterRequest registerRequest) {
+    public @NotNull User convert(RegisterRequest registerRequest) {
 
         String encodedPassword = passwordEncoder.encode(registerRequest.password());
 
-        za.gov.helpdesk.users.model.User employee = new za.gov.helpdesk.users.model.User();
-        BeanUtils.copyProperties(registerRequest, employee);
+        User user = new User();
+        BeanUtils.copyProperties(registerRequest, user);
 
-        employee.setPassword(encodedPassword);
-        employee.setRole(employee.getRole());
-        employee.setCreatedAt(LocalDateTime.now());
+        user.setPasswordHash(encodedPassword);
+        user.setRole(user.getRole());
+        user.setCreatedAt(LocalDateTime.now());
 
-        return employee;
+        return user;
     }
 }

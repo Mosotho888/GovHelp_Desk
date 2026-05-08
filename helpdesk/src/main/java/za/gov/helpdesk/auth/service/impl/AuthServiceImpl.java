@@ -10,6 +10,7 @@ import za.gov.helpdesk.auth.jwt.JwtUtil;
 import za.gov.helpdesk.auth.dto.LoginRequest;
 import za.gov.helpdesk.auth.service.AuthService;
 import za.gov.helpdesk.config.security.JwtProperties;
+import za.gov.helpdesk.users.dto.UserResponse;
 import za.gov.helpdesk.users.exception.UserNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -61,7 +62,7 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse refresh(RefreshTokenRequest refreshToken) {
         String email = jwtUtil.extractEmail(refreshToken.getRefreshToken());
 
-        za.gov.helpdesk.users.model.User employee = userRepository.findByEmail(email)
+        za.gov.helpdesk.users.model.User user = userRepository.findByEmail(email)
                 .orElseThrow(UserNotFoundException::new);
 
         if (!TOKEN_REFRESH.equals(jwtUtil.extractTokenType(refreshToken.getRefreshToken()))
@@ -69,28 +70,28 @@ public class AuthServiceImpl implements AuthService {
             throw new BadCredentialsException("Invalid or expired refresh token");
         }
 
-        return buildAuthResponse(employee);
+        return buildAuthResponse(user);
     }
 
-    private AuthResponse buildAuthResponse(za.gov.helpdesk.users.model.User employee) {
+    private AuthResponse buildAuthResponse(User user) {
         return AuthResponse.builder()
-                .accessToken(jwtUtil.generateAccessToken(employee))
-                .refreshToken(jwtUtil.generateRefreshToken(employee))
+                .accessToken(jwtUtil.generateAccessToken(user))
+                .refreshToken(jwtUtil.generateRefreshToken(user))
                 .expiresIn(jwtProperties.getValidity() / 1000)
-                .user(toEmployeeResponse(employee))
+                .user(touserResponse(user))
                 .build();
     }
 
-    private za.gov.helpdesk.users.dto.UserResponse toEmployeeResponse(za.gov.helpdesk.users.model.User employee) {
-        return za.gov.helpdesk.users.dto.UserResponse.builder()
-                .id(employee.getId())
-                .name(employee.getName())
-                .email(employee.getEmail())
-                .role(employee.getRole())
-                .phone(employee.getPhone())
-                .timezone(employee.getTimezone())
-                .active(employee.getActive())
-                .createdAt(employee.getCreatedAt())
+    private za.gov.helpdesk.users.dto.UserResponse touserResponse(User user) {
+        return UserResponse.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .role(user.getRole())
+                .phone(user.getPhone())
+                .timezone(user.getTimezone())
+                .active(user.getActive())
+                .createdAt(user.getCreatedAt())
                 .build();
     }
 }
