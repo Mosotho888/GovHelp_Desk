@@ -31,12 +31,12 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResponse login(LoginRequest loginRequest) {
-        za.gov.helpdesk.users.model.User employee = userRepository.findByEmail(loginRequest.userEmail())
+        za.gov.helpdesk.users.model.User employee = userRepository.findByEmail(loginRequest.getEmail())
                 .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginRequest.userEmail(), loginRequest.password())
+                    new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
             );
         } catch (AuthenticationException ex) {
             // Increment failed attempt counter
@@ -87,7 +87,7 @@ public class AuthServiceImpl implements AuthService {
                 .email(employee.getEmail())
                 .role(employee.getRole())
                 .phone(employee.getPhone())
-                .timezone(employee.ge)
+                .timezone(employee.getTimezone())
                 .active(employee.getActive())
                 .createdAt(employee.getCreatedAt())
                 .build();
