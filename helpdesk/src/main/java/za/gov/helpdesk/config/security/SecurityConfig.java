@@ -3,8 +3,6 @@ package za.gov.helpdesk.config.security;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import za.gov.helpdesk.auth.jwt.JwtAuthenticationFilter;
-import za.gov.helpdesk.auth.jwt.JwtUtil;
-import za.gov.helpdesk.auth.service.AuthUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
