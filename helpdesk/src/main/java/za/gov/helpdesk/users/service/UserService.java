@@ -1,11 +1,9 @@
 package za.gov.helpdesk.users.service;
 
 import org.springframework.data.domain.Page;
-import za.gov.helpdesk.users.dto.RegisterRequest;
+import za.gov.helpdesk.users.dto.*;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import za.gov.helpdesk.users.dto.UserProfileResponse;
-import za.gov.helpdesk.users.dto.UserResponse;
 
 import java.util.List;
 
