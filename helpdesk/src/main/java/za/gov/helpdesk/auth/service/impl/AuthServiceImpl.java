@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
+import za.gov.helpdesk.users.model.User;
 
 
 @Service
@@ -31,7 +32,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResponse login(LoginRequest loginRequest) {
-        za.gov.helpdesk.users.model.User employee = userRepository.findByEmail(loginRequest.getEmail())
+        User user = userRepository.findByEmail(loginRequest.getEmail())
                 .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
         try {
@@ -40,19 +41,19 @@ public class AuthServiceImpl implements AuthService {
             );
         } catch (AuthenticationException ex) {
             // Increment failed attempt counter
-            employee.setLoginAttempts(employee.getLoginAttempts() + 1);
-            if (employee.getLoginAttempts() >= MAX_LOGIN_ATTEMPTS) {
-                employee.setActive(false);
+            user.setLoginAttempts(user.getLoginAttempts() + 1);
+            if (user.getLoginAttempts() >= MAX_LOGIN_ATTEMPTS) {
+                user.setActive(false);
             }
-            userRepository.save(employee);
+            userRepository.save(user);
             throw ex;
         }
 
         // Reset on successful login
-        employee.setLoginAttempts(0);
-        userRepository.save(employee);
+        user.setLoginAttempts(0);
+        userRepository.save(user);
 
-        return buildAuthResponse(employee);
+        return buildAuthResponse(user);
     }
 
     @Override
