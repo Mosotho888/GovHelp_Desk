@@ -1,8 +1,8 @@
 package za.gov.helpdesk.exception.global;
 
 import za.gov.helpdesk.category.exception.CategoryAlreadyExistException;
-import za.gov.helpdesk.employee.exception.UserAlreadyExistsException;
-import za.gov.helpdesk.employee.exception.UserNotFoundException;
+import za.gov.helpdesk.users.exception.UserAlreadyExistsException;
+import za.gov.helpdesk.users.exception.UserNotFoundException;
 import za.gov.helpdesk.exception.model.ErrorResponse;
 import za.gov.helpdesk.priority.exception.PriorityNotFoundException;
 import za.gov.helpdesk.ticket.exception.TechnicianNotAuthorizedToUpdateTicketException;

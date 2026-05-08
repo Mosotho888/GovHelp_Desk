@@ -1,4 +1,4 @@
-package za.gov.helpdesk.employee.exception;
+package za.gov.helpdesk.users.exception;
 
 import za.gov.helpdesk.exception.ErrorMessages;
 import org.springframework.http.HttpStatus;

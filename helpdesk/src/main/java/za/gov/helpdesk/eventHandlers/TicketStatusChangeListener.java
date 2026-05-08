@@ -5,7 +5,6 @@ import za.gov.helpdesk.common.util.TicketUtil;
 import za.gov.helpdesk.config.messaging.RabbitMQProperties;
 import za.gov.helpdesk.emailnotification.dto.EmailNotificationDTO;
 import za.gov.helpdesk.emailnotification.model.EmailNotification;
-import za.gov.helpdesk.employee.model.Employees;
 import za.gov.helpdesk.ticket.model.Tickets;
 import za.gov.helpdesk.emailnotification.repository.EmailNotificationRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -38,7 +37,7 @@ public class TicketStatusChangeListener {
     @RabbitListener(queues = "ticket_status_change_queue")
     public void handleTicketStatusChangeMessage(EmailNotificationDTO request) {
         Tickets ticket = ticketUtil.getTicket(request.getTicketId());
-        Employees employee = employeeUtil.getEmployeeByEmail(request.getNormalUserEmail());
+        za.gov.helpdesk.users.model.User employee = employeeUtil.getEmployeeByEmail(request.getNormalUserEmail());
 
         EmailNotification notification = createEmailNotification(request, ticket, employee);
         emailNotificationRepository.save(notification);
@@ -77,7 +76,7 @@ public class TicketStatusChangeListener {
     }
 
     @NotNull
-    private static EmailNotification createEmailNotification(EmailNotificationDTO request, Tickets ticket, Employees employee) {
+    private static EmailNotification createEmailNotification(EmailNotificationDTO request, Tickets ticket, za.gov.helpdesk.users.model.User employee) {
         EmailNotification notification = new EmailNotification();
         notification.setTicket(ticket);
         notification.setRecipient(request.getNormalUserEmail());
@@ -87,7 +86,7 @@ public class TicketStatusChangeListener {
     }
 
     @NotNull
-    private static String getEmailBody(EmailNotificationDTO request, Employees employee) {
+    private static String getEmailBody(EmailNotificationDTO request, za.gov.helpdesk.users.model.User employee) {
         return String.format("""
                         Dear %s %s,
 

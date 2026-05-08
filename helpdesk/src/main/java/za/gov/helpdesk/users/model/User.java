@@ -1,4 +1,4 @@
-package za.gov.helpdesk.employee.model;
+package za.gov.helpdesk.users.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -75,6 +75,11 @@ public class User implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+    }
+
+    @Override
+    public String getPassword() {
+        return passwordHash;
     }
 
     @Override

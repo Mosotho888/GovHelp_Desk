@@ -117,10 +117,10 @@ All API endpoints accept JSON requests and return JSON responses unless otherwis
 
 | Method | Endpoint           | Description                                                                   |
 | :----- | :----------------- | :---------------------------------------------------------------------------- |
-| GET    | `/api/employees`    | Retrieve all employees (paginated)                                          |
-| GET    | `/api/employees/{id}` | Retrieve employee by ID                                                       |
-| GET    | `/api/employees/profile` | Retrieve the profile of the currently authenticated employee              |
-| GET    | `/api/employees/technicians` | Retrieve all technicians (paginated)                                       |
+| GET    | `/api/user`    | Retrieve all user (paginated)                                          |
+| GET    | `/api/user/{id}` | Retrieve employee by ID                                                       |
+| GET    | `/api/user/profile` | Retrieve the profile of the currently authenticated employee              |
+| GET    | `/api/user/technicians` | Retrieve all technicians (paginated)                                       |
 
 ### Ticket Management
 

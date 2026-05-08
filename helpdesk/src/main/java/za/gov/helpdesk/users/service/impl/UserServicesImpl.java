@@ -1,15 +1,14 @@
-package za.gov.helpdesk.employee.service.impl;
+package za.gov.helpdesk.users.service.impl;
 
 import org.springframework.http.HttpStatus;
-import za.gov.helpdesk.employee.dto.RegisterRequest;
+import za.gov.helpdesk.users.dto.RegisterRequest;
 import za.gov.helpdesk.common.util.EmployeeUtil;
 import za.gov.helpdesk.common.util.TicketUtil;
-import za.gov.helpdesk.employee.dto.EmployeeProfileResponse;
-import za.gov.helpdesk.employee.dto.EmployeeResponse;
-import za.gov.helpdesk.employee.exception.UserAlreadyExistsException;
-import za.gov.helpdesk.employee.model.Employees;
-import za.gov.helpdesk.employee.repository.EmployeesRepository;
-import za.gov.helpdesk.employee.service.EmployeeService;
+import za.gov.helpdesk.users.dto.UserProfileResponse;
+import za.gov.helpdesk.users.dto.UserResponse;
+import za.gov.helpdesk.users.exception.UserAlreadyExistsException;
+import za.gov.helpdesk.users.model.User;
+import za.gov.helpdesk.users.service.EmployeeService;
 import za.gov.helpdesk.ticket.dto.AssignedTicketsDTO;
 import za.gov.helpdesk.ticket.dto.SubmittedTicketsDTO;
 import lombok.extern.slf4j.Slf4j;
@@ -25,53 +24,40 @@ import java.util.List;
 
 @Service
 @Slf4j
-public class EmployeesServicesImpl implements EmployeeService {
+public class UserServicesImpl implements EmployeeService {
 
-    private final EmployeesRepository employeesRepository;
+    private final za.gov.helpdesk.users.repository.UserRepository userRepository;
     private final TicketUtil ticketUtil;
     private final EmployeeUtil employeeUtil;
 
-    public EmployeesServicesImpl(EmployeesRepository employeesRepository, TicketUtil ticketUtil, EmployeeUtil employeeUtil) {
-        this.employeesRepository = employeesRepository;
+    public UserServicesImpl(za.gov.helpdesk.users.repository.UserRepository userRepository, TicketUtil ticketUtil, EmployeeUtil employeeUtil) {
+        this.userRepository = userRepository;
         this.ticketUtil = ticketUtil;
         this.employeeUtil = employeeUtil;
     }
 
-    @Override
-    public EmployeeResponse registerEmployee(RegisterRequest registerRequest) {
-        log.info("Attempting to create a new employee with email: {}", registerRequest.email());
-        checkWhetherEmployeeAlreadyExist(registerRequest.email());
-
-        Employees employee = registerRequestConverter.convert(registerRequest);
-
-        Employees savedEmployee = employeesRepository.save(employee);
-
-        EmployeeResponse employeeResponse = employeeToEmployeeResponseConverter.convert(savedEmployee);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(employeeResponse);
-    }
+//    @Override
+//    public UserResponse registerEmployee(RegisterRequest registerRequest) {
+//        log.info("Attempting to create a new users with email: {}", registerRequest.email());
+//        checkWhetherEmployeeAlreadyExist(registerRequest.email());
+//
+//        za.gov.helpdesk.users.model.User employee = registerRequestConverter.convert(registerRequest);
+//
+//        za.gov.helpdesk.users.model.User savedEmployee = userRepository.save(employee);
+//
+//        za.gov.helpdesk.users.dto.UserResponse userResponse = employeeToEmployeeResponseConverter.convert(savedEmployee);
+//
+//        return ResponseEntity.status(HttpStatus.CREATED).body(userResponse);
+//    }
 
     private void checkWhetherEmployeeAlreadyExist(String email) {
-        Boolean doesEmployeeExist = employeesRepository.existsByEmail(email);
+        Boolean doesEmployeeExist = userRepository.existsByEmail(email);
 
         if (doesEmployeeExist) {
             log.error("User with email {} already exists", email);
             throw new UserAlreadyExistsException();
         }
-    }@Override
-    public EmployeeResponse registerEmployee(RegisterRequest registerRequest) {
-        log.info("Attempting to create a new employee with email: {}", registerRequest.email());
-        checkWhetherEmployeeAlreadyExist(registerRequest.email());
-
-        Employees employee = registerRequestConverter.convert(registerRequest);
-
-        Employees savedEmployee = employeesRepository.save(employee);
-
-        EmployeeResponse employeeResponse = employeeToEmployeeResponseConverter.convert(savedEmployee);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(employeeResponse);
     }
-
 
     /**
      * Retrieves all employees with pagination and sorting.
@@ -82,74 +68,74 @@ public class EmployeesServicesImpl implements EmployeeService {
      */
     @Override
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<EmployeeProfileResponse>> getAllEmployees(Pageable pageable) {
+    public ResponseEntity<List<za.gov.helpdesk.users.dto.UserProfileResponse>> getAllEmployees(Pageable pageable) {
         log.info("Fetching all employees with pagination: page number {}, page size {}",
                 pageable.getPageNumber(), pageable.getPageSize());
 
-        Page<Employees> page = employeesRepository.findAll(PageRequest.of(
+        Page<za.gov.helpdesk.users.model.User> page = userRepository.findAll(PageRequest.of(
                 pageable.getPageNumber(),
                 pageable.getPageSize(),
                 pageable.getSortOr(Sort.by(Sort.Direction.ASC, "id"))
         ));
 
-        List<EmployeeProfileResponse> employeeProfileResponses = mapToEmployeeDTO(page);
+        List<za.gov.helpdesk.users.dto.UserProfileResponse> userProfileRespons = mapToEmployeeDTO(page);
 
 
-        log.info("Found {} employees", employeeProfileResponses.size());
+        log.info("Found {} employees", userProfileRespons.size());
 
-        return ResponseEntity.ok(employeeProfileResponses);
+        return ResponseEntity.ok(userProfileRespons);
     }
 
     /**
-     * Retrieves an employee by their ID.
+     * Retrieves an users by their ID.
      * Only accessible by users with the ADMIN role.
      *
-     * @param employeeId the ID of the employee to retrieve.
+     * @param employeeId the ID of the users to retrieve.
      * @return ResponseEntity containing the Employee entity.
      */
     @Override
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<EmployeeProfileResponse> getEmployeeById(Long employeeId) {
-        log.info("Fetching employee by ID: {}", employeeId);
-        Employees employeeDetails = employeeUtil.getEmployee(employeeId);
-        EmployeeProfileResponse employeeResponseDetails = new EmployeeProfileResponse(employeeDetails);
+    public ResponseEntity<za.gov.helpdesk.users.dto.UserProfileResponse> getEmployeeById(Long employeeId) {
+        log.info("Fetching users by ID: {}", employeeId);
+        za.gov.helpdesk.users.model.User employeeDetails = employeeUtil.getEmployee(employeeId);
+        za.gov.helpdesk.users.dto.UserProfileResponse employeeResponseDetails = new za.gov.helpdesk.users.dto.UserProfileResponse(employeeDetails);
 
         return ResponseEntity.ok(employeeResponseDetails);
     }
 
     /**
-     * Retrieves an employee's profile using their email.
+     * Retrieves an users's profile using their email.
      * Accessible by users with either ADMIN or USER roles.
      *
-     * @param email the email of the employee to retrieve.
+     * @param email the email of the users to retrieve.
      * @return ResponseEntity containing the Employee entity.
      */
     @Override
     @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
-    public ResponseEntity<EmployeeProfileResponse> getEmployeeProfileByEmail(String email) {
-        log.info("Fetching employee by email: {}", email);
+    public ResponseEntity<UserProfileResponse> getEmployeeProfileByEmail(String email) {
+        log.info("Fetching users by email: {}", email);
 
-        Employees employee = employeeUtil.getEmployeeByEmail(email);
-        EmployeeProfileResponse employeeResponseProfile = new EmployeeProfileResponse(employee);
+        za.gov.helpdesk.users.model.User employee = employeeUtil.getEmployeeByEmail(email);
+        za.gov.helpdesk.users.dto.UserProfileResponse employeeResponseProfile = new za.gov.helpdesk.users.dto.UserProfileResponse(employee);
 
         setTicketsBasedOnRole(email, employee, employeeResponseProfile);
 
         return ResponseEntity.ok(employeeResponseProfile);
     }
 
-    private void setTicketsBasedOnRole(String email, Employees employee, EmployeeProfileResponse employeeResponseProfile) {
+    private void setTicketsBasedOnRole(String email, User employee, UserProfileResponse employeeResponseProfile) {
         if (isAdmin(employee)) {
             // Fetch and set assigned tasks if the user is an admin or technician
             List<AssignedTicketsDTO> tickets = ticketUtil.getAssignedTickets(employee);
-            employeeResponseProfile.setAssignedTicketsBasedOnRole(employee.getRole(), tickets);
+            employeeResponseProfile.setAssignedTicketsBasedOnRole(employee.getRole().toString(), tickets);
         } else {
             // Normal users only see their submitted tickets
             List<SubmittedTicketsDTO> tickets = ticketUtil.getTicketsByOwner(email);
-            employeeResponseProfile.setSubmittedTicketsBasedOnRole(employee.getRole(), tickets);
+            employeeResponseProfile.setSubmittedTicketsBasedOnRole(employee.getRole().toString(), tickets);
         }
     }
 
-    private boolean isAdmin(Employees employee)
+    private boolean isAdmin(User employee)
     {
         return employee.getRole().equals("ADMIN");
     }
@@ -161,35 +147,35 @@ public class EmployeesServicesImpl implements EmployeeService {
      * @return ResponseEntity containing a list of EmployeeResponseDTO objects.
      */
     @Override
-    public ResponseEntity<List<EmployeeProfileResponse>> getAllTechnicians(Pageable pageable) {
+    public ResponseEntity<List<za.gov.helpdesk.users.dto.UserProfileResponse>> getAllTechnicians(Pageable pageable) {
         String role = "ADMIN";
         log.info("Fetching all technicians with role: {} and pagination: page number {}, page size {}",
                 role, pageable.getPageNumber(), pageable.getPageSize());
 
-        Page<Employees> page = employeesRepository.findAllByRole(role, PageRequest.of(
+        Page<za.gov.helpdesk.users.model.User> page = userRepository.findAllByRole(role, PageRequest.of(
                 pageable.getPageNumber(),
                 pageable.getPageSize(),
                 pageable.getSortOr(Sort.by(Sort.Direction.ASC, "id"))
         ));
 
-        List<EmployeeProfileResponse> employeeProfileResponses = mapToEmployeeDTO(page);
+        List<za.gov.helpdesk.users.dto.UserProfileResponse> userProfileRespons = mapToEmployeeDTO(page);
 
-        log.info("Found {} technicians", employeeProfileResponses.size());
+        log.info("Found {} technicians", userProfileRespons.size());
 
-        return ResponseEntity.ok(employeeProfileResponses);
+        return ResponseEntity.ok(userProfileRespons);
     }
 
     /**
-     * Maps a page of Employees to a list of EmployeeResponseDTO objects.
+     * Maps a page of User to a list of EmployeeResponseDTO objects.
      *
-     * @param page the page of Employees to map.
+     * @param page the page of User to map.
      * @return a list of EmployeeResponseDTO objects.
      */
-    private List<EmployeeProfileResponse> mapToEmployeeDTO(Page<Employees> page) {
+    private List<za.gov.helpdesk.users.dto.UserProfileResponse> mapToEmployeeDTO(Page<za.gov.helpdesk.users.model.User> page) {
         return page.getContent()
                 .stream()
                 .map(employee -> {
-                    EmployeeProfileResponse dto = new EmployeeProfileResponse(employee);
+                    za.gov.helpdesk.users.dto.UserProfileResponse dto = new za.gov.helpdesk.users.dto.UserProfileResponse(employee);
                     setTicketsBasedOnRole(employee.getEmail(), employee, dto);
                     return dto;
                 })
@@ -198,10 +184,15 @@ public class EmployeesServicesImpl implements EmployeeService {
 
     @Override
     public ResponseEntity<Void> deleteEmployeeById(Long employeeId) {
-        Employees employees = employeeUtil.getEmployee(employeeId);
+        za.gov.helpdesk.users.model.User user = employeeUtil.getEmployee(employeeId);
 
-        employeesRepository.deleteById(employees.getId());
+        userRepository.deleteById(user.getId());
 
         return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    public UserResponse registerEmployee(RegisterRequest registerRequest) {
+        return null;
     }
 }

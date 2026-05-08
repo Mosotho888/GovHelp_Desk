@@ -4,7 +4,6 @@ import za.gov.helpdesk.common.util.EmployeeUtil;
 import za.gov.helpdesk.common.util.TicketUtil;
 import za.gov.helpdesk.emailnotification.dto.EmailNotificationDTO;
 import za.gov.helpdesk.emailnotification.service.MessageSenderService;
-import za.gov.helpdesk.employee.model.Employees;
 import za.gov.helpdesk.ticket.model.Tickets;
 import za.gov.helpdesk.ticket.service.CommentTicketService;
 import za.gov.helpdesk.ticketcomment.dto.CommentResponse;
@@ -43,7 +42,7 @@ public class CommentTicketServiceImpl implements CommentTicketService {
     public ResponseEntity<Void> addCommentToTicket(Long ticketId, TicketComments comments, Principal principal) {
         log.info("Adding comment to ticket ID: {} by user: {}", ticketId, principal.getName());
         Tickets ticket = ticketUtil.getTicket(ticketId);
-        Employees employee = employeeUtil.getEmployeeByEmail(principal.getName());
+        za.gov.helpdesk.users.model.User employee = employeeUtil.getEmployeeByEmail(principal.getName());
 
         comments.setTickets(ticket);
         comments.setCommenter(employee);

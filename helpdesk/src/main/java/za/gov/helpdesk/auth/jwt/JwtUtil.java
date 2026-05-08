@@ -9,7 +9,6 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import za.gov.helpdesk.employee.model.Employees;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
@@ -27,7 +26,7 @@ public class JwtUtil {
     private final JwtProperties jwtProperties;
 
     // ── Token Generation ──────────────────────────────────────
-    public String generateAccessToken(Employees user) {
+    public String generateAccessToken(za.gov.helpdesk.users.model.User user) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", user.getRole().name());
         claims.put("type", "access");
@@ -35,7 +34,7 @@ public class JwtUtil {
         return buildToken(claims, user.getUsername(), jwtProperties.getValidity());
     }
 
-    public String generateRefreshToken(Employees user) {
+    public String generateRefreshToken(za.gov.helpdesk.users.model.User user) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("type", "refresh");
 

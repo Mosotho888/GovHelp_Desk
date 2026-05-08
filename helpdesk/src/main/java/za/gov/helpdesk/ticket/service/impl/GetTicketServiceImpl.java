@@ -2,7 +2,6 @@ package za.gov.helpdesk.ticket.service.impl;
 
 import za.gov.helpdesk.common.util.EmployeeUtil;
 import za.gov.helpdesk.common.util.TicketUtil;
-import za.gov.helpdesk.employee.model.Employees;
 import za.gov.helpdesk.ticket.dto.AssignedTicketsDTO;
 import za.gov.helpdesk.ticket.dto.TicketResponse;
 import za.gov.helpdesk.ticket.model.Tickets;
@@ -63,7 +62,7 @@ public class GetTicketServiceImpl implements GetTicketService {
     @Override
     public ResponseEntity<List<AssignedTicketsDTO>> getAllTicketsByAssignedTechnician(Principal principal) {
         log.info("Fetching all tickets assigned to technician: {}", principal.getName());
-        Employees employee = employeeUtil.getEmployeeByEmail(principal.getName());
+        za.gov.helpdesk.users.model.User employee = employeeUtil.getEmployeeByEmail(principal.getName());
 
         List<AssignedTicketsDTO> ticketsAssigned = ticketUtil.getAssignedTickets(employee);
 

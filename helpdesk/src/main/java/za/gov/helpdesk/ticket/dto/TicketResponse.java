@@ -1,6 +1,5 @@
 package za.gov.helpdesk.ticket.dto;
 
-import za.gov.helpdesk.employee.dto.EmployeeResponse;
 import za.gov.helpdesk.status.model.Status;
 import za.gov.helpdesk.ticketcomment.dto.CommentResponse;
 import za.gov.helpdesk.category.model.Category;
@@ -11,7 +10,7 @@ import java.util.List;
 
 public record TicketResponse(
         Long id,
-        EmployeeResponse assignedTechnician,
+        za.gov.helpdesk.users.dto.UserResponse assignedTechnician,
         Status status,
         String description,
         String ownerEmail,

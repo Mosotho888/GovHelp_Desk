@@ -3,7 +3,6 @@ package za.gov.helpdesk.ticket.service;
 import za.gov.helpdesk.category.model.Category;
 import za.gov.helpdesk.category.service.CategoryService;
 import za.gov.helpdesk.common.util.EmployeeUtil;
-import za.gov.helpdesk.employee.model.Employees;
 import za.gov.helpdesk.priority.model.Priority;
 import za.gov.helpdesk.priority.service.PriorityService;
 import za.gov.helpdesk.status.model.Status;
@@ -30,7 +29,7 @@ public class TicketRequestToTicketConverter implements Converter<TicketRequest, 
 
     @Override
     public @NotNull Tickets convert(TicketRequest ticketRequest) {
-        Employees assignedTechnician = employeeUtil.getEmployee(ticketRequest.assignedTechnicianId());
+        za.gov.helpdesk.users.model.User assignedTechnician = employeeUtil.getEmployee(ticketRequest.assignedTechnicianId());
         Status assignedStatus = statusService.getStatus(ticketRequest.statusId());
         Category assignedCategory = categoryService.getCategory(ticketRequest.categoryId());
         Priority assignedPriority = priorityService.getPriority(ticketRequest.priorityId());

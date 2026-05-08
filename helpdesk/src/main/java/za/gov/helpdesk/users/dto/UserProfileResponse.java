@@ -1,32 +1,30 @@
-package za.gov.helpdesk.employee.dto;
+package za.gov.helpdesk.users.dto;
 
-import za.gov.helpdesk.employee.model.Employees;
 import za.gov.helpdesk.ticket.dto.AssignedTicketsDTO;
 import za.gov.helpdesk.ticket.dto.SubmittedTicketsDTO;
 import lombok.Data;
+import za.gov.helpdesk.users.model.User;
 
 import java.util.Collections;
 import java.util.List;
 
 @Data
-public class EmployeeProfileResponse {
+public class UserProfileResponse {
 
     private Long id;
-    private String firstName;
-    private String lastName;
+    private String name;
     private String email;
-    private String phone_number;
-    private String role;
+    private String phone;
+    private User.Role role;
     private List<AssignedTicketsDTO> assignedTickets;
     private List<SubmittedTicketsDTO> submittedTickets;
 
-    public EmployeeProfileResponse(Employees employees){
-        this.id = employees.getId();
-        this.firstName = employees.getFirstName();
-        this.lastName = employees.getLastName();
-        this.email = employees.getEmail();
-        this.phone_number = employees.getPhoneNumber();
-        this.role = employees.getRole();
+    public UserProfileResponse(User user){
+        this.id = user.getId();
+        this.name = user.getName();
+        this.email = user.getEmail();
+        this.phone = user.getPhone();
+        this.role = user.getRole();
     }
 
     public void setAssignedTicketsBasedOnRole(String role, List<AssignedTicketsDTO> tickets) {

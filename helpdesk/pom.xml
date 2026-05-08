@@ -8,11 +8,11 @@
 		<version>3.4.2</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.loggingsystem</groupId>
-	<artifactId>helpdeskapi</artifactId>
+	<groupId>za.gov</groupId>
+	<artifactId>helpdesk</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>springjwtauth</name>
-	<description>Creating application for users to be able to log problems to IT</description>
+	<name>Government HelpDesk System</name>
+	<description>REST API for government support ticket management</description>
 	<url/>
 	<licenses>
 		<license/>

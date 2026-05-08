@@ -1,7 +1,6 @@
 package za.gov.helpdesk.ticket.service;
 
-import za.gov.helpdesk.employee.dto.EmployeeResponse;
-import za.gov.helpdesk.employee.service.EmployeeToEmployeeResponseConverter;
+import za.gov.helpdesk.users.service.EmployeeToEmployeeResponseConverter;
 import za.gov.helpdesk.ticket.dto.TicketResponse;
 import za.gov.helpdesk.ticket.model.Tickets;
 import za.gov.helpdesk.ticketcomment.dto.CommentResponse;
@@ -26,14 +25,14 @@ public class TicketToTicketResponseConverter implements Converter<Tickets, Ticke
 
     @Override
     public @NotNull TicketResponse convert(Tickets ticket) {
-        EmployeeResponse employeeResponse = employeeToEmployeeResponseConverter.convert(ticket.getAssignedTechnician());
+        za.gov.helpdesk.users.dto.UserResponse userResponse = employeeToEmployeeResponseConverter.convert(ticket.getAssignedTechnician());
         List<CommentResponse> commentResponse = new ArrayList<>();
 
         for (TicketComments ticketComments : ticket.getComments()) {
             commentResponse.add(ticketCommentsToCommentResponseConverter.convert(ticketComments));
         }
 
-        return new TicketResponse(ticket.getId(), employeeResponse, ticket.getStatus(),
+        return new TicketResponse(ticket.getId(), userResponse, ticket.getStatus(),
                 ticket.getDescription(), ticket.getOwnerEmail(), ticket.getCategory(), ticket.getPriority(), ticket.getCreatedAt(),
                 ticket.getUpdatedAt(), commentResponse);
     }

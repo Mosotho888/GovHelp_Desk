@@ -1,6 +1,5 @@
 package za.gov.helpdesk.common.util;
 
-import za.gov.helpdesk.employee.model.Employees;
 import za.gov.helpdesk.ticket.dto.AssignedTicketsDTO;
 import za.gov.helpdesk.ticket.dto.SubmittedTicketsDTO;
 import za.gov.helpdesk.ticket.dto.TicketResponse;
@@ -83,7 +82,7 @@ public class TicketUtil {
     }
 
     @NotNull
-    public List<AssignedTicketsDTO> getAssignedTickets(Employees employee) {
+    public List<AssignedTicketsDTO> getAssignedTickets(za.gov.helpdesk.users.model.User employee) {
         List<Tickets> tickets = ticketsRepository.findAllByAssignedTechnician(employee);
 
         List<TicketResponse> ticketResponse = mapToTicketResponse(tickets);

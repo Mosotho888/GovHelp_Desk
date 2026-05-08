@@ -1,15 +1,15 @@
-package za.gov.helpdesk.employee.repository;
+package za.gov.helpdesk.users.repository;
 
-import za.gov.helpdesk.employee.model.Employees;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.PagingAndSortingRepository;
+import za.gov.helpdesk.users.model.User;
 
 import java.util.Optional;
 
-public interface EmployeesRepository extends JpaRepository<Employees, Long>, PagingAndSortingRepository<Employees, Long> {
-    Optional<Employees> findByEmail(String email);
+public interface UserRepository extends JpaRepository<za.gov.helpdesk.users.model.User, Long>, PagingAndSortingRepository<za.gov.helpdesk.users.model.User, Long> {
+    Optional<User> findByEmail(String email);
     Boolean existsByEmail(String email);
-    Page<Employees> findAllByRole(String role, PageRequest pageRequest);
+    Page<za.gov.helpdesk.users.model.User> findAllByRole(String role, PageRequest pageRequest);
 }

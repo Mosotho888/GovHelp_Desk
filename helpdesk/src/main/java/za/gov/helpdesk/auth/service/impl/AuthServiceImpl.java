@@ -10,10 +10,7 @@ import za.gov.helpdesk.auth.jwt.JwtUtil;
 import za.gov.helpdesk.auth.dto.LoginRequest;
 import za.gov.helpdesk.auth.service.AuthService;
 import za.gov.helpdesk.config.security.JwtProperties;
-import za.gov.helpdesk.employee.dto.EmployeeResponse;
-import za.gov.helpdesk.employee.exception.UserNotFoundException;
-import za.gov.helpdesk.employee.model.Employees;
-import za.gov.helpdesk.employee.repository.EmployeesRepository;
+import za.gov.helpdesk.users.exception.UserNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,14 +24,14 @@ public class AuthServiceImpl implements AuthService {
     private static final int MAX_LOGIN_ATTEMPTS = 3;
     private static final String TOKEN_REFRESH = "refresh";
     private final AuthenticationManager authenticationManager;
-    private final EmployeesRepository employeesRepository;
+    private final za.gov.helpdesk.users.repository.UserRepository userRepository;
     private final JwtUtil jwtUtil;
     private final JwtProperties jwtProperties;
 
     @Override
     @Transactional
     public AuthResponse login(LoginRequest loginRequest) {
-        Employees employee = employeesRepository.findByEmail(loginRequest.userEmail())
+        za.gov.helpdesk.users.model.User employee = userRepository.findByEmail(loginRequest.userEmail())
                 .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
         try {
@@ -47,13 +44,13 @@ public class AuthServiceImpl implements AuthService {
             if (employee.getLoginAttempts() >= MAX_LOGIN_ATTEMPTS) {
                 employee.setActive(false);
             }
-            employeesRepository.save(employee);
+            userRepository.save(employee);
             throw ex;
         }
 
         // Reset on successful login
         employee.setLoginAttempts(0);
-        employeesRepository.save(employee);
+        userRepository.save(employee);
 
         return buildAuthResponse(employee);
     }
@@ -63,7 +60,7 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse refresh(RefreshTokenRequest refreshToken) {
         String email = jwtUtil.extractEmail(refreshToken.getRefreshToken());
 
-        Employees employee = employeesRepository.findByEmail(email)
+        za.gov.helpdesk.users.model.User employee = userRepository.findByEmail(email)
                 .orElseThrow(UserNotFoundException::new);
 
         if (!TOKEN_REFRESH.equals(jwtUtil.extractTokenType(refreshToken.getRefreshToken()))
@@ -74,7 +71,7 @@ public class AuthServiceImpl implements AuthService {
         return buildAuthResponse(employee);
     }
 
-    private AuthResponse buildAuthResponse(Employees employee) {
+    private AuthResponse buildAuthResponse(za.gov.helpdesk.users.model.User employee) {
         return AuthResponse.builder()
                 .accessToken(jwtUtil.generateAccessToken(employee))
                 .refreshToken(jwtUtil.generateRefreshToken(employee))
@@ -83,8 +80,8 @@ public class AuthServiceImpl implements AuthService {
                 .build();
     }
 
-    private EmployeeResponse toEmployeeResponse(Employees employee) {
-        return EmployeeResponse.builder()
+    private za.gov.helpdesk.users.dto.UserResponse toEmployeeResponse(za.gov.helpdesk.users.model.User employee) {
+        return za.gov.helpdesk.users.dto.UserResponse.builder()
                 .id(employee.getId())
                 .name(employee.getName())
                 .email(employee.getEmail())

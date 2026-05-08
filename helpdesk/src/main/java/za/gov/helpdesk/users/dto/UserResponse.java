@@ -1,18 +1,17 @@
-package za.gov.helpdesk.employee.dto;
+package za.gov.helpdesk.users.dto;
 
 import lombok.Builder;
 import lombok.Data;
-import za.gov.helpdesk.employee.model.Employees;
 
 import java.time.LocalDateTime;
 
 @Data
 @Builder
-public class EmployeeResponse {
+public class UserResponse {
     private Long id;
     private String name;
     private String email;
-    private Employees.Role role;
+    private za.gov.helpdesk.users.model.User.Role role;
     private String phone;
     private String timezone;
     private boolean active;

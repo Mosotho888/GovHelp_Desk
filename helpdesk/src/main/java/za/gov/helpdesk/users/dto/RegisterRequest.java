@@ -1,4 +1,4 @@
-package za.gov.helpdesk.employee.dto;
+package za.gov.helpdesk.users.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;

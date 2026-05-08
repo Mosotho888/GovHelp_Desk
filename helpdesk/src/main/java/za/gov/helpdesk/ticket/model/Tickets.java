@@ -1,6 +1,5 @@
 package za.gov.helpdesk.ticket.model;
 
-import za.gov.helpdesk.employee.model.Employees;
 import za.gov.helpdesk.category.model.Category;
 import za.gov.helpdesk.priority.model.Priority;
 import za.gov.helpdesk.status.model.Status;
@@ -24,7 +23,7 @@ public class Tickets {
 
     @ManyToOne
     @JoinColumn(name = "assigned_user_id")
-    private Employees assignedTechnician;
+    private za.gov.helpdesk.users.model.User assignedTechnician;
 
     @ManyToOne
     @JoinColumn(name = "status_id")

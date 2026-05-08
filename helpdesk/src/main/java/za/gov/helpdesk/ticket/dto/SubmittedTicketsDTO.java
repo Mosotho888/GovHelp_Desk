@@ -1,7 +1,6 @@
 package za.gov.helpdesk.ticket.dto;
 
 import za.gov.helpdesk.category.model.Category;
-import za.gov.helpdesk.employee.dto.EmployeeResponse;
 import za.gov.helpdesk.priority.model.Priority;
 import za.gov.helpdesk.status.model.Status;
 import lombok.Data;
@@ -11,7 +10,7 @@ import java.time.LocalDateTime;
 @Data
 public class SubmittedTicketsDTO {
     private Long id;
-    private EmployeeResponse assignedTechnician;
+    private za.gov.helpdesk.users.dto.UserResponse assignedTechnician;
     private Category category;
     private String description;
     private Status status;

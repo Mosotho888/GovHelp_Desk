@@ -1,7 +1,6 @@
 package za.gov.helpdesk.ticket.service;
 
-import za.gov.helpdesk.employee.dto.EmployeeResponse;
-import za.gov.helpdesk.employee.service.EmployeeToEmployeeResponseConverter;
+import za.gov.helpdesk.users.service.EmployeeToEmployeeResponseConverter;
 import za.gov.helpdesk.ticket.dto.TicketsWithoutCategory;
 import za.gov.helpdesk.ticket.model.Tickets;
 import za.gov.helpdesk.ticketcomment.dto.CommentResponse;
@@ -26,7 +25,7 @@ public class TicketsToTicketsWithoutCategoryConverter implements Converter<Ticke
 
     @Override
     public @NotNull TicketsWithoutCategory convert(Tickets ticket) {
-        EmployeeResponse technicianResponse = employeeToEmployeeResponseConverter.convert(ticket.getAssignedTechnician());
+        za.gov.helpdesk.users.dto.UserResponse technicianResponse = employeeToEmployeeResponseConverter.convert(ticket.getAssignedTechnician());
         List<CommentResponse> commentsResponse = new ArrayList<>();
 
         for (TicketComments comment : ticket.getComments()) {
