@@ -53,9 +53,12 @@ public class UserController {
         return ResponseEntity.ok(userService.getAllUsers(pageable));
     }
 
-    @DeleteMapping("/{employeeId}")
-    public ResponseEntity<Void> deleteEmployeeById (@PathVariable Long employeeId) {
-        return UserService.deleteEmployeeById(employeeId);
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Deactivate a user account (Admin only)")
+    public void deactivateUser (@PathVariable Long id) {
+        userService.deactivateUser(id);
     }
 
     @GetMapping("/profile")
