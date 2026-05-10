@@ -15,6 +15,7 @@ import za.gov.helpdesk.auth.dto.LoginRequest;
 import za.gov.helpdesk.auth.jwt.JwtUtil;
 import za.gov.helpdesk.auth.service.AuthService;
 import za.gov.helpdesk.config.security.JwtProperties;
+import za.gov.helpdesk.users.exception.UserNotFoundException;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 
@@ -120,6 +121,21 @@ public class AuthServiceImpITest {
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(BadCredentialsException.class);
         then(userRepository).should().save(argThat(user -> user.getActive() == false));
+    }
 
+    @Test
+    @DisplayName("login() throws when user not found")
+    void login_userNotFound_throws() {
+        // Given
+        String email = "nobody@gov.za";
+        LoginRequest request = new LoginRequest();
+        request.setEmail(email);
+        request.setPassword("WrongPassword@123");
+
+        given(userRepository.findByEmail(email)).willReturn(Optional.empty());
+
+        // When / Then
+        assertThatThrownBy(() -> authService.login(request))
+                .isInstanceOf(UserNotFoundException.class);
     }
 }
