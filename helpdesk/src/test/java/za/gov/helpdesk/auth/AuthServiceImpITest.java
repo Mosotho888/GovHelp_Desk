@@ -102,5 +102,24 @@ public class AuthServiceImpITest {
         then(userRepository).should().save(argThat(user -> user.getLoginAttempts() == 1));
     }
 
+    @Test
+    @DisplayName("login() deactivate account after failed attempts")
+    void login_maxAttempts_deactivateAccount() {
+        // Given
+        String email = "agent@gov.za";
+        testUser.setLoginAttempts(4);
+        LoginRequest request = new LoginRequest();
+        request.setEmail(email);
+        request.setPassword("WrongPassword@123");
 
+        given(userRepository.findByEmail(email)).willReturn(Optional.of(testUser));
+        given(authManager.authenticate(any())).willThrow(new BadCredentialsException("Bad credentials"));
+        given(userRepository.save(any(User.class))).willReturn(testUser);
+
+        // When / Then
+        assertThatThrownBy(() -> authService.login(request))
+                .isInstanceOf(BadCredentialsException.class);
+        then(userRepository).should().save(argThat(user -> user.getActive() == false));
+
+    }
 }
