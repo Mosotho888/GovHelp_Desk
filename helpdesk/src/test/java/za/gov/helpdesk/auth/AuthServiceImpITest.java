@@ -8,6 +8,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import za.gov.helpdesk.auth.dto.AuthResponse;
 import za.gov.helpdesk.auth.dto.LoginRequest;
@@ -81,4 +82,25 @@ public class AuthServiceImpITest {
         assertThat(authResponse.getUser().getEmail()).isEqualTo(email);
         then(userRepository).should().save(argThat(user -> user.getLoginAttempts() == 0));
     }
+
+    @Test
+    @DisplayName("login() increments counter on bad credentials")
+    void login_badCredentials_incrementsAttempts() {
+        // Given
+        String email = "agent@gov.za";
+        LoginRequest request = new LoginRequest();
+        request.setEmail(email);
+        request.setPassword("WrongPassword@123");
+
+        given(userRepository.findByEmail(email)).willReturn(Optional.of(testUser));
+        given(authManager.authenticate(any())).willThrow(new BadCredentialsException("Bad credentials"));
+        given(userRepository.save(any(User.class))).willReturn(testUser);
+
+        // When / Then
+        assertThatThrownBy(() -> authService.login(request))
+                .isInstanceOf(BadCredentialsException.class);
+        then(userRepository).should().save(argThat(user -> user.getLoginAttempts() == 1));
+    }
+
+
 }
