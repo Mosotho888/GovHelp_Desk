@@ -1,59 +1,65 @@
 package za.gov.helpdesk.users.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import za.gov.helpdesk.users.dto.CreateUserRequest;
 import za.gov.helpdesk.users.dto.RegisterRequest;
-import za.gov.helpdesk.users.service.EmployeeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import za.gov.helpdesk.users.dto.UserResponse;
+import za.gov.helpdesk.users.service.UserService;
 
 import java.security.Principal;
 import java.util.List;
 
 @CrossOrigin(origins = "http://localhost:3000")
 @RestController
-@RequestMapping("/api/employees")
+@RequestMapping("/api/v1/employees")
+@RequiredArgsConstructor
+@Tag(name = "Users", description = "User account management")
+@SecurityRequirement(name = "bearerAuth")
 @Slf4j
 public class UserController {
-    private final EmployeeService employeeService;
+    private final UserService userService;
 
-    public UserController(EmployeeService employeeService) {
-        this.employeeService = employeeService;
-    }
 
-    @PostMapping("/register")
-    @Operation(summary = "Register user")
-    public ResponseEntity<za.gov.helpdesk.users.dto.UserResponse> registerEmployee(@Valid @RequestBody RegisterRequest registerRequest) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(employeeService.registerEmployee(registerRequest));
-        //return authService.registerEmployee(registerRequest);
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Create a new user account (Admin only)")
+    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(request));
     }
 
     @GetMapping
     private ResponseEntity<List<za.gov.helpdesk.users.dto.UserProfileResponse>> findAllEmployees (Pageable pageable) {
-        return employeeService.getAllEmployees(pageable);
+        return UserService.getAllEmployees(pageable);
     }
 
     @GetMapping("/{id}")
     private ResponseEntity<za.gov.helpdesk.users.dto.UserProfileResponse> findEmployeeById (@PathVariable Long id) {
-        return employeeService.getEmployeeById(id);
+        return UserService.getEmployeeById(id);
     }
 
     @DeleteMapping("/{employeeId}")
     public ResponseEntity<Void> deleteEmployeeById (@PathVariable Long employeeId) {
-        return employeeService.deleteEmployeeById(employeeId);
+        return UserService.deleteEmployeeById(employeeId);
     }
 
     @GetMapping("/profile")
     private ResponseEntity<za.gov.helpdesk.users.dto.UserProfileResponse> findEmployeeByEmail(Principal principal) {
-        return employeeService.getEmployeeProfileByEmail(principal.getName());
+        return UserService.getEmployeeProfileByEmail(principal.getName());
     }
 
     @GetMapping("/technicians")
     private ResponseEntity<List<za.gov.helpdesk.users.dto.UserProfileResponse>> findAllTechnicians(Pageable pageable) {
-        return employeeService.getAllTechnicians(pageable);
+        return UserService.getAllTechnicians(pageable);
     }
 //    @PutMapping("/profile")
 //    @PostMapping("/{id}/roles")
