@@ -12,6 +12,4 @@ public interface UserRepository extends JpaRepository<User, Long>, PagingAndSort
 
     Optional<User> findByEmail(String email);
     boolean existsByEmail(String email);
-
-    Page<User> findAllByRole(String role, PageRequest pageRequest);
 }
