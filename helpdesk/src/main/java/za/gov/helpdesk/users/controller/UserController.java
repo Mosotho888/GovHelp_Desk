@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import za.gov.helpdesk.users.dto.UpdateUserRequest;
 import za.gov.helpdesk.users.dto.UserResponse;
 import za.gov.helpdesk.users.service.UserService;
 
@@ -61,9 +62,13 @@ public class UserController {
         userService.deactivateUser(id);
     }
 
-    @GetMapping("/profile")
-    private ResponseEntity<za.gov.helpdesk.users.dto.UserProfileResponse> findEmployeeByEmail(Principal principal) {
-        return UserService.getEmployeeProfileByEmail(principal.getName());
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or #id == authentication.principal.id")
+    @Operation(summary = "Update user profile")
+    private ResponseEntity<UserResponse> updateUser(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateUserRequest request) {
+        return ResponseEntity.ok(userService.updateUser(id, request));
     }
 
     @GetMapping("/technicians")
