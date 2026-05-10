@@ -17,6 +17,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
 import za.gov.helpdesk.users.model.User;
+import za.gov.helpdesk.users.repository.UserRepository;
 
 
 @Service
@@ -26,7 +27,7 @@ public class AuthServiceImpl implements AuthService {
     private static final int MAX_LOGIN_ATTEMPTS = 3;
     private static final String TOKEN_REFRESH = "refresh";
     private final AuthenticationManager authenticationManager;
-    private final za.gov.helpdesk.users.repository.UserRepository userRepository;
+    private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
     private final JwtProperties jwtProperties;
 
