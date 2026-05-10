@@ -10,7 +10,6 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import za.gov.helpdesk.users.dto.CreateUserRequest;
-import za.gov.helpdesk.users.dto.RegisterRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -19,10 +18,6 @@ import za.gov.helpdesk.users.dto.UpdateUserRequest;
 import za.gov.helpdesk.users.dto.UserResponse;
 import za.gov.helpdesk.users.service.UserService;
 
-import java.security.Principal;
-import java.util.List;
-
-@CrossOrigin(origins = "http://localhost:3000")
 @RestController
 @RequestMapping("/api/v1/employees")
 @RequiredArgsConstructor
@@ -30,8 +25,8 @@ import java.util.List;
 @SecurityRequirement(name = "bearerAuth")
 @Slf4j
 public class UserController {
-    private final UserService userService;
 
+    private final UserService userService;
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -70,11 +65,4 @@ public class UserController {
             @Valid @RequestBody UpdateUserRequest request) {
         return ResponseEntity.ok(userService.updateUser(id, request));
     }
-
-    @GetMapping("/technicians")
-    private ResponseEntity<List<za.gov.helpdesk.users.dto.UserProfileResponse>> findAllTechnicians(Pageable pageable) {
-        return UserService.getAllTechnicians(pageable);
-    }
-//    @PutMapping("/profile")
-//    @PostMapping("/{id}/roles")
 }
