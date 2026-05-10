@@ -37,14 +37,10 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(request));
     }
 
-    @GetMapping
-    private ResponseEntity<List<za.gov.helpdesk.users.dto.UserProfileResponse>> findAllEmployees (Pageable pageable) {
-        return UserService.getAllEmployees(pageable);
-    }
-
     @GetMapping("/{id}")
-    private ResponseEntity<za.gov.helpdesk.users.dto.UserProfileResponse> findEmployeeById (@PathVariable Long id) {
-        return UserService.getEmployeeById(id);
+    @PreAuthorize("hasRole('ADMIN') or #id == authentication.principal.id")
+    private ResponseEntity<UserResponse> getUserById (@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getUserById(id));
     }
 
     @DeleteMapping("/{employeeId}")
