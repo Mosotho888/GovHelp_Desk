@@ -1,5 +1,10 @@
 package za.gov.helpdesk.agent.dto;
 
+import lombok.Builder;
+import lombok.Data;
+
+@Data
+@Builder
 public class AgentStatsResponse {
     private Long agentId;
     private String agentName;

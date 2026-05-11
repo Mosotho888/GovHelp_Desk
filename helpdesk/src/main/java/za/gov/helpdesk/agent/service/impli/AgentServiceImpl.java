@@ -18,6 +18,8 @@ import za.gov.helpdesk.users.exception.UserNotFoundException;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 public class AgentServiceImpl implements AgentService {
@@ -62,12 +64,26 @@ public class AgentServiceImpl implements AgentService {
     @Transactional(readOnly = true)
     public Page<AgentResponse> getAllAgents(Pageable pageable) {
 
-        return agentRepository.findAll(pageable).map(user -> toResponse(user));
+        return agentRepository.findAll(pageable).map(agent -> toResponse(agent));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public AgentStatsResponse getAgentStats(Long id) {
-        return null;
+        Agent agent = findOrThrow(id);
+        Map<String, Object> raw = reportJdbcRepository.getAgentsStats(id);
+
+        return AgentStatsResponse.builder()
+                .agentId(id)
+                .agentName(agent.getUser().getName())
+                .totalAssigned(toLong(raw.get("total_assigned")))
+                .openCount(toLong(raw.get("open_count")))
+                .inProgressCount(toLong(raw.get("in_progress_count")))
+                .resolvedCount(toCount(raw.get("resolved_count")))
+                .closedCount(toLong(raw.get("closed_count")))
+                .escalatedCount(toLong(raw.get("escalated_count")))
+                .avgResolutionHours(toDouble(raw.get("avg_resolution_hours")))
+                .build();
     }
 
     @Override
