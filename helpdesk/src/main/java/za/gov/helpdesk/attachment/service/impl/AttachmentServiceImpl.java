@@ -158,13 +158,13 @@ public class AttachmentServiceImpl implements AttachmentService {
 
     private Attachment findOrThrow(Long id) {
         return attachmentRepository.findById(id)
-                .orElseThrow(() -> new TicketNotFoundException());
+                .orElseThrow(TicketNotFoundException::new);
     }
 
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new TicketNotFoundException());
+                .orElseThrow(TicketNotFoundException::new);
     }
 
     private AttachmentResponse toResponse(Attachment a) {
