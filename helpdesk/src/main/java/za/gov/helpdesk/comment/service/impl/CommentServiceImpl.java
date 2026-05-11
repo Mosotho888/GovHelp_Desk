@@ -97,7 +97,11 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional(readOnly = true)
     public List<CommentResponse> getReplies(Long commentId) {
-        return List.of();
+        commentRepository.findById(commentId)
+                .orElseThrow(TicketNotFoundException::new);
+
+        return commentRepository.findByParentId(commentId)
+                .stream().map(this::toResponse).toList();
     }
 
     @Override
