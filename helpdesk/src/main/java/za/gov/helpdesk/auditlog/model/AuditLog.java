@@ -2,6 +2,7 @@ package za.gov.helpdesk.auditlog.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.users.model.User;
 
 import java.time.LocalDateTime;
