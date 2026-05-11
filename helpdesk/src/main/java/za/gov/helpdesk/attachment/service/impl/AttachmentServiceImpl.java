@@ -12,7 +12,12 @@ import za.gov.helpdesk.ticket.exception.TicketNotFoundException;
 import za.gov.helpdesk.users.dto.UserResponse;
 import za.gov.helpdesk.users.model.User;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +44,38 @@ public class AttachmentServiceImpl implements AttachmentService {
     @Transactional
     public void deleteAttachment(Long attachmentId) {
 
+    }
+
+    private void validateFile(MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("File '" + file.getOriginalFilename() + "' is empty");
+        }
+        if (file.getSize() > MAX_FILE_SIZE) {
+            throw new IllegalArgumentException(
+                    "File '" + file.getOriginalFilename() + "' exceeds the 20 MB limit. Size: "
+                            + (file.getSize() / (1024 * 1024)) + " MB");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !ALLOWED_TYPES.contains(contentType)) {
+            throw new IllegalArgumentException(
+                    "File type '" + contentType + "' is not allowed. "
+                            + "Allowed types: PNG, JPG, GIF, PDF, DOC, DOCX, XLS, XLSX, TXT, CSV, ZIP");
+        }
+    }
+
+    private String storeFile(Long ticketId, MultipartFile file) {
+        try {
+            Path ticketDir = Paths.get(storagePath, "ticket-" + ticketId);
+            Files.createDirectories(ticketDir);
+
+            String uniqueName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+            Path destination  = ticketDir.resolve(uniqueName);
+            file.transferTo(destination.toFile());
+
+            return destination.toString();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to store file: " + file.getOriginalFilename(), e);
+        }
     }
 
     private Attachment findOrThrow(Long id) {
