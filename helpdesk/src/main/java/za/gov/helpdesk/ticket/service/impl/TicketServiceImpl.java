@@ -6,12 +6,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.agent.repository.AgentRepository;
 import za.gov.helpdesk.auditlog.dto.AuditLogResponse;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auditlog.repository.AuditLogRepository;
 import za.gov.helpdesk.ticket.dto.CreateTicketRequest;
 import za.gov.helpdesk.ticket.dto.TicketResponse;
+import za.gov.helpdesk.ticket.dto.UpdateTicketRequest;
+import za.gov.helpdesk.ticket.exception.InvalidStatusTransitionException;
 import za.gov.helpdesk.ticket.exception.TicketNotFoundException;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.TicketRepository;
@@ -61,8 +64,38 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional
-    public TicketResponse updateTicket(Long ticketId, CreateTicketRequest request) {
-        return null;
+    public TicketResponse updateTicket(Long ticketId, UpdateTicketRequest request) {
+        Ticket ticket = findOrThrow(ticketId);
+        User actor = getCurrentUser();
+
+        // Status transition with lifecycle guard
+        if (request.getStatus() != null && !ticket.getStatus().equals(request.getStatus())) {
+            if (!ticket.canTransitionTo(request.getStatus())) {
+                throw new InvalidStatusTransitionException(ticket.getStatus(), request.getStatus());
+            }
+            audit(ticket, actor, "STATUS_CHANGED", ticket.getStatus().name(), request.getStatus().name());
+            ticket.setStatus(request.getStatus());
+        }
+
+        // Assignment change
+        if (request.getAssigneeId() != null) {
+            Agent newAgent = agentRepository.findById(request.getAssigneeId())
+                    .orElseThrow(UserNotFoundException::new);
+            String oldAssignee = ticket.getAssignee() != null ? ticket.getAssignee().getId().toString() : "unassigned";
+            audit(ticket, actor, "ASSIGNED", oldAssignee, request.getAssigneeId().toString());
+            ticket.setAssignee(newAgent);
+        }
+
+        // Other fields
+        if (request.getPriority()  != null) ticket.setPriority(request.getPriority());
+        if (request.getCategory()  != null) ticket.setCategory(request.getCategory());
+        if (request.getEscalated() != null) {
+            if (request.getEscalated() && !ticket.isEscalated()) {
+                audit(ticket, actor, "ESCALATED", "false", "true");
+            }
+            ticket.setEscalated(request.getEscalated());
+        }
+        return toResponse(ticketRepository.save(ticket));
     }
 
     @Override
