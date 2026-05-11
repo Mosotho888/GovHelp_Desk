@@ -96,7 +96,7 @@ public class AttachmentServiceImpl implements AttachmentService {
     @Override
     @Transactional(readOnly = true)
     public AttachmentResponse getAttachmentById(Long attachmentId) {
-        return null;
+        return toResponse(findOrThrow(attachmentId));
     }
 
     @Override
