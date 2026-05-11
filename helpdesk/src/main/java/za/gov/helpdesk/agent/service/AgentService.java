@@ -13,6 +13,6 @@ public interface AgentService {
     AgentResponse getAgentById(Long id);
     Page<AgentResponse> getAllAgents(Pageable pageable);
     AgentStatsResponse getAgentStats(Long id);
-    AgentResponse updateAgent(UpdateAgentRequest request);
+    AgentResponse updateAgent(Long id, UpdateAgentRequest request);
 
 }

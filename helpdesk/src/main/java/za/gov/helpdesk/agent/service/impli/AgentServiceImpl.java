@@ -13,6 +13,7 @@ import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.agent.repository.AgentRepository;
 import za.gov.helpdesk.agent.repository.jdbc.ReportJdbcRepository;
 import za.gov.helpdesk.agent.service.AgentService;
+import za.gov.helpdesk.users.dto.UserResponse;
 import za.gov.helpdesk.users.exception.UserAlreadyExistsException;
 import za.gov.helpdesk.users.exception.UserNotFoundException;
 import za.gov.helpdesk.users.model.User;
@@ -64,7 +65,7 @@ public class AgentServiceImpl implements AgentService {
     @Transactional(readOnly = true)
     public Page<AgentResponse> getAllAgents(Pageable pageable) {
 
-        return agentRepository.findAll(pageable).map(agent -> toResponse(agent));
+        return agentRepository.findAll(pageable).map(this::toResponse);
     }
 
     @Override
@@ -79,7 +80,7 @@ public class AgentServiceImpl implements AgentService {
                 .totalAssigned(toLong(raw.get("total_assigned")))
                 .openCount(toLong(raw.get("open_count")))
                 .inProgressCount(toLong(raw.get("in_progress_count")))
-                .resolvedCount(toCount(raw.get("resolved_count")))
+                .resolvedCount(toLong(raw.get("resolved_count")))
                 .closedCount(toLong(raw.get("closed_count")))
                 .escalatedCount(toLong(raw.get("escalated_count")))
                 .avgResolutionHours(toDouble(raw.get("avg_resolution_hours")))
@@ -88,7 +89,7 @@ public class AgentServiceImpl implements AgentService {
 
     @Override
     @Transactional
-    public AgentResponse updateAgent(UpdateAgentRequest request) {
+    public AgentResponse updateAgent(Long id, UpdateAgentRequest request) {
         Agent agent = findOrThrow(id);
 
         if (request.getAvailability() != null) {
@@ -98,5 +99,43 @@ public class AgentServiceImpl implements AgentService {
             agent.setDepartment(request.getDepartment());
         }
         return toResponse(agentRepository.save(agent));
+    }
+
+    private Agent findOrThrow(Long id) {
+        return agentRepository.findById(id)
+                .orElseThrow(UserNotFoundException::new);
+    }
+
+    private AgentResponse toResponse(Agent agent) {
+        User user = agent.getUser();
+
+        return AgentResponse.builder()
+                .id(agent.getId())
+                .department(agent.getDepartment())
+                .availability(agent.getAvailability())
+                .user(UserResponse.builder()
+                        .id(user.getId())
+                        .name(user.getName())
+                        .email(user.getEmail())
+                        .role(user.getRole())
+                        .phone(user.getPhone())
+                        .active(user.getActive())
+                        .build())
+                .build();
+    }
+
+    private long toLong(Object value) {
+        if (value == null) {
+            return 0L;
+        }
+
+        return ((Number) value).longValue();
+    }
+
+    private Double toDouble(Object value) {
+        if (value == null) {
+            return null;
+        }
+        return ((Number) value).doubleValue();
     }
 }
