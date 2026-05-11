@@ -49,4 +49,15 @@ public class ReportJdbcRepository {
 
         return stats;
     }
+
+    public long countAllCommentsForTicket(Long ticketId) {
+        String sql = """
+                SELECT COUNT(*) FROM COMMENTS
+                WHERE ticket_id = :ticketId
+                """;
+        Long count = jdbc.queryForObject(sql,
+                new MapSqlParameterSource("ticketId", ticketId), Long.class);
+
+        return count != null ? count : 0L;
+    }
 }
