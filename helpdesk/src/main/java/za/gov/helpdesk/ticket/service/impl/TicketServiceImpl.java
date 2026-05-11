@@ -59,7 +59,12 @@ public class TicketServiceImpl implements TicketService {
     @Override
     @Transactional
     public void deleteTicket(Long ticketId) {
+        Ticket ticket = findOrThrow(ticketId);
+        User actor = getCurrentUser();
 
+        audit(ticket, actor, "TICKET_DELETED", ticket.getStatus().name(), "DELETED");
+
+        ticketRepository.delete(ticket);
     }
 
     @Override
