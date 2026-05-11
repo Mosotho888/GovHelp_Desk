@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.gov.helpdesk.comment.dto.CommentResponse;
 import za.gov.helpdesk.comment.dto.CreateCommentRequest;
+import za.gov.helpdesk.comment.dto.UpdateCommentRequest;
 import za.gov.helpdesk.comment.model.Comment;
 import za.gov.helpdesk.comment.repository.CommentRepository;
 import za.gov.helpdesk.comment.service.CommentService;
@@ -42,7 +43,7 @@ public class CommentServiceImpl implements CommentService {
 
         // Only agents/admins can post internal notes
         if (request.isInternal() && author.getRole() == User.Role.USER) {
-            throw new org.springframework.security.access.AccessDeniedException(
+            throw new AccessDeniedException(
                     "Only agents and admins can post internal notes");
         }
 
@@ -108,7 +109,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional
-    public CommentResponse updateComment(Long commentId, CreateCommentRequest request) {
+    public CommentResponse updateComment(Long commentId, UpdateCommentRequest request) {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(TicketNotFoundException::new);
 
@@ -152,7 +153,7 @@ public class CommentServiceImpl implements CommentService {
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException());
+                .orElseThrow(UserNotFoundException::new);
     }
 
     private CommentResponse toResponse(Comment c) {
