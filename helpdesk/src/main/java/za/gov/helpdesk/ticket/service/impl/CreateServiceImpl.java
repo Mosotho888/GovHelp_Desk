@@ -2,7 +2,7 @@ package za.gov.helpdesk.ticket.service.impl;
 
 import za.gov.helpdesk.emailnotification.dto.EmailNotificationDTO;
 import za.gov.helpdesk.emailnotification.service.MessageSenderService;
-import za.gov.helpdesk.ticket.dto.TicketRequest;
+import za.gov.helpdesk.ticket.dto.CreateTicketRequest;
 import za.gov.helpdesk.ticket.dto.TicketResponse;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.TicketRepository;
@@ -33,9 +33,9 @@ public class CreateServiceImpl implements CreateTicketService {
     }
 
     @Override
-    public ResponseEntity<TicketResponse> createTicket(TicketRequest ticketRequest, Principal principal) {
+    public ResponseEntity<TicketResponse> createTicket(CreateTicketRequest createTicketRequest, Principal principal) {
         log.info("Creating a new ticket by user: {}", principal.getName());
-        Ticket ticket = ticketRequestToTicketConverter.convert(ticketRequest);
+        Ticket ticket = ticketRequestToTicketConverter.convert(createTicketRequest);
 
         ticket.setOwnerEmail(principal.getName());
         ticket.setCreatedAt(LocalDateTime.now());

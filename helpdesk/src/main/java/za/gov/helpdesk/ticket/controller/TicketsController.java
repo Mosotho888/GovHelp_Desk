@@ -7,7 +7,7 @@ import za.gov.helpdesk.ticket.service.GetTicketService;
 import za.gov.helpdesk.ticket.service.UpdateStatusService;
 import za.gov.helpdesk.ticketcomment.dto.CommentResponse;
 import za.gov.helpdesk.status.dto.StatusRequestDTO;
-import za.gov.helpdesk.ticket.dto.TicketRequest;
+import za.gov.helpdesk.ticket.dto.CreateTicketRequest;
 import za.gov.helpdesk.ticket.dto.TicketResponse;
 import za.gov.helpdesk.ticketcomment.model.TicketComments;
 import jakarta.validation.Valid;
@@ -35,8 +35,8 @@ public class TicketsController {
     }
 
     @PostMapping
-    public ResponseEntity<TicketResponse> createTicket(@Valid @RequestBody TicketRequest ticketRequest, Principal principal) {
-        return createTicketService.createTicket(ticketRequest, principal);
+    public ResponseEntity<TicketResponse> createTicket(@Valid @RequestBody CreateTicketRequest createTicketRequest, Principal principal) {
+        return createTicketService.createTicket(createTicketRequest, principal);
     }
 
     @GetMapping
