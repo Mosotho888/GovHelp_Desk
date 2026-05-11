@@ -59,8 +59,10 @@ public class AgentServiceImpl implements AgentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<AgentResponse> getAllAgents(Pageable pageable) {
-        return null;
+
+        return agentRepository.findAll(pageable).map(user -> toResponse(user));
     }
 
     @Override
