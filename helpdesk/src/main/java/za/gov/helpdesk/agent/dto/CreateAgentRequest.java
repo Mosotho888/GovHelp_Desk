@@ -9,7 +9,7 @@ import za.gov.helpdesk.agent.model.Agent;
 public class CreateAgentRequest {
 
     @NotNull(message = "userId is required")
-    private String userId;
+    private Long userId;
     private String department;
     private Agent.Availability availability = Agent.Availability.OFFLINE;
 }
