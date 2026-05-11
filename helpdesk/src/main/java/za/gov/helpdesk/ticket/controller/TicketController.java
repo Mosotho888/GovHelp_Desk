@@ -1,0 +1,79 @@
+package za.gov.helpdesk.ticket.controller;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import za.gov.helpdesk.auditlog.dto.AuditLogResponse;
+import za.gov.helpdesk.ticket.dto.UpdateTicketRequest;
+import za.gov.helpdesk.ticket.model.Ticket;
+import za.gov.helpdesk.ticket.service.*;
+import za.gov.helpdesk.ticket.dto.CreateTicketRequest;
+import za.gov.helpdesk.ticket.dto.TicketResponse;
+import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/v1/tickets")
+@RequiredArgsConstructor
+@Tag(name = "Tickets", description = "Support ticket management")
+@SecurityRequirement(name = "bearerAuth")
+public class TicketController {
+
+    private final TicketService ticketService;
+
+    @PostMapping
+    @Operation(summary = "Create a new support ticket")
+    public ResponseEntity<TicketResponse> createTicket(@Valid @RequestBody CreateTicketRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(ticketService.createTicket(request));
+    }
+
+    @GetMapping
+    @Operation(summary = "List tickets with optional filters")
+    public ResponseEntity<Page<TicketResponse>> getTickets(
+            @RequestParam(required = false) Ticket.Status   status,
+            @RequestParam(required = false) Ticket.Priority priority,
+            @RequestParam(required = false) Long            assigneeId,
+            @PageableDefault(size = 25, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(ticketService.getTickets(status, priority, assigneeId, pageable));
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "Get a ticket by ID")
+    public ResponseEntity<TicketResponse> getTicketById(@PathVariable Long id) {
+        return ResponseEntity.ok(ticketService.getTicketById(id));
+    }
+
+    @PatchMapping("/{id}")
+    @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
+    @Operation(summary = "Update ticket status, priority, or assignment (Agent/Admin only)")
+    public ResponseEntity<TicketResponse> updateTicket(
+            @PathVariable Long id,
+            @RequestBody UpdateTicketRequest request) {
+        return ResponseEntity.ok(ticketService.updateTicket(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Delete a ticket (Admin only)")
+    public void deleteTicket(@PathVariable Long id) {
+        ticketService.deleteTicket(id);
+    }
+
+    @GetMapping("/{id}/audit")
+    @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
+    @Operation(summary = "Get full audit trail for a ticket (Agent/Admin only)")
+    public ResponseEntity<List<AuditLogResponse>> getAuditLog(@PathVariable Long id) {
+        return ResponseEntity.ok(ticketService.getAuditLog(id));
+    }
+}
