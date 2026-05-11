@@ -1,31 +1,87 @@
 package za.gov.helpdesk.attachment.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import za.gov.helpdesk.attachment.dto.AttachmentResponse;
 import za.gov.helpdesk.attachment.model.Attachment;
+import za.gov.helpdesk.attachment.repository.AttachmentRepository;
 import za.gov.helpdesk.attachment.service.AttachmentService;
 import za.gov.helpdesk.ticket.exception.TicketNotFoundException;
+import za.gov.helpdesk.ticket.model.Ticket;
+import za.gov.helpdesk.ticket.repository.TicketRepository;
 import za.gov.helpdesk.users.dto.UserResponse;
 import za.gov.helpdesk.users.model.User;
+import za.gov.helpdesk.users.repository.UserRepository;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 public class AttachmentServiceImpl implements AttachmentService {
+
+    private final AttachmentRepository attachmentRepository;
+    private final TicketRepository ticketRepository;
+    private final UserRepository userRepository;
+
+    @Value("${app.upload.storage-path}")
+    private String storagePath;
+
+    private static final long   MAX_FILE_SIZE   = 20 * 1024 * 1024L; // 20 MB
+    private static final int    MAX_FILES       = 5;
+    private static final Set<String> ALLOWED_TYPES = Set.of(
+            "image/png", "image/jpeg", "image/gif",
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "text/plain", "text/csv",
+            "application/zip"
+    );
+
     @Override
     @Transactional
     public List<AttachmentResponse> uploadAttachments(Long ticketId, List<MultipartFile> files) {
-        return List.of();
+        if (files == null || files.isEmpty()) {
+            throw new IllegalArgumentException("No files provided");
+        }
+        if (files.size() > MAX_FILES) {
+            throw new IllegalArgumentException(
+                    "Maximum " + MAX_FILES + " files allowed per request. Received: " + files.size());
+        }
+
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(TicketNotFoundException::new);
+        User uploader = getCurrentUser();
+
+        List<AttachmentResponse> responses = new ArrayList<>();
+
+        for (MultipartFile file : files) {
+            validateFile(file);
+
+            String storedPath = storeFile(ticketId, file);
+
+            Attachment attachment = Attachment.builder()
+                    .ticket(ticket)
+                    .uploader(uploader)
+                    .filename(Objects.requireNonNull(file.getOriginalFilename()))
+                    .contentType(file.getContentType())
+                    .sizeBytes(file.getSize())
+                    .storagePath(storedPath)
+                    .build();
+
+            responses.add(toResponse(attachmentRepository.save(attachment)));
+        }
+
+        return responses;
     }
 
     @Override
