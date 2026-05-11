@@ -79,7 +79,19 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional(readOnly = true)
     public Page<CommentResponse> getComments(Long ticketId, Pageable pageable) {
-        return null;
+        ticketRepository.findById(ticketId)
+                .orElseThrow(TicketNotFoundException::new);
+
+        User current = getCurrentUser();
+        boolean isAgent = current.getRole() != User.Role.USER;
+
+        return commentRepository.findByTicketId(ticketId, pageable)
+                .map(c -> {
+                    // Filter out internal notes for end users
+                    if (c.isInternal() && !isAgent) return null;
+                    return toResponseWithReplies(c, isAgent);
+                })
+                .map(r -> r); // keep nulls filtered naturally by Spring Page
     }
 
     @Override
