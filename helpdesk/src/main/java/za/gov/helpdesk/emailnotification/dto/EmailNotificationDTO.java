@@ -12,7 +12,6 @@ public class EmailNotificationDTO implements Serializable {
     private String technicianEmail;
     private String normalUserEmail;
     private String technicianName;
-    private String technicianSurname;
     private Long ticketId;
     private String comment;
     private String status;
@@ -24,15 +23,14 @@ public class EmailNotificationDTO implements Serializable {
     private String issueDescription;
 
     public EmailNotificationDTO(Ticket ticket, String comment) {
-        this.technicianEmail = ticket.getAssignedTechnician().getEmail();
-        this.normalUserEmail = ticket.getOwnerEmail();
-        this.technicianName = ticket.getAssignedTechnician().getFirstName();
-        this.technicianSurname = ticket.getAssignedTechnician().getLastName();
+        this.technicianEmail = ticket.getAssignee().getUser().getEmail();
+        this.normalUserEmail = ticket.getRequester().getEmail();
+        this.technicianName = ticket.getAssignee().getUser().getName();
         this.ticketId = ticket.getId();
         this.comment = comment;
-        this.status = ticket.getStatus().getStatus_name();
-        this.priority = ticket.getPriority().getLevel();
-        this.category = ticket.getCategory().getName();
+        this.status = ticket.getStatus().name();
+        this.priority = ticket.getPriority().name();
+        this.category = ticket.getCategory();
         this.createdAt = ticket.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         this.dueAt = ticket.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 

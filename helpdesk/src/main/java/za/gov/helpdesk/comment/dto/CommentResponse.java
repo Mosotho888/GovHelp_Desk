@@ -1,4 +1,4 @@
-package za.gov.helpdesk.ticketcomment.dto;
+package za.gov.helpdesk.comment.dto;
 
 
 import java.time.LocalDateTime;
