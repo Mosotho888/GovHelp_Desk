@@ -2,7 +2,7 @@
 //
 //import com.loggingsystem.springjwtauth.category.model.Category;
 //import com.loggingsystem.springjwtauth.priority.model.Priority;
-//import com.loggingsystem.springjwtauth.ticket.model.Tickets;
+//import com.loggingsystem.springjwtauth.ticket.model.Ticket;
 //import com.loggingsystem.springjwtauth.ticketcomment.dto.CommentResponse;
 //import lombok.Data;
 //
@@ -21,7 +21,7 @@
 //    private LocalDateTime updatedAt;
 //    private List<CommentResponse> comments;
 //
-//    public TicketAssignedDTO(Tickets ticket) {
+//    public TicketAssignedDTO(Ticket ticket) {
 //        this.id = ticket.getId();
 //        this.status = ticket.getStatus().getStatus_name();
 //        this.description = ticket.getDescription();

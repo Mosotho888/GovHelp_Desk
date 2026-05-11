@@ -8,13 +8,13 @@ import za.gov.helpdesk.priority.service.PriorityService;
 import za.gov.helpdesk.status.model.Status;
 import za.gov.helpdesk.status.service.StatusService;
 import za.gov.helpdesk.ticket.dto.TicketRequest;
-import za.gov.helpdesk.ticket.model.Tickets;
+import za.gov.helpdesk.ticket.model.Ticket;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
 
 @Component
-public class TicketRequestToTicketConverter implements Converter<TicketRequest, Tickets> {
+public class TicketRequestToTicketConverter implements Converter<TicketRequest, Ticket> {
     private final EmployeeUtil employeeUtil;
     private final PriorityService priorityService;
     private final CategoryService categoryService;
@@ -28,13 +28,13 @@ public class TicketRequestToTicketConverter implements Converter<TicketRequest, 
     }
 
     @Override
-    public @NotNull Tickets convert(TicketRequest ticketRequest) {
+    public @NotNull Ticket convert(TicketRequest ticketRequest) {
         za.gov.helpdesk.users.model.User assignedTechnician = employeeUtil.getEmployee(ticketRequest.assignedTechnicianId());
         Status assignedStatus = statusService.getStatus(ticketRequest.statusId());
         Category assignedCategory = categoryService.getCategory(ticketRequest.categoryId());
         Priority assignedPriority = priorityService.getPriority(ticketRequest.priorityId());
 
-        Tickets ticket = new Tickets();
+        Ticket ticket = new Ticket();
 
         ticket.setAssignedTechnician(assignedTechnician);
         ticket.setStatus(assignedStatus);

@@ -7,7 +7,7 @@ import za.gov.helpdesk.status.dto.StatusRequestDTO;
 import za.gov.helpdesk.status.model.Status;
 import za.gov.helpdesk.status.service.StatusService;
 import za.gov.helpdesk.ticket.exception.TechnicianNotAuthorizedToUpdateTicketException;
-import za.gov.helpdesk.ticket.model.Tickets;
+import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.TicketsRepository;
 import za.gov.helpdesk.ticket.service.UpdateStatusService;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +36,7 @@ public class UpdateStatusServiceImpl implements UpdateStatusService {
     @Override
     public ResponseEntity<Void> updateStatus(Long ticketId, StatusRequestDTO statusId, Principal principal) {
         log.info("Updating status for ticket ID: {} by user: {}", ticketId, principal.getName());
-        Tickets ticket = ticketUtil.getTicket(ticketId);
+        Ticket ticket = ticketUtil.getTicket(ticketId);
         Status status = statusService.getStatus(statusId.getStatus_id());
 
         if (!isTicketAssignedToCurrentUser(principal.getName(), ticket.getAssignedTechnician().getEmail())) {

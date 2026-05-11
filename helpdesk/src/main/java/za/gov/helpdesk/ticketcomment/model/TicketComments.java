@@ -1,7 +1,7 @@
 package za.gov.helpdesk.ticketcomment.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import za.gov.helpdesk.ticket.model.Tickets;
+import za.gov.helpdesk.ticket.model.Ticket;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -21,7 +21,7 @@ public class TicketComments {
     @ManyToOne
     @JoinColumn(name = "ticket_id")
     @JsonIgnore
-    private Tickets tickets;
+    private Ticket ticket;
 
     @ManyToOne
     @JoinColumn(name = "commenter_id")
@@ -33,9 +33,9 @@ public class TicketComments {
     public TicketComments() {
     }
 
-    public TicketComments(Long id, Tickets tickets, za.gov.helpdesk.users.model.User commenter, String comment) {
+    public TicketComments(Long id, Ticket ticket, za.gov.helpdesk.users.model.User commenter, String comment) {
         this.id = id;
-        this.tickets = tickets;
+        this.ticket = ticket;
         this.commenter = commenter;
         this.comment = comment;
     }

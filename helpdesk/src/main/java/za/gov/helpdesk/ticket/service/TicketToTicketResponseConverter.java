@@ -2,7 +2,7 @@ package za.gov.helpdesk.ticket.service;
 
 import za.gov.helpdesk.users.service.EmployeeToEmployeeResponseConverter;
 import za.gov.helpdesk.ticket.dto.TicketResponse;
-import za.gov.helpdesk.ticket.model.Tickets;
+import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticketcomment.dto.CommentResponse;
 import za.gov.helpdesk.ticketcomment.model.TicketComments;
 import za.gov.helpdesk.ticketcomment.service.TicketCommentsToCommentResponseConverter;
@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
-public class TicketToTicketResponseConverter implements Converter<Tickets, TicketResponse> {
+public class TicketToTicketResponseConverter implements Converter<Ticket, TicketResponse> {
     private final EmployeeToEmployeeResponseConverter employeeToEmployeeResponseConverter;
     private final TicketCommentsToCommentResponseConverter ticketCommentsToCommentResponseConverter;
 
@@ -24,7 +24,7 @@ public class TicketToTicketResponseConverter implements Converter<Tickets, Ticke
     }
 
     @Override
-    public @NotNull TicketResponse convert(Tickets ticket) {
+    public @NotNull TicketResponse convert(Ticket ticket) {
         za.gov.helpdesk.users.dto.UserResponse userResponse = employeeToEmployeeResponseConverter.convert(ticket.getAssignedTechnician());
         List<CommentResponse> commentResponse = new ArrayList<>();
 

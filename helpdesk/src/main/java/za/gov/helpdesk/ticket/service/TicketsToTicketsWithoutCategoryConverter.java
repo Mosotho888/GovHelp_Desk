@@ -1,8 +1,8 @@
 package za.gov.helpdesk.ticket.service;
 
+import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.users.service.EmployeeToEmployeeResponseConverter;
 import za.gov.helpdesk.ticket.dto.TicketsWithoutCategory;
-import za.gov.helpdesk.ticket.model.Tickets;
 import za.gov.helpdesk.ticketcomment.dto.CommentResponse;
 import za.gov.helpdesk.ticketcomment.model.TicketComments;
 import za.gov.helpdesk.ticketcomment.service.TicketCommentsToCommentResponseConverter;
@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
-public class TicketsToTicketsWithoutCategoryConverter implements Converter<Tickets, TicketsWithoutCategory> {
+public class TicketsToTicketsWithoutCategoryConverter implements Converter<Ticket, TicketsWithoutCategory> {
     private final EmployeeToEmployeeResponseConverter employeeToEmployeeResponseConverter;
     private final TicketCommentsToCommentResponseConverter ticketCommentsToCommentResponseConverter;
 
@@ -24,7 +24,7 @@ public class TicketsToTicketsWithoutCategoryConverter implements Converter<Ticke
     }
 
     @Override
-    public @NotNull TicketsWithoutCategory convert(Tickets ticket) {
+    public @NotNull TicketsWithoutCategory convert(Ticket ticket) {
         za.gov.helpdesk.users.dto.UserResponse technicianResponse = employeeToEmployeeResponseConverter.convert(ticket.getAssignedTechnician());
         List<CommentResponse> commentsResponse = new ArrayList<>();
 

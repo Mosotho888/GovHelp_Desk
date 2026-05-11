@@ -3,7 +3,7 @@ package za.gov.helpdesk.category.service;
 import za.gov.helpdesk.category.dto.TicketsByCategoryResponse;
 import za.gov.helpdesk.category.model.Category;
 import za.gov.helpdesk.ticket.dto.TicketsWithoutCategory;
-import za.gov.helpdesk.ticket.model.Tickets;
+import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.TicketsRepository;
 import za.gov.helpdesk.ticket.service.TicketsToTicketsWithoutCategoryConverter;
 import org.jetbrains.annotations.NotNull;
@@ -25,11 +25,11 @@ public class TicketsByCategoryConverter implements Converter<Category, TicketsBy
 
     @Override
     public @NotNull TicketsByCategoryResponse convert(@NotNull Category category) {
-        List<Tickets> tickets = ticketsRepository.findAllByCategory(category);
+        List<Ticket> tickets = ticketsRepository.findAllByCategory(category);
 
         List<TicketsWithoutCategory> ticketsWithoutCategoryList = new ArrayList<>();
 
-        for (Tickets ticket : tickets) {
+        for (Ticket ticket : tickets) {
             ticketsWithoutCategoryList.add(ticketsToTicketsWithoutCategoryConverter.convert(ticket));
         }
 

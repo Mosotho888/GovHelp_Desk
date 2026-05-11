@@ -4,7 +4,7 @@ import za.gov.helpdesk.common.util.EmployeeUtil;
 import za.gov.helpdesk.common.util.TicketUtil;
 import za.gov.helpdesk.ticket.dto.AssignedTicketsDTO;
 import za.gov.helpdesk.ticket.dto.TicketResponse;
-import za.gov.helpdesk.ticket.model.Tickets;
+import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.TicketsRepository;
 import za.gov.helpdesk.ticket.service.GetTicketService;
 import za.gov.helpdesk.ticket.service.TicketToTicketResponseConverter;
@@ -37,7 +37,7 @@ public class GetTicketServiceImpl implements GetTicketService {
     @Override
     public ResponseEntity<List<TicketResponse>> getAllTickets(Pageable pageable) {
         log.info("Fetching all tickets with pagination: {}", pageable);
-        Page<Tickets> page = ticketsRepository.findAll(PageRequest.of(
+        Page<Ticket> page = ticketsRepository.findAll(PageRequest.of(
                 pageable.getPageNumber(),
                 pageable.getPageSize(),
                 pageable.getSortOr(Sort.by(Sort.Direction.ASC, "id"))
@@ -52,7 +52,7 @@ public class GetTicketServiceImpl implements GetTicketService {
 
     @Override
     public ResponseEntity<TicketResponse> getTicketById(Long id) {
-        Tickets ticket = ticketUtil.getTicket(id);
+        Ticket ticket = ticketUtil.getTicket(id);
 
         TicketResponse ticketResponse = ticketToTicketResponseConverter.convert(ticket);
 

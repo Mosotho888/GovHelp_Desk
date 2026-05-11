@@ -5,7 +5,7 @@ import za.gov.helpdesk.common.util.TicketUtil;
 import za.gov.helpdesk.config.messaging.RabbitMQProperties;
 import za.gov.helpdesk.emailnotification.dto.EmailNotificationDTO;
 import za.gov.helpdesk.emailnotification.model.EmailNotification;
-import za.gov.helpdesk.ticket.model.Tickets;
+import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.emailnotification.repository.EmailNotificationRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +36,7 @@ public class TicketStatusChangeListener {
 
     @RabbitListener(queues = "ticket_status_change_queue")
     public void handleTicketStatusChangeMessage(EmailNotificationDTO request) {
-        Tickets ticket = ticketUtil.getTicket(request.getTicketId());
+        Ticket ticket = ticketUtil.getTicket(request.getTicketId());
         za.gov.helpdesk.users.model.User employee = employeeUtil.getEmployeeByEmail(request.getNormalUserEmail());
 
         EmailNotification notification = createEmailNotification(request, ticket, employee);
@@ -76,7 +76,7 @@ public class TicketStatusChangeListener {
     }
 
     @NotNull
-    private static EmailNotification createEmailNotification(EmailNotificationDTO request, Tickets ticket, za.gov.helpdesk.users.model.User employee) {
+    private static EmailNotification createEmailNotification(EmailNotificationDTO request, Ticket ticket, za.gov.helpdesk.users.model.User employee) {
         EmailNotification notification = new EmailNotification();
         notification.setTicket(ticket);
         notification.setRecipient(request.getNormalUserEmail());

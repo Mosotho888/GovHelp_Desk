@@ -5,7 +5,7 @@ import za.gov.helpdesk.common.util.TicketUtil;
 import za.gov.helpdesk.config.messaging.RabbitMQProperties;
 import za.gov.helpdesk.emailnotification.dto.EmailNotificationDTO;
 import za.gov.helpdesk.emailnotification.model.EmailNotification;
-import za.gov.helpdesk.ticket.model.Tickets;
+import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.emailnotification.repository.EmailNotificationRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -37,7 +37,7 @@ public class TicketCommentListener {
 
     @RabbitListener(queues = "ticket_comment_queue")
     public void handleTicketCommentMessage(EmailNotificationDTO request) {
-        Tickets ticket = ticketUtil.getTicket(request.getTicketId());
+        Ticket ticket = ticketUtil.getTicket(request.getTicketId());
         za.gov.helpdesk.users.model.User employee = employeeUtil.getEmployeeByEmail(request.getNormalUserEmail());
 
 
@@ -76,7 +76,7 @@ public class TicketCommentListener {
     }
 
     @NotNull
-    private static EmailNotification createEmailNotification(EmailNotificationDTO request, Tickets ticket, User employee) {
+    private static EmailNotification createEmailNotification(EmailNotificationDTO request, Ticket ticket, User employee) {
         EmailNotification notification = new EmailNotification();
         notification.setTicket(ticket);
         notification.setRecipient(request.getNormalUserEmail());

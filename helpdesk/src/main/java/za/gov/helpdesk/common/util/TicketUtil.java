@@ -5,7 +5,7 @@ import za.gov.helpdesk.ticket.dto.SubmittedTicketsDTO;
 import za.gov.helpdesk.ticket.dto.TicketResponse;
 import za.gov.helpdesk.ticket.dto.TicketsWithoutCategory;
 import za.gov.helpdesk.ticket.exception.TicketNotFoundException;
-import za.gov.helpdesk.ticket.model.Tickets;
+import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.TicketsRepository;
 import za.gov.helpdesk.ticket.service.TicketToTicketResponseConverter;
 import za.gov.helpdesk.ticket.service.TicketsToTicketsWithoutCategoryConverter;
@@ -32,9 +32,9 @@ public class TicketUtil {
     }
 
     @NotNull
-    public Tickets getTicket(Long ticketId) {
+    public Ticket getTicket(Long ticketId) {
         log.info("Fetching ticket with ID: {}", ticketId);
-        Optional<Tickets> optionalTicket = ticketsRepository.findById(ticketId);
+        Optional<Ticket> optionalTicket = ticketsRepository.findById(ticketId);
 
         if (optionalTicket.isPresent()) {
             log.info("Ticket found with ID: {}", ticketId);
@@ -46,20 +46,20 @@ public class TicketUtil {
     }
 
     @NotNull
-    public List<TicketResponse> mapToTicketResponse(List<Tickets> tickets) {
+    public List<TicketResponse> mapToTicketResponse(List<Ticket> tickets) {
         List<TicketResponse> ticketResponse = new ArrayList<>();
 
-        for (Tickets ticket : tickets) {
+        for (Ticket ticket : tickets) {
             ticketResponse.add(ticketToTicketResponseConverter.convert(ticket));
         }
         return ticketResponse;
     }
 
     @NotNull
-    public List<TicketsWithoutCategory> mapToTicketsByCategoryResponse(List<Tickets> tickets) {
+    public List<TicketsWithoutCategory> mapToTicketsByCategoryResponse(List<Ticket> tickets) {
         List<TicketsWithoutCategory> ticketsByCategoryResponseList = new ArrayList<>();
 
-        for (Tickets ticket : tickets) {
+        for (Ticket ticket : tickets) {
             ticketsByCategoryResponseList.add(ticketsToTicketsWithoutCategoryConverter.convert(ticket));
         }
         return ticketsByCategoryResponseList;
@@ -83,7 +83,7 @@ public class TicketUtil {
 
     @NotNull
     public List<AssignedTicketsDTO> getAssignedTickets(za.gov.helpdesk.users.model.User employee) {
-        List<Tickets> tickets = ticketsRepository.findAllByAssignedTechnician(employee);
+        List<Ticket> tickets = ticketsRepository.findAllByAssignedTechnician(employee);
 
         List<TicketResponse> ticketResponse = mapToTicketResponse(tickets);
 
@@ -92,7 +92,7 @@ public class TicketUtil {
 
     @NotNull
     public List<SubmittedTicketsDTO> getTicketsByOwner(String email) {
-        List<Tickets> tickets = ticketsRepository.findAllByOwnerEmail(email);
+        List<Ticket> tickets = ticketsRepository.findAllByOwnerEmail(email);
 
         List<TicketResponse> ticketResponse = mapToTicketResponse(tickets);
 

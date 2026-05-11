@@ -1,6 +1,6 @@
 package za.gov.helpdesk.emailnotification.dto;
 
-import za.gov.helpdesk.ticket.model.Tickets;
+import za.gov.helpdesk.ticket.model.Ticket;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -23,7 +23,7 @@ public class EmailNotificationDTO implements Serializable {
     private String updatedAt;
     private String issueDescription;
 
-    public EmailNotificationDTO(Tickets ticket, String comment) {
+    public EmailNotificationDTO(Ticket ticket, String comment) {
         this.technicianEmail = ticket.getAssignedTechnician().getEmail();
         this.normalUserEmail = ticket.getOwnerEmail();
         this.technicianName = ticket.getAssignedTechnician().getFirstName();

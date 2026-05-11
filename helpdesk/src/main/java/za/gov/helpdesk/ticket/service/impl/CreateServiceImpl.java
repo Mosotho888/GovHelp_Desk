@@ -4,7 +4,7 @@ import za.gov.helpdesk.emailnotification.dto.EmailNotificationDTO;
 import za.gov.helpdesk.emailnotification.service.MessageSenderService;
 import za.gov.helpdesk.ticket.dto.TicketRequest;
 import za.gov.helpdesk.ticket.dto.TicketResponse;
-import za.gov.helpdesk.ticket.model.Tickets;
+import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.TicketsRepository;
 import za.gov.helpdesk.ticket.service.CreateTicketService;
 import za.gov.helpdesk.ticket.service.TicketRequestToTicketConverter;
@@ -35,12 +35,12 @@ public class CreateServiceImpl implements CreateTicketService {
     @Override
     public ResponseEntity<TicketResponse> createTicket(TicketRequest ticketRequest, Principal principal) {
         log.info("Creating a new ticket by user: {}", principal.getName());
-        Tickets ticket = ticketRequestToTicketConverter.convert(ticketRequest);
+        Ticket ticket = ticketRequestToTicketConverter.convert(ticketRequest);
 
         ticket.setOwnerEmail(principal.getName());
         ticket.setCreatedAt(LocalDateTime.now());
 
-        Tickets savedTicket = ticketsRepository.save(ticket);
+        Ticket savedTicket = ticketsRepository.save(ticket);
         log.info("Ticket created successfully with ID: {}", savedTicket.getId());
 
         EmailNotificationDTO emailRequest = new EmailNotificationDTO(savedTicket, null);
