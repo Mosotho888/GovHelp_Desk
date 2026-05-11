@@ -1,0 +1,20 @@
+package za.gov.helpdesk.ticket.service;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import za.gov.helpdesk.auditlog.dto.AuditLogResponse;
+import za.gov.helpdesk.ticket.dto.CreateTicketRequest;
+import za.gov.helpdesk.ticket.dto.TicketResponse;
+import za.gov.helpdesk.ticket.model.Ticket;
+
+import java.util.List;
+
+public interface TicketService {
+
+    TicketResponse createTicket(CreateTicketRequest request);
+    TicketResponse getTicketById(String ticketId);
+    Page<TicketResponse> getTickets(Ticket.Status status, Ticket.Priority priority, Long assigneeId, Pageable pageable);
+    TicketResponse updateTicket(Long ticketId, CreateTicketRequest request);
+    void deleteTicket(Long ticketId);
+    List<AuditLogResponse> getAuditLog(Long ticketId);
+}
