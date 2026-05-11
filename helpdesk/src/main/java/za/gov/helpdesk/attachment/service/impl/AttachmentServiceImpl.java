@@ -87,7 +87,10 @@ public class AttachmentServiceImpl implements AttachmentService {
     @Override
     @Transactional(readOnly = true)
     public List<AttachmentResponse> getAttachments(Long ticketId) {
-        return List.of();
+        ticketRepository.findById(ticketId)
+                .orElseThrow(TicketNotFoundException::new);
+        return attachmentRepository.findByTicketId(ticketId)
+                .stream().map(this::toResponse).toList();
     }
 
     @Override
