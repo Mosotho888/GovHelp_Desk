@@ -47,7 +47,16 @@ public class TicketServiceImpl implements TicketService {
     @Override
     @Transactional(readOnly = true)
     public Page<TicketResponse> getTickets(Ticket.Status status, Ticket.Priority priority, Long assigneeId, Pageable pageable) {
-        return null;
+
+        User currentUser = getCurrentUser();
+
+        // End users can only see their own tickets
+        if (currentUser.getRole() == User.Role.USER) {
+            return ticketRepository.findByRequester(currentUser, pageable)
+                    .map(this::toResponse);
+        }
+        return ticketRepository.findWithFilters(status, priority, assigneeId, pageable)
+                .map(this::toResponse);
     }
 
     @Override
