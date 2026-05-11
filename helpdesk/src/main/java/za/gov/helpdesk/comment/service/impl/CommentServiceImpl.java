@@ -3,6 +3,7 @@ package za.gov.helpdesk.comment.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,7 @@ import za.gov.helpdesk.users.exception.UserNotFoundException;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -107,7 +109,23 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional
     public CommentResponse updateComment(Long commentId, CreateCommentRequest request) {
-        return null;
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(TicketNotFoundException::new);
+
+        User current = getCurrentUser();
+        boolean isAdmin = current.getRole() == User.Role.ADMIN;
+        boolean isAuthor = comment.getAuthor().getId().equals(current.getId());
+        boolean withinWindow = comment.getCreatedAt()
+                .isAfter(LocalDateTime.now().minusMinutes(EDIT_WINDOW_MINUTES));
+
+        if (!isAdmin && !(isAuthor && withinWindow)) {
+            throw new AccessDeniedException(
+                    "Comments can only be edited within " + EDIT_WINDOW_MINUTES
+                            + " minutes of creation, or by an admin");
+        }
+
+        comment.setBody(request.getBody());
+        return toResponse(commentRepository.save(comment));
     }
 
     @Override
