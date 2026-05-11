@@ -1,13 +1,24 @@
 package za.gov.helpdesk.comment.dto;
 
 
-import java.time.LocalDateTime;
+import lombok.Builder;
+import lombok.Data;
+import za.gov.helpdesk.comment.model.Comment;
+import za.gov.helpdesk.users.dto.UserResponse;
 
-public record CommentResponse(
-        Long id,
-        Long commenterId,
-        String commenterEmail,
-        String role,
-        String comment,
-        LocalDateTime created_at
-) { }
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Data
+@Builder
+public class CommentResponse{
+    private Long id;
+    private Long ticketId;
+    private UserResponse author;
+    private Long parentId;
+    private String body;
+    private boolean internal;
+    private Comment.CommentType type;
+    private LocalDateTime createdAt;
+    private List<CommentResponse> replies;
+}
