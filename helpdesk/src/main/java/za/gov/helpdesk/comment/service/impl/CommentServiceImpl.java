@@ -11,6 +11,7 @@ import za.gov.helpdesk.comment.dto.CreateCommentRequest;
 import za.gov.helpdesk.comment.model.Comment;
 import za.gov.helpdesk.comment.repository.CommentRepository;
 import za.gov.helpdesk.comment.service.CommentService;
+import za.gov.helpdesk.ticket.exception.TicketNotFoundException;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.TicketRepository;
 import za.gov.helpdesk.users.dto.UserResponse;
@@ -34,7 +35,7 @@ public class CommentServiceImpl implements CommentService {
     @Transactional
     public CommentResponse addComment(Long ticketId, CreateCommentRequest request) {
         Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(UserNotFoundException::new);
+                .orElseThrow(TicketNotFoundException::new);
         User author = getCurrentUser();
 
         // Only agents/admins can post internal notes
@@ -57,7 +58,22 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional
     public CommentResponse addReply(Long parentCommentId, CreateCommentRequest request) {
-        return null;
+        Comment parent = commentRepository.findById(parentCommentId)
+                .orElseThrow(TicketNotFoundException::new);
+
+        // Replies inherit the ticket from the parent
+        User author = getCurrentUser();
+
+        Comment reply = Comment.builder()
+                .ticket(parent.getTicket())
+                .author(author)
+                .parent(parent)
+                .body(request.getBody())
+                .internal(request.isInternal())
+                .type(Comment.CommentType.REPLY)
+                .build();
+
+        return toResponse(commentRepository.save(reply));
     }
 
     @Override
