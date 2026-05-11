@@ -87,7 +87,16 @@ public class AgentServiceImpl implements AgentService {
     }
 
     @Override
+    @Transactional
     public AgentResponse updateAgent(UpdateAgentRequest request) {
-        return null;
+        Agent agent = findOrThrow(id);
+
+        if (request.getAvailability() != null) {
+            agent.setAvailability(request.getAvailability());
+        }
+        if (request.getDepartment() != null) {
+            agent.setDepartment(request.getDepartment());
+        }
+        return toResponse(agentRepository.save(agent));
     }
 }
