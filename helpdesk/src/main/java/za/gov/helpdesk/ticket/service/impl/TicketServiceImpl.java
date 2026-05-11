@@ -38,7 +38,27 @@ public class TicketServiceImpl implements TicketService {
     @Override
     @Transactional
     public TicketResponse createTicket(CreateTicketRequest request) {
-        return null;
+        User requester = getCurrentUser();
+
+        Ticket.TicketBuilder builder = Ticket.builder()
+                .subject(request.getSubject())
+                .description(request.getDescription())
+                .priority(request.getPriority() != null ? request.getPriority() : Ticket.Priority.MEDIUM)
+                .category(request.getCategory())
+                .requester(requester)
+                .status(Ticket.Status.OPEN);
+
+        if (request.getAssigneeId() != null) {
+            Agent agent = agentRepository.findById(request.getAssigneeId())
+                    .orElseThrow(UserNotFoundException::new);
+            builder.assignee(agent);
+        }
+
+        Ticket saved = ticketRepository.save(builder.build());
+
+        audit(saved, requester, "TICKET_CREATED", null, Ticket.Status.OPEN.name());
+
+        return toResponse(saved);
     }
 
     @Override
