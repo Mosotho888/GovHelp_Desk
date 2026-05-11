@@ -60,4 +60,15 @@ public class ReportJdbcRepository {
 
         return count != null ? count : 0L;
     }
+
+    public long getTotalAttachmentSize(Long ticketId) {
+        String sql = """
+                SELECT COALESCE(SUM(size_bytes), 0)
+                FROM ATTACHMENTS
+                WHERE ticket_id = :ticketId
+                """;
+        Long total = jdbc.queryForObject(sql,
+                new MapSqlParameterSource("ticketId", ticketId), Long.class);
+        return total != null ? total : 0L;
+    }
 }
