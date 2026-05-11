@@ -65,7 +65,10 @@ public class TicketServiceImpl implements TicketService {
     @Override
     @Transactional(readOnly = true)
     public List<AuditLogResponse> getAuditLog(Long ticketId) {
-        return List.of();
+        findOrThrow(ticketId);
+
+        return auditLogRepository.findByTicketIdOrderByCreatedDateDesc(ticketId)
+                .stream().map(this::toAuditResponse).toList();
     }
 
     private Ticket findOrThrow(Long id) {
