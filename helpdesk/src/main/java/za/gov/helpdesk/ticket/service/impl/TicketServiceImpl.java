@@ -40,8 +40,8 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional(readOnly = true)
-    public TicketResponse getTicketById(String ticketId) {
-        return null;
+    public TicketResponse getTicketById(Long ticketId) {
+        return toResponse(findOrThrow(ticketId));
     }
 
     @Override

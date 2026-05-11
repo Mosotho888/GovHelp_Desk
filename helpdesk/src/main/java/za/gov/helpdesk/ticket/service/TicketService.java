@@ -12,7 +12,7 @@ import java.util.List;
 public interface TicketService {
 
     TicketResponse createTicket(CreateTicketRequest request);
-    TicketResponse getTicketById(String ticketId);
+    TicketResponse getTicketById(Long ticketId);
     Page<TicketResponse> getTickets(Ticket.Status status, Ticket.Priority priority, Long assigneeId, Pageable pageable);
     TicketResponse updateTicket(Long ticketId, CreateTicketRequest request);
     void deleteTicket(Long ticketId);
