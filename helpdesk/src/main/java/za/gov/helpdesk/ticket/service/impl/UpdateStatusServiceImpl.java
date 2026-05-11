@@ -8,7 +8,7 @@ import za.gov.helpdesk.status.model.Status;
 import za.gov.helpdesk.status.service.StatusService;
 import za.gov.helpdesk.ticket.exception.TechnicianNotAuthorizedToUpdateTicketException;
 import za.gov.helpdesk.ticket.model.Ticket;
-import za.gov.helpdesk.ticket.repository.TicketsRepository;
+import za.gov.helpdesk.ticket.repository.TicketRepository;
 import za.gov.helpdesk.ticket.service.UpdateStatusService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -24,13 +24,13 @@ public class UpdateStatusServiceImpl implements UpdateStatusService {
     private final TicketUtil ticketUtil;
     private final StatusService statusService;
     private final MessageSenderService messageSenderService;
-    private final TicketsRepository ticketsRepository;
+    private final TicketRepository ticketRepository;
 
-    public UpdateStatusServiceImpl(TicketUtil ticketUtil, StatusService statusService, MessageSenderService messageSenderService, TicketsRepository ticketsRepository) {
+    public UpdateStatusServiceImpl(TicketUtil ticketUtil, StatusService statusService, MessageSenderService messageSenderService, TicketRepository ticketRepository) {
         this.ticketUtil = ticketUtil;
         this.statusService = statusService;
         this.messageSenderService = messageSenderService;
-        this.ticketsRepository = ticketsRepository;
+        this.ticketRepository = ticketRepository;
     }
 
     @Override
@@ -46,7 +46,7 @@ public class UpdateStatusServiceImpl implements UpdateStatusService {
 
         ticket.setStatus(status);
         ticket.setUpdatedAt(LocalDateTime.now());
-        ticketsRepository.save(ticket);
+        ticketRepository.save(ticket);
 
         EmailNotificationDTO emailRequest = new EmailNotificationDTO(ticket, null);
         messageSenderService.sendTicketStatusChangeMessage(emailRequest);

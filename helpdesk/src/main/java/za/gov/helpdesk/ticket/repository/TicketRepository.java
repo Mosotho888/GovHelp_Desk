@@ -5,16 +5,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import za.gov.helpdesk.category.model.Category;
 import za.gov.helpdesk.ticket.model.Ticket;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.repository.PagingAndSortingRepository;
 import za.gov.helpdesk.users.model.User;
 
-import java.util.List;
-
 @Repository
-public interface TicketsRepository extends JpaRepository<Ticket, Long> {
+public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
     // For agents/admins: filter by status and/or priority
     @Query("""

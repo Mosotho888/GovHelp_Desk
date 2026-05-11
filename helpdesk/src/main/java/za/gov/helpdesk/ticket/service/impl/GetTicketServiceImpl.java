@@ -5,7 +5,7 @@ import za.gov.helpdesk.common.util.TicketUtil;
 import za.gov.helpdesk.ticket.dto.AssignedTicketsDTO;
 import za.gov.helpdesk.ticket.dto.TicketResponse;
 import za.gov.helpdesk.ticket.model.Ticket;
-import za.gov.helpdesk.ticket.repository.TicketsRepository;
+import za.gov.helpdesk.ticket.repository.TicketRepository;
 import za.gov.helpdesk.ticket.service.GetTicketService;
 import za.gov.helpdesk.ticket.service.TicketToTicketResponseConverter;
 import lombok.extern.slf4j.Slf4j;
@@ -22,13 +22,13 @@ import java.util.List;
 @Service
 @Slf4j
 public class GetTicketServiceImpl implements GetTicketService {
-    private final TicketsRepository ticketsRepository;
+    private final TicketRepository ticketRepository;
     private final TicketUtil ticketUtil;
     private final EmployeeUtil employeeUtil;
     private final TicketToTicketResponseConverter ticketToTicketResponseConverter;
 
-    public GetTicketServiceImpl(TicketsRepository ticketsRepository, TicketUtil ticketUtil, EmployeeUtil employeeUtil, TicketToTicketResponseConverter ticketToTicketResponseConverter) {
-        this.ticketsRepository = ticketsRepository;
+    public GetTicketServiceImpl(TicketRepository ticketRepository, TicketUtil ticketUtil, EmployeeUtil employeeUtil, TicketToTicketResponseConverter ticketToTicketResponseConverter) {
+        this.ticketRepository = ticketRepository;
         this.ticketUtil = ticketUtil;
         this.employeeUtil = employeeUtil;
         this.ticketToTicketResponseConverter = ticketToTicketResponseConverter;
@@ -37,7 +37,7 @@ public class GetTicketServiceImpl implements GetTicketService {
     @Override
     public ResponseEntity<List<TicketResponse>> getAllTickets(Pageable pageable) {
         log.info("Fetching all tickets with pagination: {}", pageable);
-        Page<Ticket> page = ticketsRepository.findAll(PageRequest.of(
+        Page<Ticket> page = ticketRepository.findAll(PageRequest.of(
                 pageable.getPageNumber(),
                 pageable.getPageSize(),
                 pageable.getSortOr(Sort.by(Sort.Direction.ASC, "id"))

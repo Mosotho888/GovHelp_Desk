@@ -5,7 +5,7 @@ import za.gov.helpdesk.emailnotification.service.MessageSenderService;
 import za.gov.helpdesk.ticket.dto.TicketRequest;
 import za.gov.helpdesk.ticket.dto.TicketResponse;
 import za.gov.helpdesk.ticket.model.Ticket;
-import za.gov.helpdesk.ticket.repository.TicketsRepository;
+import za.gov.helpdesk.ticket.repository.TicketRepository;
 import za.gov.helpdesk.ticket.service.CreateTicketService;
 import za.gov.helpdesk.ticket.service.TicketRequestToTicketConverter;
 import za.gov.helpdesk.ticket.service.TicketToTicketResponseConverter;
@@ -20,13 +20,13 @@ import java.time.LocalDateTime;
 @Service
 @Slf4j
 public class CreateServiceImpl implements CreateTicketService {
-    private final TicketsRepository ticketsRepository;
+    private final TicketRepository ticketRepository;
     private final MessageSenderService messageSenderService;
     private final TicketRequestToTicketConverter ticketRequestToTicketConverter;
     private final TicketToTicketResponseConverter ticketToTicketResponseConverter;
 
-    public CreateServiceImpl(TicketsRepository ticketsRepository, MessageSenderService messageSenderService, TicketRequestToTicketConverter ticketRequestToTicketConverter, TicketToTicketResponseConverter ticketToTicketResponseConverter) {
-        this.ticketsRepository = ticketsRepository;
+    public CreateServiceImpl(TicketRepository ticketRepository, MessageSenderService messageSenderService, TicketRequestToTicketConverter ticketRequestToTicketConverter, TicketToTicketResponseConverter ticketToTicketResponseConverter) {
+        this.ticketRepository = ticketRepository;
         this.messageSenderService = messageSenderService;
         this.ticketRequestToTicketConverter = ticketRequestToTicketConverter;
         this.ticketToTicketResponseConverter = ticketToTicketResponseConverter;
@@ -40,7 +40,7 @@ public class CreateServiceImpl implements CreateTicketService {
         ticket.setOwnerEmail(principal.getName());
         ticket.setCreatedAt(LocalDateTime.now());
 
-        Ticket savedTicket = ticketsRepository.save(ticket);
+        Ticket savedTicket = ticketRepository.save(ticket);
         log.info("Ticket created successfully with ID: {}", savedTicket.getId());
 
         EmailNotificationDTO emailRequest = new EmailNotificationDTO(savedTicket, null);
