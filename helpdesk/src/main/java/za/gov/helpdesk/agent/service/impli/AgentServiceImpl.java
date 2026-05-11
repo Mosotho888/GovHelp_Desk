@@ -52,8 +52,10 @@ public class AgentServiceImpl implements AgentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public AgentResponse getAgentById(Long id) {
-        return null;
+
+        return toResponse(findOrThrow(id));
     }
 
     @Override
