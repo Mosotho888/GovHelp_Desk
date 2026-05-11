@@ -2,6 +2,7 @@ package za.gov.helpdesk.attachment.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -102,7 +103,25 @@ public class AttachmentServiceImpl implements AttachmentService {
     @Override
     @Transactional
     public void deleteAttachment(Long attachmentId) {
+        Attachment attachment = findOrThrow(attachmentId);
+        User current = getCurrentUser();
 
+        boolean isAdmin  = current.getRole() == User.Role.ADMIN;
+        boolean isOwner  = attachment.getUploader().getId().equals(current.getId());
+
+        if (!isAdmin && !isOwner) {
+            throw new AccessDeniedException(
+                    "You can only delete your own attachments");
+        }
+
+        // Remove file from storage
+        try {
+            Files.deleteIfExists(Paths.get(attachment.getStoragePath()));
+        } catch (IOException e) {
+            // Log but don't block — DB record must still be removed
+        }
+
+        attachmentRepository.delete(attachment);
     }
 
     private void validateFile(MultipartFile file) {
