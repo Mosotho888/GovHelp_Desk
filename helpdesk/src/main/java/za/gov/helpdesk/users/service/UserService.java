@@ -3,9 +3,6 @@ package za.gov.helpdesk.users.service;
 import org.springframework.data.domain.Page;
 import za.gov.helpdesk.users.dto.*;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.ResponseEntity;
-
-import java.util.List;
 
 public interface UserService {
 

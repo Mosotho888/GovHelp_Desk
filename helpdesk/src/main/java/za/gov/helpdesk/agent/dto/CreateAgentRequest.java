@@ -2,7 +2,6 @@ package za.gov.helpdesk.agent.dto;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import lombok.NonNull;
 import za.gov.helpdesk.agent.model.Agent;
 
 @Data

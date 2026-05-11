@@ -4,8 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import za.gov.helpdesk.users.dto.*;
-import za.gov.helpdesk.common.util.EmployeeUtil;
-import za.gov.helpdesk.common.util.TicketUtil;
 import za.gov.helpdesk.users.exception.UserAlreadyExistsException;
 import za.gov.helpdesk.users.exception.UserNotFoundException;
 import za.gov.helpdesk.users.model.User;

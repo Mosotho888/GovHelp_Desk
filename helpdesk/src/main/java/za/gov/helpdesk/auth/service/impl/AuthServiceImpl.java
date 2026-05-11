@@ -79,11 +79,11 @@ public class AuthServiceImpl implements AuthService {
                 .accessToken(jwtUtil.generateAccessToken(user))
                 .refreshToken(jwtUtil.generateRefreshToken(user))
                 .expiresIn(jwtProperties.getValidity() / 1000)
-                .user(touserResponse(user))
+                .user(toUserResponse(user))
                 .build();
     }
 
-    private za.gov.helpdesk.users.dto.UserResponse touserResponse(User user) {
+    private UserResponse toUserResponse(User user) {
         return UserResponse.builder()
                 .id(user.getId())
                 .name(user.getName())
