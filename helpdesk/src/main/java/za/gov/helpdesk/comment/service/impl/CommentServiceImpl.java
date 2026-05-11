@@ -131,7 +131,22 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional
     public void deleteComment(Long commentId) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(TicketNotFoundException::new);
 
+        User current = getCurrentUser();
+        boolean isAdmin  = current.getRole() == User.Role.ADMIN;
+        boolean isAuthor = comment.getAuthor().getId().equals(current.getId());
+        boolean withinWindow = comment.getCreatedAt()
+                .isAfter(LocalDateTime.now().minusMinutes(EDIT_WINDOW_MINUTES));
+
+        if (!isAdmin && !(isAuthor && withinWindow)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Comments can only be deleted within " + EDIT_WINDOW_MINUTES
+                            + " minutes of creation, or by an admin");
+        }
+
+        commentRepository.delete(comment);
     }
 
     private User getCurrentUser() {
