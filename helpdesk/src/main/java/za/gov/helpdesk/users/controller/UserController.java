@@ -19,7 +19,7 @@ import za.gov.helpdesk.users.dto.response.UserResponse;
 import za.gov.helpdesk.users.service.UserService;
 
 @RestController
-@RequestMapping("/api/v1/employees")
+@RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
 @Tag(name = "Users", description = "User account management")
 @SecurityRequirement(name = "bearerAuth")
@@ -57,7 +57,7 @@ public class UserController {
         userService.deactivateUser(id);
     }
 
-    @GetMapping("/{id}")
+    @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or #id == authentication.principal.id")
     @Operation(summary = "Update user profile")
     private ResponseEntity<UserResponse> updateUser(
