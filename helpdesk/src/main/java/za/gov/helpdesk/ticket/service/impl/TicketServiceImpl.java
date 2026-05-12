@@ -133,7 +133,7 @@ public class TicketServiceImpl implements TicketService {
     public List<AuditLogResponse> getAuditLog(Long ticketId) {
         findOrThrow(ticketId);
 
-        return auditLogRepository.findByTicketIdOrderByCreatedDateDesc(ticketId)
+        return auditLogRepository.findByTicketIdOrderByCreatedAtDesc(ticketId)
                 .stream().map(this::toAuditResponse).toList();
     }
 

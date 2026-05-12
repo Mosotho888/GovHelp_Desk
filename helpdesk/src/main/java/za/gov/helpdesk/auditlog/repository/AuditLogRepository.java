@@ -11,7 +11,7 @@ import java.util.List;
 @Repository
 public interface AuditLogRepository extends JpaRepository<AuditLog,Long> {
 
-    List<AuditLog> findByTicketIdOrderByCreatedDateDesc(Long ticketId);
+    List<AuditLog> findByTicketIdOrderByCreatedAtDesc(Long ticketId);
 
     Page<AuditLog> findByTicketId(Long ticketId, Pageable pageable);
 }
