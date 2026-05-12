@@ -20,7 +20,6 @@ import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
 import za.gov.helpdesk.ticket.service.TicketService;
 import za.gov.helpdesk.users.dto.response.UserResponse;
-import za.gov.helpdesk.users.exception.UserNotFoundException;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 
@@ -100,7 +99,7 @@ public class TicketServiceImpl implements TicketService {
         // Assignment change
         if (request.getAssigneeId() != null) {
             Agent newAgent = agentRepository.findById(request.getAssigneeId())
-                    .orElseThrow(UserNotFoundException::new);
+                    .orElseThrow(() -> new  ResourceNotFoundException("Agent", request.getAssigneeId()));
             String oldAssignee = ticket.getAssignee() != null ? ticket.getAssignee().getId().toString() : "unassigned";
             audit(ticket, actor, "ASSIGNED", oldAssignee, request.getAssigneeId().toString());
             ticket.setAssignee(newAgent);
