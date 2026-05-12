@@ -17,7 +17,7 @@ public class EmailNotification {
 
     @ManyToOne
     @JoinColumn(name = "ticket_id")
-    private TicketResponse ticket;
+    private Ticket ticket;
 
     @Column(name = "recipient")
     private String recipient;
@@ -33,7 +33,7 @@ public class EmailNotification {
     public EmailNotification() {
     }
 
-    public EmailNotification(Long id, TicketResponse ticket, String recipient, String subject, String body, LocalDateTime sentAt, EmailStatus status) {
+    public EmailNotification(Long id, Ticket ticket, String recipient, String subject, String body, LocalDateTime sentAt, EmailStatus status) {
         this.id = id;
         this.ticket = ticket;
         this.recipient = recipient;

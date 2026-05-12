@@ -9,7 +9,7 @@ import java.util.Optional;
 @Repository
 public interface AgentRepository extends JpaRepository<Agent, Long> {
 
-    Optional<Agent> findByUserId(String userId);
+    Optional<Agent> findByUserId(Long userId);
 
     boolean existsByUserId(Long userId);
 }

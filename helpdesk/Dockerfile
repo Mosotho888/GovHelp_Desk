@@ -6,6 +6,9 @@ WORKDIR /opt/app
 COPY .mvn/ .mvn
 COPY mvnw pom.xml ./
 
+# This command deletes the hidden Windows '\r' characters
+RUN sed -i 's/\r$//' mvnw
+
 # ✅ Grant execute permissions to mvnw
 RUN chmod +x mvnw
 
