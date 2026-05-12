@@ -1,8 +1,8 @@
 package za.gov.helpdesk.auth.service;
 
-import za.gov.helpdesk.auth.dto.LoginRequest;
-import za.gov.helpdesk.auth.dto.AuthResponse;
-import za.gov.helpdesk.auth.dto.RefreshTokenRequest;
+import za.gov.helpdesk.auth.dto.request.LoginRequest;
+import za.gov.helpdesk.auth.dto.response.AuthResponse;
+import za.gov.helpdesk.auth.dto.request.RefreshTokenRequest;
 
 public interface AuthService {
 

@@ -1,8 +1,10 @@
 package za.gov.helpdesk.users.service;
 
 import org.springframework.data.domain.Page;
-import za.gov.helpdesk.users.dto.*;
 import org.springframework.data.domain.Pageable;
+import za.gov.helpdesk.users.dto.request.CreateUserRequest;
+import za.gov.helpdesk.users.dto.request.UpdateUserRequest;
+import za.gov.helpdesk.users.dto.response.UserResponse;
 
 public interface UserService {
 

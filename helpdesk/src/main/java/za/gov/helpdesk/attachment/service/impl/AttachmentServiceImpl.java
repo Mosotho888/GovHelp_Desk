@@ -7,15 +7,14 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import za.gov.helpdesk.attachment.dto.AttachmentResponse;
+import za.gov.helpdesk.attachment.dto.response.AttachmentResponse;
 import za.gov.helpdesk.attachment.model.Attachment;
 import za.gov.helpdesk.attachment.repository.AttachmentRepository;
 import za.gov.helpdesk.attachment.service.AttachmentService;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
-import za.gov.helpdesk.ticket.exception.TicketNotFoundException;
 import za.gov.helpdesk.ticket.model.Ticket;
-import za.gov.helpdesk.ticket.repository.TicketRepository;
-import za.gov.helpdesk.users.dto.UserResponse;
+import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
+import za.gov.helpdesk.users.dto.response.UserResponse;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 

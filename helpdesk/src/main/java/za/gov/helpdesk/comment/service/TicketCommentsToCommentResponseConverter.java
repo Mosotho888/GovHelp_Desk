@@ -1,11 +1,11 @@
 package za.gov.helpdesk.comment.service;
 
-import za.gov.helpdesk.comment.dto.CommentResponse;
+import za.gov.helpdesk.comment.dto.response.CommentResponse;
 import za.gov.helpdesk.comment.model.Comment;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
-import za.gov.helpdesk.users.dto.UserResponse;
+import za.gov.helpdesk.users.dto.response.UserResponse;
 
 import java.util.List;
 

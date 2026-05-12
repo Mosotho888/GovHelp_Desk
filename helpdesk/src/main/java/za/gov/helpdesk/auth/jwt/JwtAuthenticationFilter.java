@@ -24,7 +24,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     public static final String BEARER = "Bearer ";
     public static final String TOKEN_REFRESH = "refresh";
     private final UserDetailsService userDetailsService;
-    private final JwtUtil jwtUtil;
+    private final JwtService jwtService;
 
     @Override
     protected void doFilterInternal(@NotNull HttpServletRequest request,
@@ -43,7 +43,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String token = authHeader.substring(7);
 
         try {
-            final String userEmail = jwtUtil.extractEmail(token);
+            final String userEmail = jwtService.extractEmail(token);
 
             // Only process if not already authenticated
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -51,12 +51,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
 
                 // Reject refresh tokens on protected endpoints
-                if (TOKEN_REFRESH.equals(jwtUtil.extractTokenType(token))) {
+                if (TOKEN_REFRESH.equals(jwtService.extractTokenType(token))) {
                     filterChain.doFilter(request, response);
                     return;
                 }
 
-                if (jwtUtil.isTokenValid(token, userDetails)) {
+                if (jwtService.isTokenValid(token, userDetails)) {
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(
                                     userDetails, null, userDetails.getAuthorities()

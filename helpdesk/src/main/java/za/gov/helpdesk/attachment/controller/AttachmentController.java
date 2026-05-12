@@ -12,12 +12,11 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import za.gov.helpdesk.attachment.dto.AttachmentResponse;
+import za.gov.helpdesk.attachment.dto.response.AttachmentResponse;
 import za.gov.helpdesk.attachment.model.Attachment;
 import za.gov.helpdesk.attachment.repository.AttachmentRepository;
 import za.gov.helpdesk.attachment.service.AttachmentService;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
-import za.gov.helpdesk.ticket.exception.TicketNotFoundException;
 
 import java.nio.file.Paths;
 import java.util.List;

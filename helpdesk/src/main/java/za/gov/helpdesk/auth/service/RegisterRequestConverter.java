@@ -1,6 +1,5 @@
 package za.gov.helpdesk.auth.service;
 
-import za.gov.helpdesk.users.dto.RegisterRequest;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
 import org.springframework.core.convert.converter.Converter;

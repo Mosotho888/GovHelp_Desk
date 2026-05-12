@@ -5,23 +5,20 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.gov.helpdesk.agent.dto.AgentResponse;
-import za.gov.helpdesk.agent.dto.AgentStatsResponse;
-import za.gov.helpdesk.agent.dto.CreateAgentRequest;
-import za.gov.helpdesk.agent.dto.UpdateAgentRequest;
+import za.gov.helpdesk.agent.dto.response.AgentResponse;
+import za.gov.helpdesk.agent.dto.response.AgentStatsResponse;
+import za.gov.helpdesk.agent.dto.request.CreateAgentRequest;
+import za.gov.helpdesk.agent.dto.request.UpdateAgentRequest;
 import za.gov.helpdesk.agent.model.Agent;
-import za.gov.helpdesk.agent.repository.AgentRepository;
+import za.gov.helpdesk.agent.repository.jpa.AgentRepository;
 import za.gov.helpdesk.agent.repository.jdbc.ReportJdbcRepository;
 import za.gov.helpdesk.agent.service.AgentService;
 import za.gov.helpdesk.exception.DuplicateResourceException;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
-import za.gov.helpdesk.users.dto.UserResponse;
-import za.gov.helpdesk.users.exception.UserAlreadyExistsException;
-import za.gov.helpdesk.users.exception.UserNotFoundException;
+import za.gov.helpdesk.users.dto.response.UserResponse;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 
-import java.nio.file.ReadOnlyFileSystemException;
 import java.util.Map;
 
 @Service

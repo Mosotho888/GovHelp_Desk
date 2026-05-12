@@ -2,9 +2,9 @@ package za.gov.helpdesk.comment.service;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import za.gov.helpdesk.comment.dto.CommentResponse;
-import za.gov.helpdesk.comment.dto.CreateCommentRequest;
-import za.gov.helpdesk.comment.dto.UpdateCommentRequest;
+import za.gov.helpdesk.comment.dto.response.CommentResponse;
+import za.gov.helpdesk.comment.dto.request.CreateCommentRequest;
+import za.gov.helpdesk.comment.dto.request.UpdateCommentRequest;
 
 import java.util.List;
 

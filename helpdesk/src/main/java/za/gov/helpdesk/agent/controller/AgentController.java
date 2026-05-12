@@ -11,10 +11,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import za.gov.helpdesk.agent.dto.AgentResponse;
-import za.gov.helpdesk.agent.dto.AgentStatsResponse;
-import za.gov.helpdesk.agent.dto.CreateAgentRequest;
-import za.gov.helpdesk.agent.dto.UpdateAgentRequest;
+import za.gov.helpdesk.agent.dto.response.AgentResponse;
+import za.gov.helpdesk.agent.dto.response.AgentStatsResponse;
+import za.gov.helpdesk.agent.dto.request.CreateAgentRequest;
+import za.gov.helpdesk.agent.dto.request.UpdateAgentRequest;
 import za.gov.helpdesk.agent.service.AgentService;
 
 import javax.validation.Valid;

@@ -1,7 +1,7 @@
 package za.gov.helpdesk.attachment.service;
 
 import org.springframework.web.multipart.MultipartFile;
-import za.gov.helpdesk.attachment.dto.AttachmentResponse;
+import za.gov.helpdesk.attachment.dto.response.AttachmentResponse;
 
 import java.util.List;
 

@@ -3,7 +3,7 @@ package za.gov.helpdesk.users.service;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
-import za.gov.helpdesk.users.dto.UserResponse;
+import za.gov.helpdesk.users.dto.response.UserResponse;
 import za.gov.helpdesk.users.model.User;
 
 @Component

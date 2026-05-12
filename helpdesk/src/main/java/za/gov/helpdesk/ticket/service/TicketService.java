@@ -2,10 +2,10 @@ package za.gov.helpdesk.ticket.service;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import za.gov.helpdesk.auditlog.dto.AuditLogResponse;
-import za.gov.helpdesk.ticket.dto.CreateTicketRequest;
-import za.gov.helpdesk.ticket.dto.TicketResponse;
-import za.gov.helpdesk.ticket.dto.UpdateTicketRequest;
+import za.gov.helpdesk.auditlog.dto.response.AuditLogResponse;
+import za.gov.helpdesk.ticket.dto.request.CreateTicketRequest;
+import za.gov.helpdesk.ticket.dto.response.TicketResponse;
+import za.gov.helpdesk.ticket.dto.request.UpdateTicketRequest;
 import za.gov.helpdesk.ticket.model.Ticket;
 
 import java.util.List;

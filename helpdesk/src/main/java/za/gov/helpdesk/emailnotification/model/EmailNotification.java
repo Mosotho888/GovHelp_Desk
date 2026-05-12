@@ -1,5 +1,6 @@
 package za.gov.helpdesk.emailnotification.model;
 
+import za.gov.helpdesk.ticket.dto.response.TicketResponse;
 import za.gov.helpdesk.ticket.model.Ticket;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -16,7 +17,7 @@ public class EmailNotification {
 
     @ManyToOne
     @JoinColumn(name = "ticket_id")
-    private Ticket ticket;
+    private TicketResponse ticket;
 
     @Column(name = "recipient")
     private String recipient;
@@ -32,7 +33,7 @@ public class EmailNotification {
     public EmailNotification() {
     }
 
-    public EmailNotification(Long id, Ticket ticket, String recipient, String subject, String body, LocalDateTime sentAt, EmailStatus status) {
+    public EmailNotification(Long id, TicketResponse ticket, String recipient, String subject, String body, LocalDateTime sentAt, EmailStatus status) {
         this.id = id;
         this.ticket = ticket;
         this.recipient = recipient;

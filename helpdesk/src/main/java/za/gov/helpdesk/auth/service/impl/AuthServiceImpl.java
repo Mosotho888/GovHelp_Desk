@@ -1,18 +1,17 @@
 package za.gov.helpdesk.auth.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.transaction.annotation.Transactional;
-import za.gov.helpdesk.auth.dto.AuthResponse;
-import za.gov.helpdesk.auth.dto.RefreshTokenRequest;
-import za.gov.helpdesk.auth.jwt.JwtUtil;
-import za.gov.helpdesk.auth.dto.LoginRequest;
+import za.gov.helpdesk.auth.dto.response.AuthResponse;
+import za.gov.helpdesk.auth.dto.request.RefreshTokenRequest;
+import za.gov.helpdesk.auth.jwt.JwtService;
+import za.gov.helpdesk.auth.dto.request.LoginRequest;
 import za.gov.helpdesk.auth.service.AuthService;
-import za.gov.helpdesk.config.security.JwtProperties;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
-import za.gov.helpdesk.users.dto.UserResponse;
-import za.gov.helpdesk.users.exception.UserNotFoundException;
+import za.gov.helpdesk.users.dto.response.UserResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -25,12 +24,16 @@ import za.gov.helpdesk.users.repository.UserRepository;
 @Slf4j
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
-    private static final int MAX_LOGIN_ATTEMPTS = 3;
     private static final String TOKEN_REFRESH = "refresh";
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
-    private final JwtUtil jwtUtil;
-    private final JwtProperties jwtProperties;
+    private final JwtService jwtService;
+
+    @Value("${app.security.max-login-attempts}")
+    private int maxLoginAttempts;
+
+    @Value("${app.jwt.access-token-expiry-ms}")
+    private long accessTokenExpiryMs;
 
     @Override
     @Transactional
@@ -45,7 +48,7 @@ public class AuthServiceImpl implements AuthService {
         } catch (AuthenticationException ex) {
             // Increment failed attempt counter
             user.setLoginAttempts(user.getLoginAttempts() + 1);
-            if (user.getLoginAttempts() >= MAX_LOGIN_ATTEMPTS) {
+            if (user.getLoginAttempts() >= maxLoginAttempts) {
                 user.setActive(false);
             }
             userRepository.save(user);
@@ -62,13 +65,13 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(readOnly = true)
     public AuthResponse refresh(RefreshTokenRequest refreshToken) {
-        String email = jwtUtil.extractEmail(refreshToken.getRefreshToken());
+        String email = jwtService.extractEmail(refreshToken.getRefreshToken());
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        if (!TOKEN_REFRESH.equals(jwtUtil.extractTokenType(refreshToken.getRefreshToken()))
-                || jwtUtil.isTokenExpired(refreshToken.getRefreshToken())) {
+        if (!TOKEN_REFRESH.equals(jwtService.extractTokenType(refreshToken.getRefreshToken()))
+                || jwtService.isTokenExpired(refreshToken.getRefreshToken())) {
             throw new BadCredentialsException("Invalid or expired refresh token");
         }
 
@@ -77,9 +80,9 @@ public class AuthServiceImpl implements AuthService {
 
     private AuthResponse buildAuthResponse(User user) {
         return AuthResponse.builder()
-                .accessToken(jwtUtil.generateAccessToken(user))
-                .refreshToken(jwtUtil.generateRefreshToken(user))
-                .expiresIn(jwtProperties.getValidity() / 1000)
+                .accessToken(jwtService.generateAccessToken(user))
+                .refreshToken(jwtService.generateRefreshToken(user))
+                .expiresIn(accessTokenExpiryMs / 1000)
                 .user(toUserResponse(user))
                 .build();
     }

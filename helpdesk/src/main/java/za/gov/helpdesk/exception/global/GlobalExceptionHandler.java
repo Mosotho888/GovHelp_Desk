@@ -9,7 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import za.gov.helpdesk.exception.DuplicateResourceException;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
-import za.gov.helpdesk.exception.dto.ApiErrorResponse;
+import za.gov.helpdesk.exception.dto.response.ApiErrorResponse;
 import org.springframework.http.HttpStatus;
 import za.gov.helpdesk.ticket.exception.InvalidStatusTransitionException;
 

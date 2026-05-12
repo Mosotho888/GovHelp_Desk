@@ -10,11 +10,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import za.gov.helpdesk.auth.dto.AuthResponse;
-import za.gov.helpdesk.auth.dto.LoginRequest;
-import za.gov.helpdesk.auth.jwt.JwtUtil;
+import za.gov.helpdesk.auth.dto.response.AuthResponse;
+import za.gov.helpdesk.auth.dto.request.LoginRequest;
+import za.gov.helpdesk.auth.jwt.JwtService;
 import za.gov.helpdesk.auth.service.AuthService;
-import za.gov.helpdesk.config.security.JwtProperties;
 import za.gov.helpdesk.users.exception.UserNotFoundException;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
@@ -33,7 +32,7 @@ public class AuthServiceImpITest {
     @Mock
     private UserRepository userRepository;
     @Mock
-    private JwtUtil jwtUtil;
+    private JwtService jwtService;
     @Mock
     private JwtProperties jwtProperties;
 
@@ -69,8 +68,8 @@ public class AuthServiceImpITest {
         given(userRepository.findByEmail(email)).willReturn(Optional.of(testUser));
         given(authManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .willReturn(new UsernamePasswordAuthenticationToken(testUser, null, testUser.getAuthorities()));
-        given(jwtUtil.generateAccessToken(testUser)).willReturn("access.token.here");
-        given(jwtUtil.generateRefreshToken(testUser)).willReturn("refresh.token.here");
+        given(jwtService.generateAccessToken(testUser)).willReturn("access.token.here");
+        given(jwtService.generateRefreshToken(testUser)).willReturn("refresh.token.here");
         given(userRepository.save(any(User.class))).willReturn(testUser);
 
         // When
