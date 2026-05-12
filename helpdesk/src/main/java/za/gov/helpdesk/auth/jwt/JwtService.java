@@ -22,7 +22,7 @@ public class JwtService {
     @Value("${app.jwt.secret}")
     private String secret;
 
-    @Value("app.jwt.access-token-expiry-ms")
+    @Value("${app.jwt.access-token-expiry-ms}")
     private long accessTokenExpiryMs;
 
     @Value("${app.jwt.refresh-token-expiry-ms}")
