@@ -14,7 +14,6 @@ import za.gov.helpdesk.auth.dto.response.AuthResponse;
 import za.gov.helpdesk.auth.dto.request.LoginRequest;
 import za.gov.helpdesk.auth.jwt.JwtService;
 import za.gov.helpdesk.auth.service.AuthService;
-import za.gov.helpdesk.users.exception.UserNotFoundException;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 
@@ -33,8 +32,6 @@ public class AuthServiceImpITest {
     private UserRepository userRepository;
     @Mock
     private JwtService jwtService;
-    @Mock
-    private JwtProperties jwtProperties;
 
     @InjectMocks
     private AuthService authService;
@@ -54,6 +51,9 @@ public class AuthServiceImpITest {
                 .timezone("Afria/Johannesburg")
                 .build();
 
+        // Inject @Value fields via reflection for testing
+        org.springframework.test.util.ReflectionTestUtils.setField(authService, "accessTokenExpiryMs", 3600000L);
+        org.springframework.test.util.ReflectionTestUtils.setField(authService, "maxLoginAttempts", 5);
     }
 
     @Test
@@ -135,6 +135,6 @@ public class AuthServiceImpITest {
 
         // When / Then
         assertThatThrownBy(() -> authService.login(request))
-                .isInstanceOf(UserNotFoundException.class);
+                .isInstanceOf(BadCredentialsException.class);
     }
 }
