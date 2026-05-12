@@ -11,6 +11,7 @@ import za.gov.helpdesk.agent.repository.AgentRepository;
 import za.gov.helpdesk.auditlog.dto.AuditLogResponse;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auditlog.repository.AuditLogRepository;
+import za.gov.helpdesk.exception.ResourceNotFoundException;
 import za.gov.helpdesk.ticket.dto.CreateTicketRequest;
 import za.gov.helpdesk.ticket.dto.TicketResponse;
 import za.gov.helpdesk.ticket.dto.UpdateTicketRequest;
@@ -50,7 +51,7 @@ public class TicketServiceImpl implements TicketService {
 
         if (request.getAssigneeId() != null) {
             Agent agent = agentRepository.findById(request.getAssigneeId())
-                    .orElseThrow(UserNotFoundException::new);
+                    .orElseThrow(() -> new ResourceNotFoundException("Agent", request.getAssigneeId()));
             builder.assignee(agent);
         }
 
@@ -140,14 +141,14 @@ public class TicketServiceImpl implements TicketService {
 
     private Ticket findOrThrow(Long id) {
         return ticketRepository.findById(id)
-                .orElseThrow(TicketNotFoundException::new);
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", id));
     }
 
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
 
         return userRepository.findByEmail(email)
-                .orElseThrow(UserNotFoundException::new);
+                .orElseThrow(() -> new ResourceNotFoundException("Authenticated user not found"));
     }
 
     private void audit(Ticket ticket, User actor, String action, String oldVal, String newVal) {

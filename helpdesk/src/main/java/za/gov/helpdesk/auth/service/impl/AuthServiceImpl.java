@@ -10,6 +10,7 @@ import za.gov.helpdesk.auth.jwt.JwtUtil;
 import za.gov.helpdesk.auth.dto.LoginRequest;
 import za.gov.helpdesk.auth.service.AuthService;
 import za.gov.helpdesk.config.security.JwtProperties;
+import za.gov.helpdesk.exception.ResourceNotFoundException;
 import za.gov.helpdesk.users.dto.UserResponse;
 import za.gov.helpdesk.users.exception.UserNotFoundException;
 import lombok.extern.slf4j.Slf4j;
@@ -63,8 +64,8 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse refresh(RefreshTokenRequest refreshToken) {
         String email = jwtUtil.extractEmail(refreshToken.getRefreshToken());
 
-        za.gov.helpdesk.users.model.User user = userRepository.findByEmail(email)
-                .orElseThrow(UserNotFoundException::new);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (!TOKEN_REFRESH.equals(jwtUtil.extractTokenType(refreshToken.getRefreshToken()))
                 || jwtUtil.isTokenExpired(refreshToken.getRefreshToken())) {

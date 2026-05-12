@@ -11,6 +11,7 @@ import za.gov.helpdesk.attachment.dto.AttachmentResponse;
 import za.gov.helpdesk.attachment.model.Attachment;
 import za.gov.helpdesk.attachment.repository.AttachmentRepository;
 import za.gov.helpdesk.attachment.service.AttachmentService;
+import za.gov.helpdesk.exception.ResourceNotFoundException;
 import za.gov.helpdesk.ticket.exception.TicketNotFoundException;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.TicketRepository;
@@ -60,7 +61,7 @@ public class AttachmentServiceImpl implements AttachmentService {
         }
 
         Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(TicketNotFoundException::new);
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
         User uploader = getCurrentUser();
 
         List<AttachmentResponse> responses = new ArrayList<>();
@@ -89,7 +90,7 @@ public class AttachmentServiceImpl implements AttachmentService {
     @Transactional(readOnly = true)
     public List<AttachmentResponse> getAttachments(Long ticketId) {
         ticketRepository.findById(ticketId)
-                .orElseThrow(TicketNotFoundException::new);
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
         return attachmentRepository.findByTicketId(ticketId)
                 .stream().map(this::toResponse).toList();
     }
@@ -158,13 +159,13 @@ public class AttachmentServiceImpl implements AttachmentService {
 
     private Attachment findOrThrow(Long id) {
         return attachmentRepository.findById(id)
-                .orElseThrow(TicketNotFoundException::new);
+                .orElseThrow(() -> new ResourceNotFoundException("Attachment", id));
     }
 
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByEmail(email)
-                .orElseThrow(TicketNotFoundException::new);
+                .orElseThrow(() -> new ResourceNotFoundException("Authenticated user not found"));
     }
 
     private AttachmentResponse toResponse(Attachment a) {

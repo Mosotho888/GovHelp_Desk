@@ -72,6 +72,7 @@ public class CommentController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Delete a comment (within 15 minutes of creation, or admin)")
     public void deleteComment(@PathVariable Long commentId) {
+
         commentService.deleteComment(commentId);
     }
 }

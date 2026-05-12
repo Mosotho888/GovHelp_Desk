@@ -13,6 +13,7 @@ import za.gov.helpdesk.comment.dto.UpdateCommentRequest;
 import za.gov.helpdesk.comment.model.Comment;
 import za.gov.helpdesk.comment.repository.CommentRepository;
 import za.gov.helpdesk.comment.service.CommentService;
+import za.gov.helpdesk.exception.ResourceNotFoundException;
 import za.gov.helpdesk.ticket.exception.TicketNotFoundException;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.TicketRepository;
@@ -38,7 +39,7 @@ public class CommentServiceImpl implements CommentService {
     @Transactional
     public CommentResponse addComment(Long ticketId, CreateCommentRequest request) {
         Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(TicketNotFoundException::new);
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
         User author = getCurrentUser();
 
         // Only agents/admins can post internal notes
@@ -62,7 +63,7 @@ public class CommentServiceImpl implements CommentService {
     @Transactional
     public CommentResponse addReply(Long parentCommentId, CreateCommentRequest request) {
         Comment parent = commentRepository.findById(parentCommentId)
-                .orElseThrow(TicketNotFoundException::new);
+                .orElseThrow(() ->  new ResourceNotFoundException("Comment", parentCommentId));
 
         // Replies inherit the ticket from the parent
         User author = getCurrentUser();
@@ -83,7 +84,7 @@ public class CommentServiceImpl implements CommentService {
     @Transactional(readOnly = true)
     public Page<CommentResponse> getComments(Long ticketId, Pageable pageable) {
         ticketRepository.findById(ticketId)
-                .orElseThrow(TicketNotFoundException::new);
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
 
         User current = getCurrentUser();
         boolean isAgent = current.getRole() != User.Role.USER;
@@ -101,7 +102,7 @@ public class CommentServiceImpl implements CommentService {
     @Transactional(readOnly = true)
     public List<CommentResponse> getReplies(Long commentId) {
         commentRepository.findById(commentId)
-                .orElseThrow(TicketNotFoundException::new);
+                .orElseThrow(() -> new ResourceNotFoundException("Comment", commentId));
 
         return commentRepository.findByParentId(commentId)
                 .stream().map(this::toResponse).toList();
@@ -111,7 +112,7 @@ public class CommentServiceImpl implements CommentService {
     @Transactional
     public CommentResponse updateComment(Long commentId, UpdateCommentRequest request) {
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(TicketNotFoundException::new);
+                .orElseThrow(() -> new ResourceNotFoundException("Comment", commentId));
 
         User current = getCurrentUser();
         boolean isAdmin = current.getRole() == User.Role.ADMIN;
@@ -133,7 +134,7 @@ public class CommentServiceImpl implements CommentService {
     @Transactional
     public void deleteComment(Long commentId) {
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(TicketNotFoundException::new);
+                .orElseThrow(() -> new ResourceNotFoundException("Comment", commentId));
 
         User current = getCurrentUser();
         boolean isAdmin  = current.getRole() == User.Role.ADMIN;
@@ -142,7 +143,7 @@ public class CommentServiceImpl implements CommentService {
                 .isAfter(LocalDateTime.now().minusMinutes(EDIT_WINDOW_MINUTES));
 
         if (!isAdmin && !(isAuthor && withinWindow)) {
-            throw new org.springframework.security.access.AccessDeniedException(
+            throw new AccessDeniedException(
                     "Comments can only be deleted within " + EDIT_WINDOW_MINUTES
                             + " minutes of creation, or by an admin");
         }
@@ -153,7 +154,7 @@ public class CommentServiceImpl implements CommentService {
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByEmail(email)
-                .orElseThrow(UserNotFoundException::new);
+                .orElseThrow(() -> new ResourceNotFoundException("Authenticated user not found"));
     }
 
     private CommentResponse toResponse(Comment c) {

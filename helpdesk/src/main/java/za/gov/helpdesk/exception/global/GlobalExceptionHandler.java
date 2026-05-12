@@ -1,73 +1,104 @@
 package za.gov.helpdesk.exception.global;
 
-import za.gov.helpdesk.category.exception.CategoryAlreadyExistException;
-import za.gov.helpdesk.users.exception.UserAlreadyExistsException;
-import za.gov.helpdesk.users.exception.UserNotFoundException;
-import za.gov.helpdesk.exception.model.ErrorResponse;
-import za.gov.helpdesk.priority.exception.PriorityNotFoundException;
-import za.gov.helpdesk.ticket.exception.TechnicianNotAuthorizedToUpdateTicketException;
-import za.gov.helpdesk.ticket.exception.TicketNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.*;
+import za.gov.helpdesk.exception.DuplicateResourceException;
+import za.gov.helpdesk.exception.ResourceNotFoundException;
+import za.gov.helpdesk.exception.dto.ApiErrorResponse;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ControllerAdvice;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.context.request.WebRequest;
+import za.gov.helpdesk.ticket.exception.InvalidStatusTransitionException;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
-@ControllerAdvice
+@RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(UserAlreadyExistsException.class)
-    @ResponseBody
-    @ResponseStatus(HttpStatus.CONFLICT)
-    public ErrorResponse handleUserAlreadyExistsException(UserAlreadyExistsException exception, WebRequest request) {
-        return createErrorResponse(exception, HttpStatus.CONFLICT, request);
-    }
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiErrorResponse> handleValidation(
+            MethodArgumentNotValidException ex, HttpServletRequest req) {
 
-    @ExceptionHandler(UserNotFoundException.class)
-    @ResponseBody
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ErrorResponse handleUserNotFoundException(UserNotFoundException exception, WebRequest request) {
-        return createErrorResponse(exception, HttpStatus.NOT_FOUND, request);
-    }
+        List<ApiErrorResponse.FieldError> fieldErrors = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(e -> ApiErrorResponse.FieldError.builder()
+                        .field(e.getField())
+                        .issue(e.getDefaultMessage())
+                        .build())
+                .toList();
 
-    @ExceptionHandler(TechnicianNotAuthorizedToUpdateTicketException.class)
-    @ResponseBody
-    @ResponseStatus(HttpStatus.FORBIDDEN)
-    public ErrorResponse handleTechnicianNotAuthorizedToUpdateTicketException(TechnicianNotAuthorizedToUpdateTicketException exception, WebRequest request) {
-        return createErrorResponse(exception, HttpStatus.FORBIDDEN, request);
-    }
-
-    @ExceptionHandler(TicketNotFoundException.class)
-    @ResponseBody
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ErrorResponse handleTicketNotFoundException(TicketNotFoundException exception, WebRequest request) {
-        return createErrorResponse(exception, HttpStatus.NOT_FOUND, request);
-    }
-
-    @ExceptionHandler(PriorityNotFoundException.class)
-    @ResponseBody
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ErrorResponse handlePriorityNotFoundException(PriorityNotFoundException exception, WebRequest request) {
-        return createErrorResponse(exception, HttpStatus.NOT_FOUND, request);
-    }
-
-    @ExceptionHandler(CategoryAlreadyExistException.class)
-    @ResponseBody
-    @ResponseStatus(HttpStatus.CONFLICT)
-    public ErrorResponse handleCategoryAlreadyException(CategoryAlreadyExistException exception, WebRequest request) {
-        return createErrorResponse(exception, HttpStatus.CONFLICT, request);
-    }
-
-    private ErrorResponse createErrorResponse(Exception exception, HttpStatus status, WebRequest request) {
-        return new ErrorResponse(
-                LocalDateTime.now(),
-                status.value(),
-                status.getReasonPhrase(),
-                exception.getMessage(),
-                request.getDescription(false).replace("uri=", "")
+        return ResponseEntity.badRequest().body(
+                ApiErrorResponse.builder()
+                        .timestamp(LocalDateTime.now())
+                        .status(400)
+                        .error("VALIDATION_ERROR")
+                        .message("Request validation failed")
+                        .path(req.getRequestURI())
+                        .details(fieldErrors)
+                        .build()
         );
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleNotFound(
+            ResourceNotFoundException ex, HttpServletRequest req) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error(404, "NOT_FOUND", ex.getMessage(), req));
+    }
+
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<ApiErrorResponse> handleDuplicate(
+            DuplicateResourceException ex, HttpServletRequest req) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error(409, "CONFLICT", ex.getMessage(), req));
+    }
+
+    @ExceptionHandler(InvalidStatusTransitionException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidTransition(
+            InvalidStatusTransitionException ex, HttpServletRequest req) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(error(422, "INVALID_STATUS_TRANSITION", ex.getMessage(), req));
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ApiErrorResponse> handleBadCredentials(
+            BadCredentialsException ex, HttpServletRequest req) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(error(401, "INVALID_CREDENTIALS", "Invalid email or password", req));
+    }
+
+    @ExceptionHandler(LockedException.class)
+    public ResponseEntity<ApiErrorResponse> handleLocked(
+            LockedException ex, HttpServletRequest req) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(error(403, "ACCOUNT_LOCKED", "Account locked. Contact your administrator.", req));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiErrorResponse> handleAccessDenied(
+            AccessDeniedException ex, HttpServletRequest req) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(error(403, "FORBIDDEN", "You do not have permission to perform this action", req));
+    }
+
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiErrorResponse> handleGeneric(
+            Exception ex, HttpServletRequest req) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(error(500, "INTERNAL_ERROR", "An unexpected error occurred", req));
+    }
+
+    private ApiErrorResponse error(int status, String code, String message, HttpServletRequest req) {
+        return ApiErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(status)
+                .error(code)
+                .message(message)
+                .path(req.getRequestURI())
+                .build();
     }
 }

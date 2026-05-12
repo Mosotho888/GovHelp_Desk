@@ -16,6 +16,7 @@ import za.gov.helpdesk.attachment.dto.AttachmentResponse;
 import za.gov.helpdesk.attachment.model.Attachment;
 import za.gov.helpdesk.attachment.repository.AttachmentRepository;
 import za.gov.helpdesk.attachment.service.AttachmentService;
+import za.gov.helpdesk.exception.ResourceNotFoundException;
 import za.gov.helpdesk.ticket.exception.TicketNotFoundException;
 
 import java.nio.file.Paths;
@@ -51,11 +52,11 @@ public class AttachmentController {
     @Operation(summary = "Download an attachment by ID")
     public ResponseEntity<Resource> downloadAttachment(@PathVariable Long attachmentId) {
         Attachment attachment = attachmentRepository.findById(attachmentId)
-                .orElseThrow(() -> new TicketNotFoundException());
+                .orElseThrow(() -> new ResourceNotFoundException("Attachment", attachmentId));
 
         Resource resource = new FileSystemResource(Paths.get(attachment.getStoragePath()));
         if (!resource.exists()) {
-            throw new TicketNotFoundException();
+            throw new ResourceNotFoundException("File not found on storage for attachment " + attachmentId);
         }
 
         return ResponseEntity.ok()

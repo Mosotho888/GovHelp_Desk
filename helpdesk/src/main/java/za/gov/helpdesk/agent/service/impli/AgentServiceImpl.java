@@ -13,12 +13,15 @@ import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.agent.repository.AgentRepository;
 import za.gov.helpdesk.agent.repository.jdbc.ReportJdbcRepository;
 import za.gov.helpdesk.agent.service.AgentService;
+import za.gov.helpdesk.exception.DuplicateResourceException;
+import za.gov.helpdesk.exception.ResourceNotFoundException;
 import za.gov.helpdesk.users.dto.UserResponse;
 import za.gov.helpdesk.users.exception.UserAlreadyExistsException;
 import za.gov.helpdesk.users.exception.UserNotFoundException;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 
+import java.nio.file.ReadOnlyFileSystemException;
 import java.util.Map;
 
 @Service
@@ -33,10 +36,10 @@ public class AgentServiceImpl implements AgentService {
     @Transactional
     public AgentResponse createAgent(CreateAgentRequest request) {
         User user = userRepository.findById(request.getUserId())
-                .orElseThrow(UserNotFoundException::new);
+                .orElseThrow(() -> new ResourceNotFoundException("User", request.getUserId()));
 
         if (agentRepository.existsByUserId(request.getUserId())) {
-            throw new UserAlreadyExistsException();
+            throw new DuplicateResourceException("User " +  request.getUserId() + " is already registered as an agent");
         }
 
         // Promote user role to AGENT if not already ADMIN
@@ -103,7 +106,7 @@ public class AgentServiceImpl implements AgentService {
 
     private Agent findOrThrow(Long id) {
         return agentRepository.findById(id)
-                .orElseThrow(UserNotFoundException::new);
+                .orElseThrow(() -> new ResourceNotFoundException("Agent", id));
     }
 
     private AgentResponse toResponse(Agent agent) {

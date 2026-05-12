@@ -3,6 +3,8 @@ package za.gov.helpdesk.users.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
+import za.gov.helpdesk.exception.DuplicateResourceException;
+import za.gov.helpdesk.exception.ResourceNotFoundException;
 import za.gov.helpdesk.users.dto.*;
 import za.gov.helpdesk.users.exception.UserAlreadyExistsException;
 import za.gov.helpdesk.users.exception.UserNotFoundException;
@@ -28,7 +30,9 @@ public class UserServicesImpl implements UserService {
     public UserResponse createUser(CreateUserRequest request) {
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new UserAlreadyExistsException();
+            throw new DuplicateResourceException(
+                    "A user with '" + request.getEmail() + "' already exists"
+            );
         }
 
         User user = User.builder()
@@ -53,7 +57,7 @@ public class UserServicesImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public Page<UserResponse> getAllUsers(Pageable pageable) {
-        return userRepository.findAll(pageable).map(user -> toResponse(user));
+        return userRepository.findAll(pageable).map(this::toResponse);
     }
 
     @Override
@@ -87,7 +91,7 @@ public class UserServicesImpl implements UserService {
 
     private User findOrThrow(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(UserNotFoundException::new);
+                .orElseThrow(() -> new ResourceNotFoundException("User", id));
     }
 
     public UserResponse toResponse(User user) {
