@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/tickets")
+@RequestMapping("/v1/tickets")
 @RequiredArgsConstructor
 @Tag(name = "Tickets", description = "Support ticket management")
 @SecurityRequirement(name = "bearerAuth")

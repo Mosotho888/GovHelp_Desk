@@ -19,7 +19,7 @@ import za.gov.helpdesk.users.dto.response.UserResponse;
 import za.gov.helpdesk.users.service.UserService;
 
 @RestController
-@RequestMapping("/api/v1/users")
+@RequestMapping("/v1/users")
 @RequiredArgsConstructor
 @Tag(name = "Users", description = "User account management")
 @SecurityRequirement(name = "bearerAuth")

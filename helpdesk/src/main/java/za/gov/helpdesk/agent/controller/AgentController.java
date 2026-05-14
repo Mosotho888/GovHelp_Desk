@@ -20,7 +20,7 @@ import za.gov.helpdesk.agent.service.AgentService;
 import javax.validation.Valid;
 
 @RestController
-@RequestMapping("/api/v1/agents")
+@RequestMapping("/v1/agents")
 @RequiredArgsConstructor
 @Tag(name = "Agents", description = "Agent account management")
 @SecurityRequirement(name = "bearerAuth")

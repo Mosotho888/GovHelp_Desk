@@ -98,6 +98,7 @@ public class UserServicesImpl implements UserService {
         return UserResponse.builder()
                 .id(user.getId())
                 .name(user.getName())
+                .email(user.getEmail())
                 .role(user.getRole())
                 .phone(user.getPhone())
                 .timezone(user.getTimezone())

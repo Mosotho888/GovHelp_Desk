@@ -10,7 +10,7 @@ networks:
 services:
   db:
     image: postgres:18-alpine
-    container_name: postgres_db
+    container_name: helpdesk-db
     restart: always
     environment:
       POSTGRES_USER: ${PG_USER}
@@ -38,6 +38,10 @@ services:
     ports:
       - "8080:8080"
 
+    volumes:
+      # Mounts container uploads to a local folder named 'uploads' in your project root
+      - upload_data:/opt/app/uploads
+
     environment:
       SPRING_APPLICATION_NAME: helpdesk
 
@@ -45,25 +49,40 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${PG_USER}
       SPRING_DATASOURCE_PASSWORD: ${PG_PASSWORD}
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+
+      # Flyway Configuration
+      SPRING_FLYWAY_ENABLED: "true"
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
+      SPRING_FLYWAY_LOCATIONS: "classpath:db/migration"
 
       # JPA
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
       SPRING_JPA_SHOW_SQL: true
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
       SPRING_JPA_OPEN_IN_VIEW: false
-      SPRING_JPA_DATABASE_PLATFORM: ${HIBERNATE_DIALECT}
       SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: true
+      APP_DATASOURCE_TYPE: postgresql
 
       # JWT
       APP_JWT_SECRET: ${JWT_SECRET_KEY}
       APP_JWT_ACCESS_TOKEN_EXPIRY_MS: ${JWT_VALIDITY}
       APP_JWT_REFRESH_TOKEN_EXPIRY_MS: ${JWT_REFRESH_VALIDITY}
 
+      # File Upload
+      SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: 20MB
+      SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: 100MB
+      APP_UPLOAD_STORAGE_PATH: /opt/app/uploads
+
       # Swagger / SpringDoc
       SPRINGDOC_API_DOCS_PATH: /v3/api-docs
-      SPRINGDOC_SWAGGER_UI_PATH: /swagger-ui/index.html
+      SPRINGDOC_SWAGGER_UI_PATH: /swagger-ui.html
       SPRINGDOC_SWAGGER_UI_OPERATIONSSORTER: method
       SPRINGDOC_API_DOCS_ENABLED: true
       SPRINGDOC_SWAGGER_UI_ENABLED: true
+
+      # Account Lockout
+      APP_SECURITY_MAX_LOGIN_ATTEMPTS: 5
 
       # Mail
       SPRING_MAIL_HOST: ${MAIL_HOST}
@@ -130,3 +149,4 @@ services:
 
 volumes:
   postgres_data:
+  upload_data:

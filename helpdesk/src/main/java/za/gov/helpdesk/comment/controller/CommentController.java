@@ -23,7 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "Comments", description = "Ticket comments and replies")
 @SecurityRequirement(name = "bearerAuth")
-@RequestMapping("/api/v1")
+@RequestMapping("/v1")
 public class CommentController {
 
     private final CommentService commentService;
@@ -60,7 +60,7 @@ public class CommentController {
         return ResponseEntity.ok(commentService.getReplies(commentId));
     }
 
-    @PutMapping("/v1/comments/{commentId}")
+    @PutMapping("/comments/{commentId}")
     @Operation(summary = "Edit a comment (within 15 minutes of creation, or admin)")
     public ResponseEntity<CommentResponse> updateComment(
             @PathVariable Long commentId,
@@ -68,7 +68,7 @@ public class CommentController {
         return ResponseEntity.ok(commentService.updateComment(commentId, request));
     }
 
-    @DeleteMapping("/v1/comments/{commentId}")
+    @DeleteMapping("/comments/{commentId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Delete a comment (within 15 minutes of creation, or admin)")
     public void deleteComment(@PathVariable Long commentId) {

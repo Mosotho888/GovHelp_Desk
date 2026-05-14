@@ -39,7 +39,7 @@ public class User implements UserDetails {
     @Column(name = "role")
     private Role role;
 
-    @Column(name = "phone_number")
+    @Column(name = "phone")
     private String phone;
 
     @Column(length = 60)
