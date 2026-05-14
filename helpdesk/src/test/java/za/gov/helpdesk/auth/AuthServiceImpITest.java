@@ -14,6 +14,7 @@ import za.gov.helpdesk.auth.dto.response.AuthResponse;
 import za.gov.helpdesk.auth.dto.request.LoginRequest;
 import za.gov.helpdesk.auth.jwt.JwtService;
 import za.gov.helpdesk.auth.service.AuthService;
+import za.gov.helpdesk.auth.service.impl.AuthServiceImpl;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 
@@ -34,7 +35,7 @@ public class AuthServiceImpITest {
     private JwtService jwtService;
 
     @InjectMocks
-    private AuthService authService;
+    private AuthServiceImpl authServiceImpl;
 
     private User testUser;
 
@@ -52,8 +53,8 @@ public class AuthServiceImpITest {
                 .build();
 
         // Inject @Value fields via reflection for testing
-        org.springframework.test.util.ReflectionTestUtils.setField(authService, "accessTokenExpiryMs", 3600000L);
-        org.springframework.test.util.ReflectionTestUtils.setField(authService, "maxLoginAttempts", 5);
+        org.springframework.test.util.ReflectionTestUtils.setField(authServiceImpl, "accessTokenExpiryMs", 3600000L);
+        org.springframework.test.util.ReflectionTestUtils.setField(authServiceImpl, "maxLoginAttempts", 5);
     }
 
     @Test
@@ -73,7 +74,7 @@ public class AuthServiceImpITest {
         given(userRepository.save(any(User.class))).willReturn(testUser);
 
         // When
-        AuthResponse authResponse = authService.login(request);
+        AuthResponse authResponse = authServiceImpl.login(request);
 
         // Then
         assertThat(authResponse.getAccessToken()).isEqualTo("access.token.here");
@@ -97,7 +98,7 @@ public class AuthServiceImpITest {
         given(userRepository.save(any(User.class))).willReturn(testUser);
 
         // When / Then
-        assertThatThrownBy(() -> authService.login(request))
+        assertThatThrownBy(() -> authServiceImpl.login(request))
                 .isInstanceOf(BadCredentialsException.class);
         then(userRepository).should().save(argThat(user -> user.getLoginAttempts() == 1));
     }
@@ -117,7 +118,7 @@ public class AuthServiceImpITest {
         given(userRepository.save(any(User.class))).willReturn(testUser);
 
         // When / Then
-        assertThatThrownBy(() -> authService.login(request))
+        assertThatThrownBy(() -> authServiceImpl.login(request))
                 .isInstanceOf(BadCredentialsException.class);
         then(userRepository).should().save(argThat(user -> user.getActive() == false));
     }
@@ -134,7 +135,7 @@ public class AuthServiceImpITest {
         given(userRepository.findByEmail(email)).willReturn(Optional.empty());
 
         // When / Then
-        assertThatThrownBy(() -> authService.login(request))
+        assertThatThrownBy(() -> authServiceImpl.login(request))
                 .isInstanceOf(BadCredentialsException.class);
     }
 }
