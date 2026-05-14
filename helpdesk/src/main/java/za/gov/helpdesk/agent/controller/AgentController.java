@@ -36,7 +36,7 @@ public class AgentController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('AGENT', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
     @Operation(summary = "List of all agents")
     public ResponseEntity<Page<AgentResponse>> getAllAgents(
             @PageableDefault(size = 25, sort = "id") Pageable pageable) {
@@ -45,7 +45,7 @@ public class AgentController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('AGENT', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
     @Operation(summary = "Get an agent by ID")
     public ResponseEntity<AgentResponse> getAgentById(@PathVariable Long id) {
         return ResponseEntity.ok(agentService.getAgentById(id));

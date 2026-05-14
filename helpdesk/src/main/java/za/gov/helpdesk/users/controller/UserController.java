@@ -37,7 +37,7 @@ public class UserController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or #id == authentication.principal.id")
-    private ResponseEntity<UserResponse> getUserById (@PathVariable Long id) {
+    public ResponseEntity<UserResponse> getUserById (@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
@@ -60,7 +60,7 @@ public class UserController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or #id == authentication.principal.id")
     @Operation(summary = "Update user profile")
-    private ResponseEntity<UserResponse> updateUser(
+    public ResponseEntity<UserResponse> updateUser(
             @PathVariable Long id,
             @Valid @RequestBody UpdateUserRequest request) {
         return ResponseEntity.ok(userService.updateUser(id, request));
