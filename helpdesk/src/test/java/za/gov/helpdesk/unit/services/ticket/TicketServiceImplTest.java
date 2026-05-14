@@ -1,4 +1,4 @@
-package za.gov.helpdesk.ticket;
+package za.gov.helpdesk.unit.services.ticket;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

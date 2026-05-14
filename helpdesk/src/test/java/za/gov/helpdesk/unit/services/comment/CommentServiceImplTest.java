@@ -1,4 +1,4 @@
-package za.gov.helpdesk.comment;
+package za.gov.helpdesk.unit.services.comment;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
