@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
@@ -70,9 +71,9 @@ public class GlobalExceptionHandler {
                 .body(error(401, "INVALID_CREDENTIALS", "Invalid email or password", req));
     }
 
-    @ExceptionHandler(LockedException.class)
+    @ExceptionHandler({LockedException.class, DisabledException.class})
     public ResponseEntity<ApiErrorResponse> handleLocked(
-            LockedException ex, HttpServletRequest req) {
+            RuntimeException ex, HttpServletRequest req) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(error(403, "ACCOUNT_LOCKED", "Account locked. Contact your administrator.", req));
     }

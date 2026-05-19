@@ -2,9 +2,10 @@ package za.gov.helpdesk;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import za.gov.helpdesk.integration.BaseIntegrationTest;
 
-@SpringBootTest
-class HelpdeskApplicationTests {
+class HelpdeskApplicationTests extends BaseIntegrationTest {
 
 
 	@Test

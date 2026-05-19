@@ -16,7 +16,7 @@ public class SecurityHeadersIntegrationTest extends BaseIntegrationTest {
     @Test
     @DisplayName("Response includes Strict-Transport-Security header")
     void response_includesHSTSHeader() throws Exception {
-        mvc.perform(get("/v1/auth/login"))
+        mvc.perform(get("/v1/auth/login").secure(true))
                 .andExpect(header().exists("Strict-Transport-Security"))
                 .andExpect(header().string("Strict-Transport-Security",
                         org.hamcrest.Matchers.containsString("max-age=")));

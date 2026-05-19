@@ -50,6 +50,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ${PG_USER}
       SPRING_DATASOURCE_PASSWORD: ${PG_PASSWORD}
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      SPRING_SQL_INIT_MODE: always
 
       # Flyway Configuration
       SPRING_FLYWAY_ENABLED: "true"

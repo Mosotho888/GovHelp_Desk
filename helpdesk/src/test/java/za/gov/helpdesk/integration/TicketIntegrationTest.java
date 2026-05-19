@@ -62,7 +62,7 @@ public class TicketIntegrationTest extends BaseIntegrationTest {
     @Test
     @DisplayName("POST /tickets creates ticket and returns 201")
     void createTicket_validRequest_returns201() throws Exception {
-        mvc.perform(post("/api/v1/tickets")
+        mvc.perform(post("/v1/tickets")
                         .header("Authorization", "Bearer " + userToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(Map.of(
@@ -80,7 +80,7 @@ public class TicketIntegrationTest extends BaseIntegrationTest {
     @Test
     @DisplayName("POST /tickets returns 401 without token")
     void createTicket_noToken_returns401() throws Exception {
-        mvc.perform(post("/api/v1/tickets")
+        mvc.perform(post("/v1/tickets")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(Map.of(
                                 "subject", "Test", "description", "Test desc"
@@ -91,7 +91,7 @@ public class TicketIntegrationTest extends BaseIntegrationTest {
     @Test
     @DisplayName("POST /tickets returns 400 when subject is missing")
     void createTicket_missingSubject_returns400() throws Exception {
-        mvc.perform(post("/api/v1/tickets")
+        mvc.perform(post("/v1/tickets")
                         .header("Authorization", "Bearer " + userToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(Map.of(
