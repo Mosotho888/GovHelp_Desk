@@ -87,6 +87,11 @@ public class User implements UserDetails {
         return email;
     }
 
+    @Override
+    public boolean isEnabled() {
+        return Boolean.TRUE.equals(active);
+    }
+
     public enum Role {
         USER,
         AGENT,

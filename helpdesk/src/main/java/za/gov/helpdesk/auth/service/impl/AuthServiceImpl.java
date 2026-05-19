@@ -36,7 +36,7 @@ public class AuthServiceImpl implements AuthService {
     private long accessTokenExpiryMs;
 
     @Override
-    @Transactional
+    @Transactional(noRollbackFor = AuthenticationException.class)
     public AuthResponse login(LoginRequest loginRequest) {
         User user = userRepository.findByEmail(loginRequest.getEmail())
                 .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
