@@ -7,6 +7,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import za.gov.helpdesk.auditlog.model.AuditLog;
+import za.gov.helpdesk.auditlog.service.AuditService;
 import za.gov.helpdesk.comment.dto.response.CommentResponse;
 import za.gov.helpdesk.comment.dto.request.CreateCommentRequest;
 import za.gov.helpdesk.comment.dto.request.UpdateCommentRequest;
@@ -30,6 +32,7 @@ public class CommentServiceImpl implements CommentService {
     private final CommentRepository commentRepository;
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
+    private final AuditService auditService;
 
     private static final int EDIT_WINDOW_MINUTES = 15;
 
@@ -54,7 +57,23 @@ public class CommentServiceImpl implements CommentService {
                 .type(request.getType() != null ? request.getType() : Comment.CommentType.REPLY)
                 .build();
 
-        return toResponse(commentRepository.save(comment));
+        Comment savedComment = commentRepository.save(comment);
+
+        AuditLog.AuditAction action = request.isInternal()
+                ? AuditLog.AuditAction.INTERNAL_NOTE_ADDED
+                : AuditLog.AuditAction.COMMENT_ADDED;
+
+        auditService.log(
+                AuditLog.EntityType.COMMENT,
+                savedComment.getId(),
+                author,
+                action,
+                null,
+                String.valueOf(savedComment.getId()),
+                (request.isInternal() ? "Internal note" : "Comment") + " on ticket #" + ticketId
+        );
+
+        return toResponse(savedComment);
     }
 
     @Override
@@ -75,7 +94,19 @@ public class CommentServiceImpl implements CommentService {
                 .type(Comment.CommentType.REPLY)
                 .build();
 
-        return toResponse(commentRepository.save(reply));
+        Comment savedReply = commentRepository.save(reply);
+
+        auditService.log(
+                AuditLog.EntityType.COMMENT,
+                savedReply.getId(),
+                author,
+                AuditLog.AuditAction.COMMENT_ADDED,
+                null,
+                String.valueOf(savedReply.getId()),
+                "Reply to comment #" + parentCommentId + " on ticket #" + parent.getTicket().getId()
+        );
+
+        return toResponse(savedReply);
     }
 
     @Override
@@ -124,8 +155,20 @@ public class CommentServiceImpl implements CommentService {
                             + " minutes of creation, or by an admin");
         }
 
+        String oldBody = comment.getBody();
         comment.setBody(request.getBody());
-        return toResponse(commentRepository.save(comment));
+        Comment savedComment = commentRepository.save(comment);
+
+        auditService.log(
+                AuditLog.EntityType.COMMENT,
+                savedComment.getId(),
+                current,
+                AuditLog.AuditAction.COMMENT_EDITED,
+                oldBody.length() > 80 ? oldBody.substring(0, 80) + "…" : oldBody,
+                null,
+                "Comment edited on ticket #" + comment.getTicket().getId()
+        );
+        return toResponse(savedComment);
     }
 
     @Override
@@ -145,6 +188,16 @@ public class CommentServiceImpl implements CommentService {
                     "Comments can only be deleted within " + EDIT_WINDOW_MINUTES
                             + " minutes of creation, or by an admin");
         }
+
+        auditService.log(
+                AuditLog.EntityType.COMMENT,
+                comment.getId(),
+                current,
+                AuditLog.AuditAction.COMMENT_DELETED,
+                String.valueOf(comment.getId()),
+                null,
+                "Comment deleted from ticket #" + comment.getTicket().getId()
+        );
 
         commentRepository.delete(comment);
     }
