@@ -11,7 +11,16 @@ import java.util.List;
 @Repository
 public interface AuditLogRepository extends JpaRepository<AuditLog,Long> {
 
-    List<AuditLog> findByTicketIdOrderByCreatedAtDesc(Long ticketId);
+    List<AuditLog> findByEntityTypeAndEntityIdOrderByCreatedAtDesc(AuditLog.EntityType entityType, Long entityId);
 
-    Page<AuditLog> findByTicketId(Long ticketId, Pageable pageable);
+    Page<AuditLog> findByEntityTypeAndEntityId(
+            AuditLog.EntityType entityType, Long entityId, Pageable pageable);
+
+    Page<AuditLog> findByActorIdOrderByCreatedAtDesc(Long actorId, Pageable pageable);
+
+    Page<AuditLog> findByActionOrderByCreatedAtDesc(
+            AuditLog.AuditAction action, Pageable pageable);
+
+    Page<AuditLog> findByEntityTypeOrderByCreatedAtDesc(
+            AuditLog.EntityType entityType, Pageable pageable);
 }
