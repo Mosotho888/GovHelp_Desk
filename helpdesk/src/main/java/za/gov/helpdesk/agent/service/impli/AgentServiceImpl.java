@@ -3,6 +3,7 @@ package za.gov.helpdesk.agent.service.impli;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.gov.helpdesk.agent.dto.response.AgentResponse;
@@ -13,6 +14,9 @@ import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.agent.repository.jpa.AgentRepository;
 import za.gov.helpdesk.agent.repository.jdbc.ReportJdbcRepository;
 import za.gov.helpdesk.agent.service.AgentService;
+import za.gov.helpdesk.auditlog.model.AuditLog;
+import za.gov.helpdesk.auditlog.service.AuditService;
+import za.gov.helpdesk.auth.service.AuthService;
 import za.gov.helpdesk.exception.DuplicateResourceException;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
 import za.gov.helpdesk.users.dto.response.UserResponse;
@@ -28,6 +32,7 @@ public class AgentServiceImpl implements AgentService {
     private final AgentRepository agentRepository;
     private final UserRepository userRepository;
     private final ReportJdbcRepository reportJdbcRepository;
+    private final AuditService auditService;
 
     @Override
     @Transactional
@@ -51,7 +56,20 @@ public class AgentServiceImpl implements AgentService {
                 .availability(request.getAvailability() != null ? request.getAvailability() : Agent.Availability.OFFLINE)
                 .build();
 
-        return toResponse(agentRepository.save(agent));
+        Agent savedAgent = agentRepository.save(agent);
+        User actor = getCurrentUser();
+
+        auditService.log(
+                AuditLog.EntityType.AGENT,
+                savedAgent.getId(),
+                actor,
+                AuditLog.AuditAction.AGENT_REGISTERED,
+                null,
+                user.getName(),
+                "Registered as agent in department: " + (savedAgent.getDepartment() != null ? savedAgent.getDepartment() : "N/A")
+        );
+
+        return toResponse(savedAgent);
     }
 
     @Override
@@ -91,11 +109,33 @@ public class AgentServiceImpl implements AgentService {
     @Transactional
     public AgentResponse updateAgent(Long id, UpdateAgentRequest request) {
         Agent agent = findOrThrow(id);
+        User actor = getCurrentUser();
 
-        if (request.getAvailability() != null) {
+        if (request.getAvailability() != null && !request.getAvailability().equals(agent.getAvailability())) {
+
+            auditService.log(
+                    AuditLog.EntityType.AGENT,
+                    agent.getId(),
+                    actor,
+                    AuditLog.AuditAction.AVAILABILITY_CHANGED,
+                    agent.getAvailability().name(),
+                    request.getAvailability().name(),
+                    null
+            );
             agent.setAvailability(request.getAvailability());
         }
-        if (request.getDepartment() != null) {
+
+        if (request.getDepartment() != null && !request.getDepartment().equals(agent.getDepartment())) {
+
+            auditService.log(
+                    AuditLog.EntityType.AGENT,
+                    agent.getId(),
+                    actor,
+                    AuditLog.AuditAction.DEPARTMENT_CHANGED,
+                    agent.getDepartment(),
+                    request.getDepartment(),
+                    null
+            );
             agent.setDepartment(request.getDepartment());
         }
         return toResponse(agentRepository.save(agent));
@@ -104,6 +144,14 @@ public class AgentServiceImpl implements AgentService {
     private Agent findOrThrow(Long id) {
         return agentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Agent", id));
+    }
+
+    private User getCurrentUser() {
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication().getName();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Authenticated user not found"));
     }
 
     private AgentResponse toResponse(Agent agent) {
