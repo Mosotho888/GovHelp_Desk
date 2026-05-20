@@ -90,7 +90,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleGeneric(
             Exception ex, HttpServletRequest req) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(error(500, "INTERNAL_ERROR", ex.getMessage(), req));
+                .body(error(500, "INTERNAL_ERROR", "An unexpected error occurred", req));
     }
 
     private ApiErrorResponse error(int status, String code, String message, HttpServletRequest req) {
