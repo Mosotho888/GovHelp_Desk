@@ -100,7 +100,7 @@ public class AuditServiceImpl implements AuditService {
     }
 
     @Override
-    public Page<AuditLogResponse> getAuditByAction(AuditLog.AuditAction action, Pageable pageable) {
+    public Page<AuditLogResponse> getLogsByAction(AuditLog.AuditAction action, Pageable pageable) {
 
         return auditLogRepository.findByActionOrderByCreatedAtDesc(action, pageable)
                 .map(this::toResponse);

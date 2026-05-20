@@ -23,5 +23,5 @@ public interface AuditService {
 
     Page<AuditLogResponse> getAuthLogs(Pageable pageable);
 
-    Page<AuditLogResponse> getAuditByAction(AuditLog.AuditAction action, Pageable pageable);
+    Page<AuditLogResponse> getLogsByAction(AuditLog.AuditAction action, Pageable pageable);
 }
