@@ -11,6 +11,7 @@ import za.gov.helpdesk.agent.repository.jpa.AgentRepository;
 import za.gov.helpdesk.auditlog.dto.response.AuditLogResponse;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auditlog.repository.AuditLogRepository;
+import za.gov.helpdesk.auditlog.service.AuditService;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
 import za.gov.helpdesk.ticket.dto.request.CreateTicketRequest;
 import za.gov.helpdesk.ticket.dto.response.TicketResponse;
@@ -33,6 +34,7 @@ public class TicketServiceImpl implements TicketService {
     private final AgentRepository agentRepository;
     private final UserRepository userRepository;
     private final AuditLogRepository auditLogRepository;
+    private final AuditService auditService;
 
     @Override
     @Transactional
@@ -55,7 +57,15 @@ public class TicketServiceImpl implements TicketService {
 
         Ticket saved = ticketRepository.save(builder.build());
 
-        audit(saved, requester, "TICKET_CREATED", null, Ticket.Status.OPEN.name());
+        auditService.log(
+                AuditLog.EntityType.TICKET,
+                saved.getId(),
+                requester,
+                AuditLog.AuditAction.TICKET_CREATED,
+                null,
+                Ticket.Status.OPEN.name(),
+                "Ticket created: " + saved.getSubject()
+        );
 
         return toResponse(saved);
     }
@@ -92,7 +102,16 @@ public class TicketServiceImpl implements TicketService {
             if (!ticket.canTransitionTo(request.getStatus())) {
                 throw new InvalidStatusTransitionException(ticket.getStatus(), request.getStatus());
             }
-            audit(ticket, actor, "STATUS_CHANGED", ticket.getStatus().name(), request.getStatus().name());
+
+            auditService.log(
+                    AuditLog.EntityType.TICKET,
+                    ticket.getId(),
+                    actor,
+                    AuditLog.AuditAction.STATUS_CHANGED,
+                    ticket.getStatus().name(),
+                    request.getStatus().name(),
+                    null
+            );
             ticket.setStatus(request.getStatus());
         }
 
@@ -100,19 +119,49 @@ public class TicketServiceImpl implements TicketService {
         if (request.getAssigneeId() != null) {
             Agent newAgent = agentRepository.findById(request.getAssigneeId())
                     .orElseThrow(() -> new  ResourceNotFoundException("Agent", request.getAssigneeId()));
-            String oldAssignee = ticket.getAssignee() != null ? ticket.getAssignee().getId().toString() : "unassigned";
-            audit(ticket, actor, "ASSIGNED", oldAssignee, request.getAssigneeId().toString());
+
+            String oldAssignee = ticket.getAssignee() != null ? ticket.getAssignee().getId().toString() : "Unassigned";
+
+            auditService.log(
+                    AuditLog.EntityType.TICKET,
+                    ticket.getId(),
+                    actor,
+                    AuditLog.AuditAction.ASSIGNED_TO_AGENT,
+                    oldAssignee,
+                    newAgent.getUser().getName(),
+                    null
+            );
+
             ticket.setAssignee(newAgent);
         }
 
         // Other fields
-        if (request.getPriority()  != null) ticket.setPriority(request.getPriority());
+        if (request.getPriority()  != null && !ticket.getPriority().equals(request.getPriority())) {
+
+            auditService.log(
+                    AuditLog.EntityType.TICKET,
+                    ticket.getId(),
+                    actor,
+                    AuditLog.AuditAction.PRIORITY_CHANGED,
+                    ticket.getPriority().name(),
+                    request.getPriority().name(),
+                    null
+            );
+            ticket.setPriority(request.getPriority());
+        }
         if (request.getCategory()  != null) ticket.setCategory(request.getCategory());
-        if (request.getEscalated() != null) {
-            if (request.getEscalated() && !ticket.isEscalated()) {
-                audit(ticket, actor, "ESCALATED", "false", "true");
-            }
-            ticket.setEscalated(request.getEscalated());
+        if (request.getEscalated() != null && request.getEscalated() && !ticket.isEscalated()) {
+
+            auditService.log(
+                    AuditLog.EntityType.TICKET,
+                    ticket.getId(),
+                    actor,
+                    AuditLog.AuditAction.ESCALATED,
+                    "false",
+                    "true",
+                    request.getEscalationReason()
+            );
+            ticket.setEscalated(true);
         }
         return toResponse(ticketRepository.save(ticket));
     }
@@ -123,7 +172,15 @@ public class TicketServiceImpl implements TicketService {
         Ticket ticket = findOrThrow(ticketId);
         User actor = getCurrentUser();
 
-        audit(ticket, actor, "TICKET_DELETED", ticket.getStatus().name(), "DELETED");
+        auditService.log(
+                AuditLog.EntityType.TICKET,
+                ticket.getId(),
+                actor,
+                AuditLog.AuditAction.TICKET_DELETED,
+                ticket.getStatus().name(),
+                "DELETED",
+                "Ticket deleted by " + actor.getName()
+        );
 
         ticketRepository.delete(ticket);
     }
@@ -133,8 +190,7 @@ public class TicketServiceImpl implements TicketService {
     public List<AuditLogResponse> getAuditLog(Long ticketId) {
         findOrThrow(ticketId);
 
-        return auditLogRepository.findByTicketIdOrderByCreatedAtDesc(ticketId)
-                .stream().map(this::toAuditResponse).toList();
+        return auditService.getLogsForEntity(AuditLog.EntityType.TICKET, ticketId);
     }
 
     private Ticket findOrThrow(Long id) {
@@ -147,16 +203,6 @@ public class TicketServiceImpl implements TicketService {
 
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Authenticated user not found"));
-    }
-
-    private void audit(Ticket ticket, User actor, String action, String oldVal, String newVal) {
-        auditLogRepository.save(AuditLog.builder()
-                .ticket(ticket)
-                .actor(actor)
-                .action(action)
-                .oldValue(oldVal)
-                .newValue(newVal)
-                .build());
     }
 
     private TicketResponse toResponse(Ticket ticket) {
@@ -190,23 +236,6 @@ public class TicketServiceImpl implements TicketService {
                 .escalated(ticket.isEscalated())
                 .createdAt(ticket.getCreatedAt())
                 .updatedAt(ticket.getUpdatedAt())
-                .build();
-    }
-
-    private AuditLogResponse toAuditResponse(AuditLog log) {
-        return AuditLogResponse.builder()
-                .id(log.getId())
-                .ticketId(log.getTicket().getId())
-                .actor(UserResponse.builder()
-                        .id(log.getActor().getId())
-                        .name(log.getActor().getName())
-                        .email(log.getActor().getEmail())
-                        .role(log.getActor().getRole())
-                        .build())
-                .action(log.getAction())
-                .oldValue(log.getOldValue())
-                .newValue(log.getNewValue())
-                .createdAt(log.getCreatedAt())
                 .build();
     }
 }
