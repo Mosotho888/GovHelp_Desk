@@ -1,8 +1,11 @@
 package za.gov.helpdesk.users.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
+import za.gov.helpdesk.auditlog.model.AuditLog;
+import za.gov.helpdesk.auditlog.service.AuditService;
 import za.gov.helpdesk.exception.DuplicateResourceException;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
 import za.gov.helpdesk.users.dto.request.CreateUserRequest;
@@ -23,6 +26,7 @@ public class UserServicesImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditService auditService;
 
 
     @Override
@@ -45,7 +49,20 @@ public class UserServicesImpl implements UserService {
                 .active(true)
                 .build();
 
-        return toResponse(userRepository.save(user));
+        User savedUser = userRepository.save(user);
+        User actor = getActorOrSystem();
+
+        auditService.log(
+                AuditLog.EntityType.USER,
+                savedUser.getId(),
+                actor,
+                AuditLog.AuditAction.USER_CREATED,
+                null,
+                savedUser.getEmail(),
+                "User created with role " + savedUser.getRole().name()
+        );
+
+        return toResponse(savedUser);
     }
 
     @Override
@@ -65,33 +82,81 @@ public class UserServicesImpl implements UserService {
     public UserResponse updateUser(Long id, UpdateUserRequest request) {
 
         User user = findOrThrow(id);
+        User actor = getActorOrSystem();
 
-        if (request.getName() != null) {
+        StringBuilder changes = new StringBuilder();
+
+        if (request.getName() != null && !request.getName().equals(user.getName())) {
+            changes.append("name: ").append(user.getName())
+                    .append(" -> ").append(request.getName());
             user.setName(request.getName());
         }
 
         if (request.getPhone() != null) {
             user.setPhone(request.getPhone());
+            changes.append("phone updated; ");
         }
 
         if (request.getTimezone() != null) {
             user.setTimezone(request.getTimezone());
+            changes.append("timezone: ").append(request.getTimezone()).append("; ");
         }
 
-        return toResponse(userRepository.save(user));
+        User savedUser = userRepository.save(user);
+
+        if (!changes.isEmpty()) {
+            auditService.log(
+                    AuditLog.EntityType.USER,
+                    savedUser.getId(),
+                    actor,
+                    AuditLog.AuditAction.USER_UPDATED,
+                    null,
+                    null,
+                    changes.toString().trim()
+            );
+        }
+
+        return toResponse(savedUser);
     }
 
     @Override
     @Transactional
     public void deactivateUser(Long id) {
         User user = findOrThrow(id);
+        User actor = getActorOrSystem();
+
         user.setActive(false);
         userRepository.save(user);
+
+        auditService.log(
+                AuditLog.EntityType.USER,
+                user.getId(),
+                actor,
+                AuditLog.AuditAction.USER_DEACTIVATED,
+                "active",
+                "inactive",
+                "Deactivated by " + actor.getName()
+        );
     }
 
     private User findOrThrow(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", id));
+    }
+
+    private User getActorOrSystem() {
+        try {
+            String email = SecurityContextHolder.getContext()
+                    .getAuthentication().getName();
+            return userRepository.findByEmail(email)
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Authenticated user not found"));
+        } catch (Exception e) {
+            // Fall back to a synthetic system actor
+            return User.builder()
+                    .id(0L).name("System").email("system")
+                    .role(User.Role.ADMIN).build();
+        }
     }
 
     public UserResponse toResponse(User user) {
