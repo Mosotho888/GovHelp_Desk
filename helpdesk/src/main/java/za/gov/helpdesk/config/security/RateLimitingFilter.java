@@ -50,6 +50,14 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         }
     }
 
+    // Skip rate limiting for non-API paths
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+
+        return path.startsWith("/actuator/health") || path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs");
+    }
+
     private String resolveKey(HttpServletRequest request) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
