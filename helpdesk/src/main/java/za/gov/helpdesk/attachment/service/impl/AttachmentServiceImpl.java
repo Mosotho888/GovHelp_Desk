@@ -1,6 +1,7 @@
 package za.gov.helpdesk.attachment.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -11,6 +12,8 @@ import za.gov.helpdesk.attachment.dto.response.AttachmentResponse;
 import za.gov.helpdesk.attachment.model.Attachment;
 import za.gov.helpdesk.attachment.repository.AttachmentRepository;
 import za.gov.helpdesk.attachment.service.AttachmentService;
+import za.gov.helpdesk.auditlog.model.AuditLog;
+import za.gov.helpdesk.auditlog.service.AuditService;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
@@ -26,11 +29,13 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AttachmentServiceImpl implements AttachmentService {
 
     private final AttachmentRepository attachmentRepository;
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
+    private final AuditService auditService;
 
     @Value("${app.upload.storage-path}")
     private String storagePath;
@@ -79,7 +84,19 @@ public class AttachmentServiceImpl implements AttachmentService {
                     .storagePath(storedPath)
                     .build();
 
-            responses.add(toResponse(attachmentRepository.save(attachment)));
+            Attachment savedAttachment = attachmentRepository.save(attachment);
+
+            auditService.log(
+                    AuditLog.EntityType.ATTACHMENT,
+                    savedAttachment.getId(),
+                    uploader,
+                    AuditLog.AuditAction.ATTACHMENT_UPLOADED,
+                    null,
+                    savedAttachment.getFilename(),
+                    "Uploaded to ticket #" + ticketId + " (" + (savedAttachment.getSizeBytes() / 1024) + " KB)"
+            );
+
+            responses.add(toResponse(savedAttachment));
         }
 
         return responses;
@@ -97,7 +114,20 @@ public class AttachmentServiceImpl implements AttachmentService {
     @Override
     @Transactional(readOnly = true)
     public AttachmentResponse getAttachmentById(Long attachmentId) {
-        return toResponse(findOrThrow(attachmentId));
+        Attachment attachment = findOrThrow(attachmentId);
+        User viewer = getCurrentUser();
+
+        auditService.log(
+                AuditLog.EntityType.ATTACHMENT,
+                attachment.getId(),
+                viewer,
+                AuditLog.AuditAction.ATTACHMENT_DOWNLOADED,
+                null,
+                attachment.getFilename(),
+                "Downloaded to ticket #" + attachment.getTicket().getId()
+        );
+
+        return toResponse(attachment);
     }
 
     @Override
@@ -114,11 +144,22 @@ public class AttachmentServiceImpl implements AttachmentService {
                     "You can only delete your own attachments");
         }
 
+        auditService.log(
+                AuditLog.EntityType.ATTACHMENT,
+                attachment.getId(),
+                current,
+                AuditLog.AuditAction.ATTACHMENT_DELETED,
+                attachment.getFilename(),
+                null,
+                "Deleted from ticket #" + attachment.getTicket().getId()
+        );
+
         // Remove file from storage
         try {
             Files.deleteIfExists(Paths.get(attachment.getStoragePath()));
         } catch (IOException e) {
             // Log but don't block — DB record must still be removed
+            log.error("Failed to write auth audit log: action={} error={}", AuditLog.AuditAction.ATTACHMENT_DELETED, e.getMessage());
         }
 
         attachmentRepository.delete(attachment);
@@ -180,7 +221,7 @@ public class AttachmentServiceImpl implements AttachmentService {
                 .filename(a.getFilename())
                 .contentType(a.getContentType())
                 .sizeBytes(a.getSizeBytes())
-                .downloadUrl("/api/v1/attachments/" + a.getId())
+                .downloadUrl("/v1/attachments/" + a.getId())
                 .createdAt(a.getCreatedAt())
                 .build();
     }
