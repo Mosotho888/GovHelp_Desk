@@ -3,8 +3,11 @@ package za.gov.helpdesk.auth.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.transaction.annotation.Transactional;
+import za.gov.helpdesk.auditlog.model.AuditLog;
+import za.gov.helpdesk.auditlog.service.AuditService;
 import za.gov.helpdesk.auth.dto.response.AuthResponse;
 import za.gov.helpdesk.auth.dto.request.RefreshTokenRequest;
 import za.gov.helpdesk.auth.jwt.JwtService;
@@ -28,6 +31,7 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    private final AuditService auditService;
 
     @Value("${app.security.max-login-attempts}")
     private int maxLoginAttempts;
@@ -41,23 +45,49 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(loginRequest.getEmail())
                 .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
+        if (!user.isEnabled()) {
+            auditService.logAuth(
+                    AuditLog.AuditAction.LOGIN_FAILED,
+                    user.getId(),
+                    user.getName(),
+                    user.getRole().name(),
+                    "Login attempt on inactive account"
+            );
+            throw new LockedException("Account locked. Contact your administrator.");
+        }
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
             );
         } catch (AuthenticationException ex) {
             // Increment failed attempt counter
-            user.setLoginAttempts(user.getLoginAttempts() + 1);
-            if (user.getLoginAttempts() >= maxLoginAttempts) {
+            int attempts = user.getLoginAttempts() + 1;
+            user.setLoginAttempts(attempts);
+
+            if (attempts >= maxLoginAttempts) {
                 user.setActive(false);
+                userRepository.save(user);
+
+                auditService.logAuth(
+                        AuditLog.AuditAction.ACCOUNT_LOCKED,
+                        user.getId(), user.getName(), user.getRole().name(), attempts + " consecutive failed login attempts"
+                );
+                throw new LockedException("Account locked after " + maxLoginAttempts
+                        + " failed attempts. Contact your administrator.");
             }
-            userRepository.save(user);
+
             throw ex;
         }
 
         // Reset on successful login
         user.setLoginAttempts(0);
         userRepository.save(user);
+
+        auditService.logAuth(
+                AuditLog.AuditAction.LOGIN_SUCCESS,
+                user.getId(), user.getName(), user.getRole().name(),
+                "Login successful"
+        );
 
         return buildAuthResponse(user);
     }
@@ -74,6 +104,12 @@ public class AuthServiceImpl implements AuthService {
                 || jwtService.isTokenExpired(refreshToken.getRefreshToken())) {
             throw new BadCredentialsException("Invalid or expired refresh token");
         }
+
+        auditService.logAuth(
+                AuditLog.AuditAction.TOKEN_REFRESHED,
+                user.getId(), user.getName(), user.getRole().name(),
+                "Access token refreshed"
+        );
 
         return buildAuthResponse(user);
     }

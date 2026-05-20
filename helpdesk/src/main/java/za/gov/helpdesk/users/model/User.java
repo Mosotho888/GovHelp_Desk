@@ -89,7 +89,7 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return Boolean.TRUE.equals(active);
+        return active;
     }
 
     public enum Role {
