@@ -9,6 +9,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.rabbitmq.RabbitMQContainer;
 
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -25,8 +26,11 @@ public abstract class BaseIntegrationTest {
                     .withUsername("helpdesk")
                     .withPassword("helpdesk");
 
+    static final RabbitMQContainer rabbitmq = new RabbitMQContainer("rabbitmq:3.7.25-management-alpine");
+
     static {
         postgres.start();
+        rabbitmq.start();
     }
 
     @BeforeEach
@@ -43,5 +47,10 @@ public abstract class BaseIntegrationTest {
                 () -> "org.postgresql.Driver");
         registry.add("spring.jpa.database-platform",
                 () -> "org.hibernate.dialect.PostgreSQLDialect");
+
+        registry.add("spring.rabbitmq.host", rabbitmq::getHost);
+        registry.add("spring.rabbitmq.port", rabbitmq::getAmqpPort);
+        registry.add("spring.rabbitmq.username", rabbitmq::getAdminUsername);
+        registry.add("spring.rabbitmq.password", rabbitmq::getAdminPassword);
     }
 }

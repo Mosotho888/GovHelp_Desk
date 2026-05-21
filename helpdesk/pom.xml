@@ -235,7 +235,14 @@
 			<version>2.0.5</version>
 			<scope>test</scope>
 		</dependency>
-<!--		<dependency>-->
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers-rabbitmq</artifactId>
+			<version>2.0.5</version>
+			<scope>test</scope>
+		</dependency>
+
+		<!--		<dependency>-->
 <!--			<groupId>org.testcontainers</groupId>-->
 <!--			<artifactId>testcontainers-spock</artifactId>-->
 <!--			<version>2.0.5</version>-->
