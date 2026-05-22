@@ -50,7 +50,7 @@ public class AuditLog {
     @Column(name = "old_value", length = 50)
     private String oldValue;
 
-    @Column(name = "new_value", nullable = false, length = 50)
+    @Column(name = "new_value", length = 50)
     private String newValue;
 
     @Column(length = 500)
