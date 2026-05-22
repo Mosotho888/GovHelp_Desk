@@ -25,10 +25,10 @@ public class AuditServiceImpl implements AuditService {
 
     private final AuditLogRepository auditLogRepository;
 
-    @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void log(AuditLog.EntityType entityType, Long entityId, User actor, AuditLog.AuditAction action, String oldValue, String newValue, String description) {
-
+//    @Override
+//    @Transactional(propagation = Propagation.REQUIRES_NEW)
+//    public void log(AuditLog.EntityType entityType, Long entityId, User actor, AuditLog.AuditAction action, String oldValue, String newValue, String description) {
+//
 //        try {
 //            AuditLog entry = AuditLog.builder()
 //                    .entityType(entityType)
@@ -48,12 +48,12 @@ public class AuditServiceImpl implements AuditService {
 //
 //            log.error("Failed to write audit log: entity={}/{} action={} error={}", entityType, entityId, action, e.getMessage());
 //        }
-    }
+//    }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void log(AuditLog.EntityType entityType, Long entityId, User actor, AuditLog.AuditAction action, String description) {
-        log(entityType, entityId, actor, action, null,null, description);
+    public void log(AuditLog.EntityType entityType, Long entityId, Long actorId, String actorName, String actorRole, String ipAddress, AuditLog.AuditAction action, String description) {
+        log(entityType, entityId, actorId, actorName, actorRole, ipAddress, action, null,null, description);
     }
 
     @Override
@@ -81,14 +81,14 @@ public class AuditServiceImpl implements AuditService {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void logAuth(AuditLog.AuditAction action, Long actorId, String actorName, String actorRole, String description) {
+    public void logAuth(AuditLog.AuditAction action, Long actorId, String actorName, String actorRole, String ipAddress, String description) {
         try {
             AuditLog entry = AuditLog.builder()
                     .entityType(AuditLog.EntityType.AUTH)
                     .entityId(actorId)
                     .actorName(actorName)
                     .actorRole(actorRole)
-                    .ipAddress(resolveIpAddress())
+                    .ipAddress(ipAddress)
                     .action(action)
                     .description(description)
                     .build();

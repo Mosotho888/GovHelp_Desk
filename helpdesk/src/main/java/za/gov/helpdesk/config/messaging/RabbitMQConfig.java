@@ -29,13 +29,35 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    public TopicExchange deadLetterExchange() {
+        return new TopicExchange(RabbitMQConstants.DLX);
+    }
+
+    @Bean
+    public Queue auditDlq() {
+        return QueueBuilder.durable(RabbitMQConstants.AUDIT_DLQ).build();
+    }
+
+    @Bean
+    public Queue emailDlq() {
+        return QueueBuilder.durable(RabbitMQConstants.EMAIL_DLQ).build();
+    }
+
+    @Bean
     public Queue auditQueue() {
-        return QueueBuilder.durable(RabbitMQConstants.AUDIT_QUEUE).build();
+
+        return QueueBuilder.durable(RabbitMQConstants.AUDIT_QUEUE)
+                .withArgument("x-dead-letter-exchange", RabbitMQConstants.DLX)
+                .withArgument("x-dead-letter-routing-key", RabbitMQConstants.AUDIT_DLQ_ROUTING_KEY)
+                .build();
     }
 
     @Bean
     public Queue emailQueue() {
-        return QueueBuilder.durable(RabbitMQConstants.EMAIL_QUEUE).build();
+
+        return QueueBuilder.durable(RabbitMQConstants.EMAIL_QUEUE)
+                .withArgument("x-dead-letter-exchange", RabbitMQConstants.DLX)
+                .withArgument("x-dead-letter-routing-key", RabbitMQConstants.EMAIL_DLQ_ROUTING_KEY).build();
     }
 
     @Bean
@@ -46,6 +68,19 @@ public class RabbitMQConfig {
     @Bean
     public Binding bindEmailQueue(Queue emailQueue, TopicExchange helpdeskExchange) {
         return BindingBuilder.bind(emailQueue).to(helpdeskExchange).with(RabbitMQConstants.EMAIL_ROUTING_KEY);
+    }
+    @Bean
+    public Binding bindAuditDlq(Queue auditDlq, TopicExchange deadLetterExchange) {
+        return BindingBuilder.bind(auditDlq)
+                .to(deadLetterExchange)
+                .with(RabbitMQConstants.AUDIT_DLQ_ROUTING_KEY);
+    }
+
+    @Bean
+    public Binding bindEmailDlq(Queue emailDlq, TopicExchange deadLetterExchange) {
+        return BindingBuilder.bind(emailDlq)
+                .to(deadLetterExchange)
+                .with(RabbitMQConstants.EMAIL_DLQ_ROUTING_KEY);
     }
 
     @Bean

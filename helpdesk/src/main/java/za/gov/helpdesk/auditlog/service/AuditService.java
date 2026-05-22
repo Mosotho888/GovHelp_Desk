@@ -10,13 +10,14 @@ import java.util.List;
 
 public interface AuditService {
 
-    void log (AuditLog.EntityType entityType, Long entityId, User actor, AuditLog.AuditAction action,
-              String oldValue, String newValue, String description);
+//    void log (AuditLog.EntityType entityType, Long entityId, User actor, AuditLog.AuditAction action,
+//              String oldValue, String newValue, String description);
 
-    void log (AuditLog.EntityType entityType, Long entityId, User actor, AuditLog.AuditAction action, String description);
+    void log (AuditLog.EntityType entityType, Long entityId, Long actorId, String actorName, String actorRole, String ipAddress, AuditLog.AuditAction action, String description);
+
     void log(AuditLog.EntityType entityType, Long entityId, Long actorId, String actorName, String actorRole, String ipAddress, AuditLog.AuditAction action, String oldValue, String newValue, String description);
 
-    void logAuth(AuditLog.AuditAction action, Long actorId, String actorName, String actorRole, String description);
+    void logAuth(AuditLog.AuditAction action, Long actorId, String actorName, String actorRole, String ipAddress, String description);
 
     List<AuditLogResponse> getLogsForEntity(AuditLog.EntityType entityType, Long entityId);
 

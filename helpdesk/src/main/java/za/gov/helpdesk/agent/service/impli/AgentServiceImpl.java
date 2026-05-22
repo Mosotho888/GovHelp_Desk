@@ -14,6 +14,7 @@ import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.agent.repository.jpa.AgentRepository;
 import za.gov.helpdesk.agent.repository.jdbc.ReportJdbcRepository;
 import za.gov.helpdesk.agent.service.AgentService;
+import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auditlog.service.AuditService;
 import za.gov.helpdesk.auth.service.AuthService;
@@ -32,7 +33,7 @@ public class AgentServiceImpl implements AgentService {
     private final AgentRepository agentRepository;
     private final UserRepository userRepository;
     private final ReportJdbcRepository reportJdbcRepository;
-    private final AuditService auditService;
+    private final AuditEventPublisher auditPublisher;
 
     @Override
     @Transactional
@@ -59,7 +60,7 @@ public class AgentServiceImpl implements AgentService {
         Agent savedAgent = agentRepository.save(agent);
         User actor = getCurrentUser();
 
-        auditService.log(
+        auditPublisher.publishAudit(
                 AuditLog.EntityType.AGENT,
                 savedAgent.getId(),
                 actor,
@@ -113,7 +114,7 @@ public class AgentServiceImpl implements AgentService {
 
         if (request.getAvailability() != null && !request.getAvailability().equals(agent.getAvailability())) {
 
-            auditService.log(
+            auditPublisher.publishAudit(
                     AuditLog.EntityType.AGENT,
                     agent.getId(),
                     actor,
@@ -127,7 +128,7 @@ public class AgentServiceImpl implements AgentService {
 
         if (request.getDepartment() != null && !request.getDepartment().equals(agent.getDepartment())) {
 
-            auditService.log(
+            auditPublisher.publishAudit(
                     AuditLog.EntityType.AGENT,
                     agent.getId(),
                     actor,
