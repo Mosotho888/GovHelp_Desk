@@ -69,11 +69,4 @@ public class TicketController {
     public void deleteTicket(@PathVariable Long id) {
         ticketService.deleteTicket(id);
     }
-
-    @GetMapping("/{id}/audit")
-    @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
-    @Operation(summary = "Get full audit trail for a ticket (Agent/Admin only)")
-    public ResponseEntity<List<AuditLogResponse>> getAuditLog(@PathVariable Long id) {
-        return ResponseEntity.ok(ticketService.getAuditLog(id));
-    }
 }

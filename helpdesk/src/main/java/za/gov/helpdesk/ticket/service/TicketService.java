@@ -17,5 +17,4 @@ public interface TicketService {
     Page<TicketResponse> getTickets(Ticket.Status status, Ticket.Priority priority, Long assigneeId, Pageable pageable);
     TicketResponse updateTicket(Long ticketId, UpdateTicketRequest request);
     void deleteTicket(Long ticketId);
-    List<AuditLogResponse> getAuditLog(Long ticketId);
 }

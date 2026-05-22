@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.agent.repository.jpa.AgentRepository;
 import za.gov.helpdesk.auditlog.dto.response.AuditLogResponse;
+import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auditlog.repository.AuditLogRepository;
 import za.gov.helpdesk.auditlog.service.AuditService;
@@ -33,8 +34,7 @@ public class TicketServiceImpl implements TicketService {
     private final TicketRepository ticketRepository;
     private final AgentRepository agentRepository;
     private final UserRepository userRepository;
-    private final AuditLogRepository auditLogRepository;
-    private final AuditService auditService;
+    private final AuditEventPublisher auditPublisher;
 
     @Override
     @Transactional
@@ -57,7 +57,7 @@ public class TicketServiceImpl implements TicketService {
 
         Ticket saved = ticketRepository.save(builder.build());
 
-        auditService.log(
+        auditPublisher.publishAudit(
                 AuditLog.EntityType.TICKET,
                 saved.getId(),
                 requester,
@@ -103,7 +103,7 @@ public class TicketServiceImpl implements TicketService {
                 throw new InvalidStatusTransitionException(ticket.getStatus(), request.getStatus());
             }
 
-            auditService.log(
+            auditPublisher.publishAudit(
                     AuditLog.EntityType.TICKET,
                     ticket.getId(),
                     actor,
@@ -122,7 +122,7 @@ public class TicketServiceImpl implements TicketService {
 
             String oldAssignee = ticket.getAssignee() != null ? ticket.getAssignee().getId().toString() : "Unassigned";
 
-            auditService.log(
+            auditPublisher.publishAudit(
                     AuditLog.EntityType.TICKET,
                     ticket.getId(),
                     actor,
@@ -138,7 +138,7 @@ public class TicketServiceImpl implements TicketService {
         // Other fields
         if (request.getPriority()  != null && !ticket.getPriority().equals(request.getPriority())) {
 
-            auditService.log(
+            auditPublisher.publishAudit(
                     AuditLog.EntityType.TICKET,
                     ticket.getId(),
                     actor,
@@ -152,7 +152,7 @@ public class TicketServiceImpl implements TicketService {
         if (request.getCategory()  != null) ticket.setCategory(request.getCategory());
         if (request.getEscalated() != null && request.getEscalated() && !ticket.isEscalated()) {
 
-            auditService.log(
+            auditPublisher.publishAudit(
                     AuditLog.EntityType.TICKET,
                     ticket.getId(),
                     actor,
@@ -172,7 +172,7 @@ public class TicketServiceImpl implements TicketService {
         Ticket ticket = findOrThrow(ticketId);
         User actor = getCurrentUser();
 
-        auditService.log(
+        auditPublisher.publishAudit(
                 AuditLog.EntityType.TICKET,
                 ticket.getId(),
                 actor,
@@ -183,14 +183,6 @@ public class TicketServiceImpl implements TicketService {
         );
 
         ticketRepository.delete(ticket);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<AuditLogResponse> getAuditLog(Long ticketId) {
-        findOrThrow(ticketId);
-
-        return auditService.getLogsForEntity(AuditLog.EntityType.TICKET, ticketId);
     }
 
     private Ticket findOrThrow(Long id) {
