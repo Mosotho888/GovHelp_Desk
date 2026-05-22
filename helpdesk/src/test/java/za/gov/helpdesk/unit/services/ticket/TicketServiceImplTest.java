@@ -12,6 +12,7 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.agent.repository.jpa.AgentRepository;
+import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auditlog.repository.AuditLogRepository;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
@@ -30,8 +31,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
@@ -48,7 +48,7 @@ public class TicketServiceImplTest {
     @Mock
     private UserRepository userRepository;
     @Mock
-    private AuditLogRepository auditLogRepository;
+    private AuditEventPublisher auditPublisher;
     @Mock
     private SecurityContext securityContext;
     @Mock
@@ -81,8 +81,8 @@ public class TicketServiceImplTest {
     }
 
     @Test
-    @DisplayName("createTicket() persists ticket and writes audit log")
-    void createTicket_validRequest_savesAndAudits() {
+    @DisplayName("createTicket() persists ticket and publishes audit event")
+    void createTicket_validRequest_savesAndPublishesAudit() {
 
         mockAuthenticatedUser();
 
@@ -94,21 +94,27 @@ public class TicketServiceImplTest {
         given(authentication.getName()).willReturn("john@citizen.za");
         given(userRepository.findByEmail("john@citizen.za")).willReturn(Optional.of(endUser));
         given(ticketRepository.save(any(Ticket.class))).willReturn(openTicket);
-        given(auditLogRepository.save(any(AuditLog.class))).willReturn(new AuditLog());
 
         TicketResponse response = ticketServiceImpl.createTicket(req);
 
         assertThat(response.getSubject()).isEqualTo("Login broken");
         assertThat(response.getStatus()).isEqualTo(Ticket.Status.OPEN);
         then(ticketRepository).should(times(1)).save(any(Ticket.class));
-        then(auditLogRepository).should(times(1)).save(
-                argThat(log -> "TICKET_CREATED".equals(log.getAction()))
+
+        then(auditPublisher).should(times(1)).publishAudit(
+                eq(AuditLog.EntityType.TICKET),
+                eq(openTicket.getId()),
+                eq(endUser),
+                eq(AuditLog.AuditAction.TICKET_CREATED),
+                any(),
+                any(),
+                any()
         );
     }
 
     @Test
-    @DisplayName("updateTicket() OPEN -> IN_PROGRESS succeeds and audits")
-    void updateTicket_validTransition_updatesAndAudits() {
+    @DisplayName("updateTicket() OPEN -> IN_PROGRESS publishes STATUS_CHANGED and audit event")
+    void updateTicket_validTransition_publishesAuditEvent() {
 
         mockAuthenticatedUser();
 
@@ -119,15 +125,19 @@ public class TicketServiceImplTest {
         given(userRepository.findByEmail("jane@gov.za")).willReturn(Optional.of(agentUser));
         given(ticketRepository.findById(100L)).willReturn(Optional.of(openTicket));
         given(ticketRepository.save(any(Ticket.class))).willAnswer(i -> i.getArgument(0));
-        given(auditLogRepository.save(any(AuditLog.class))).willReturn(new AuditLog());
 
         TicketResponse response = ticketServiceImpl.updateTicket(100L, req);
 
         assertThat(response.getStatus()).isEqualTo(Ticket.Status.IN_PROGRESS);
-        then(auditLogRepository).should().save(
-                argThat(log -> "STATUS_CHANGED".equals(log.getAction())
-                        && "OPEN".equals(log.getOldValue())
-                        && "IN_PROGRESS".equals(log.getNewValue()))
+
+        then(auditPublisher).should(times(1)).publishAudit(
+                eq(AuditLog.EntityType.TICKET),
+                eq(100L),
+                eq(agentUser),
+                eq(AuditLog.AuditAction.STATUS_CHANGED),
+                eq("OPEN"),
+                eq("IN_PROGRESS"),
+                eq(null)
         );
     }
 
@@ -155,6 +165,15 @@ public class TicketServiceImplTest {
                 .hasMessageContaining("OPEN");
 
         then(ticketRepository).should(never()).save(any());
+        then(auditPublisher).should(never()).publishAudit(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any()
+        );
     }
 
     @Test
@@ -168,8 +187,8 @@ public class TicketServiceImplTest {
     }
 
     @Test
-    @DisplayName("updateTicket() assigns agent and records audit entry")
-    void updateTicket_assignAgent_auditsAssignment() {
+    @DisplayName("updateTicket() assigns agent and publishes ASSIGNED_TO_AGENT audit event")
+    void updateTicket_assignAgent_publishesAuditEvent() {
 
         mockAuthenticatedUser();
 
@@ -181,12 +200,17 @@ public class TicketServiceImplTest {
         given(ticketRepository.findById(100L)).willReturn(Optional.of(openTicket));
         given(agentRepository.findById(1L)).willReturn(Optional.of(agent));
         given(ticketRepository.save(any(Ticket.class))).willAnswer(i -> i.getArgument(0));
-        given(auditLogRepository.save(any(AuditLog.class))).willReturn(new AuditLog());
 
         ticketServiceImpl.updateTicket(100L, req);
 
-        then(auditLogRepository).should().save(
-                argThat(log -> "ASSIGNED".equals(log.getAction()))
+        then(auditPublisher).should(times(1)).publishAudit(
+                eq(AuditLog.EntityType.TICKET),
+                eq(100L),
+                eq(agentUser),
+                eq(AuditLog.AuditAction.ASSIGNED_TO_AGENT),
+                eq("Unassigned"),
+                eq(agentUser.getName()),
+                eq(null)
         );
     }
 

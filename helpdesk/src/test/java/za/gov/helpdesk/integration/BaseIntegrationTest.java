@@ -9,29 +9,29 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.rabbitmq.RabbitMQContainer;
 
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Testcontainers
 public abstract class BaseIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Container
     static final PostgreSQLContainer<?> postgres =
             new PostgreSQLContainer<>("postgres:18-alpine")
                     .withDatabaseName("helpdesk_test")
                     .withUsername("helpdesk")
                     .withPassword("helpdesk");
 
+    @Container
     static final RabbitMQContainer rabbitmq = new RabbitMQContainer("rabbitmq:3.7.25-management-alpine");
-
-    static {
-        postgres.start();
-        rabbitmq.start();
-    }
 
     @BeforeEach
     void cleanDatabase() {
