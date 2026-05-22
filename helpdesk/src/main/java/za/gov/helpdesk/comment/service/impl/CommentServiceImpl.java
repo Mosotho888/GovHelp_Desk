@@ -7,6 +7,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auditlog.service.AuditService;
 import za.gov.helpdesk.comment.dto.response.CommentResponse;
@@ -32,7 +33,7 @@ public class CommentServiceImpl implements CommentService {
     private final CommentRepository commentRepository;
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
-    private final AuditService auditService;
+    private final AuditEventPublisher  auditPublisher;
 
     private static final int EDIT_WINDOW_MINUTES = 15;
 
@@ -63,7 +64,7 @@ public class CommentServiceImpl implements CommentService {
                 ? AuditLog.AuditAction.INTERNAL_NOTE_ADDED
                 : AuditLog.AuditAction.COMMENT_ADDED;
 
-        auditService.log(
+        auditPublisher.publishAudit(
                 AuditLog.EntityType.COMMENT,
                 savedComment.getId(),
                 author,
@@ -96,7 +97,7 @@ public class CommentServiceImpl implements CommentService {
 
         Comment savedReply = commentRepository.save(reply);
 
-        auditService.log(
+        auditPublisher.publishAudit(
                 AuditLog.EntityType.COMMENT,
                 savedReply.getId(),
                 author,
@@ -159,7 +160,7 @@ public class CommentServiceImpl implements CommentService {
         comment.setBody(request.getBody());
         Comment savedComment = commentRepository.save(comment);
 
-        auditService.log(
+        auditPublisher.publishAudit(
                 AuditLog.EntityType.COMMENT,
                 savedComment.getId(),
                 current,
@@ -189,7 +190,7 @@ public class CommentServiceImpl implements CommentService {
                             + " minutes of creation, or by an admin");
         }
 
-        auditService.log(
+        auditPublisher.publishAudit(
                 AuditLog.EntityType.COMMENT,
                 comment.getId(),
                 current,
