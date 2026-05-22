@@ -14,6 +14,7 @@ public interface AuditService {
               String oldValue, String newValue, String description);
 
     void log (AuditLog.EntityType entityType, Long entityId, User actor, AuditLog.AuditAction action, String description);
+    void log(AuditLog.EntityType entityType, Long entityId, Long actorId, String actorName, String actorRole, String ipAddress, AuditLog.AuditAction action, String oldValue, String newValue, String description);
 
     void logAuth(AuditLog.AuditAction action, Long actorId, String actorName, String actorRole, String description);
 

@@ -29,14 +29,44 @@ public class AuditServiceImpl implements AuditService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void log(AuditLog.EntityType entityType, Long entityId, User actor, AuditLog.AuditAction action, String oldValue, String newValue, String description) {
 
+//        try {
+//            AuditLog entry = AuditLog.builder()
+//                    .entityType(entityType)
+//                    .entityId(entityId)
+//                    .actorId(actor.getId())
+//                    .actorName(actor.getName())
+//                    .actorRole(actor.getRole().name())
+//                    .ipAddress(resolveIpAddress())
+//                    .action(action)
+//                    .oldValue(oldValue)
+//                    .newValue(newValue)
+//                    .description(description)
+//                    .build();
+//
+//            auditLogRepository.save(entry);
+//        } catch (Exception e) {
+//
+//            log.error("Failed to write audit log: entity={}/{} action={} error={}", entityType, entityId, action, e.getMessage());
+//        }
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void log(AuditLog.EntityType entityType, Long entityId, User actor, AuditLog.AuditAction action, String description) {
+        log(entityType, entityId, actor, action, null,null, description);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void log(AuditLog.EntityType entityType, Long entityId, Long actorId, String actorName, String actorRole, String ipAddress, AuditLog.AuditAction action, String oldValue, String newValue, String description) {
         try {
             AuditLog entry = AuditLog.builder()
                     .entityType(entityType)
                     .entityId(entityId)
-                    .actorId(actor.getId())
-                    .actorName(actor.getName())
-                    .actorRole(actor.getRole().name())
-                    .ipAddress(resolveIpAddress())
+                    .actorId(actorId)
+                    .actorName(actorName)
+                    .actorRole(actorRole)
+                    .ipAddress(ipAddress)
                     .action(action)
                     .oldValue(oldValue)
                     .newValue(newValue)
@@ -45,15 +75,8 @@ public class AuditServiceImpl implements AuditService {
 
             auditLogRepository.save(entry);
         } catch (Exception e) {
-
             log.error("Failed to write audit log: entity={}/{} action={} error={}", entityType, entityId, action, e.getMessage());
         }
-    }
-
-    @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void log(AuditLog.EntityType entityType, Long entityId, User actor, AuditLog.AuditAction action, String description) {
-        log(entityType, entityId, actor, action, null,null, description);
     }
 
     @Override
