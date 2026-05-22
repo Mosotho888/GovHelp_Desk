@@ -6,9 +6,9 @@ import lombok.NoArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-@NoArgsConstructor
-@AllArgsConstructor
 public final class RabbitMQConstants {
+
+    private RabbitMQConstants() {}
 
     public static final String EXCHANGE = "helpdesk.exchange";
     public static final String DLX = "helpdesk.dlx";
