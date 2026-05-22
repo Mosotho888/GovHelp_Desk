@@ -129,27 +129,6 @@ public class AuditServiceImpl implements AuditService {
                 .map(this::toResponse);
     }
 
-    private String resolveIpAddress() {
-        try {
-            ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
-
-            if (attrs == null) {
-                return "system";
-            }
-
-            HttpServletRequest request = attrs.getRequest();
-            String forwarded =  request.getHeader("X-Forwarded-For");
-
-            if (forwarded != null && !forwarded.isEmpty()) {
-                return forwarded.split(",")[0].trim();
-            }
-
-            return request.getRemoteAddr();
-        } catch (Exception e) {
-            return "unknown";
-        }
-    }
-
     public AuditLogResponse toResponse(AuditLog log) {
         return AuditLogResponse.builder()
                 .id(log.getId())
