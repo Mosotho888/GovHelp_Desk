@@ -12,6 +12,7 @@ import za.gov.helpdesk.attachment.dto.response.AttachmentResponse;
 import za.gov.helpdesk.attachment.model.Attachment;
 import za.gov.helpdesk.attachment.repository.AttachmentRepository;
 import za.gov.helpdesk.attachment.service.AttachmentService;
+import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auditlog.service.AuditService;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
@@ -35,7 +36,7 @@ public class AttachmentServiceImpl implements AttachmentService {
     private final AttachmentRepository attachmentRepository;
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
-    private final AuditService auditService;
+    private final AuditEventPublisher auditPublisher;
 
     @Value("${app.upload.storage-path}")
     private String storagePath;
@@ -86,7 +87,7 @@ public class AttachmentServiceImpl implements AttachmentService {
 
             Attachment savedAttachment = attachmentRepository.save(attachment);
 
-            auditService.log(
+            auditPublisher.publishAudit(
                     AuditLog.EntityType.ATTACHMENT,
                     savedAttachment.getId(),
                     uploader,
@@ -117,7 +118,7 @@ public class AttachmentServiceImpl implements AttachmentService {
         Attachment attachment = findOrThrow(attachmentId);
         User viewer = getCurrentUser();
 
-        auditService.log(
+        auditPublisher.publishAudit(
                 AuditLog.EntityType.ATTACHMENT,
                 attachment.getId(),
                 viewer,
@@ -144,7 +145,7 @@ public class AttachmentServiceImpl implements AttachmentService {
                     "You can only delete your own attachments");
         }
 
-        auditService.log(
+        auditPublisher.publishAudit(
                 AuditLog.EntityType.ATTACHMENT,
                 attachment.getId(),
                 current,
