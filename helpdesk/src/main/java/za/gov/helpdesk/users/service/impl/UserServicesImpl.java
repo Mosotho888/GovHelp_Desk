@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
+import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auditlog.service.AuditService;
 import za.gov.helpdesk.exception.DuplicateResourceException;
@@ -26,7 +27,7 @@ public class UserServicesImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final AuditService auditService;
+    private final AuditEventPublisher auditPublisher;
 
 
     @Override
@@ -52,7 +53,7 @@ public class UserServicesImpl implements UserService {
         User savedUser = userRepository.save(user);
         User actor = getActorOrSystem();
 
-        auditService.log(
+        auditPublisher.publishAudit(
                 AuditLog.EntityType.USER,
                 savedUser.getId(),
                 actor,
@@ -105,7 +106,7 @@ public class UserServicesImpl implements UserService {
         User savedUser = userRepository.save(user);
 
         if (!changes.isEmpty()) {
-            auditService.log(
+            auditPublisher.publishAudit(
                     AuditLog.EntityType.USER,
                     savedUser.getId(),
                     actor,
@@ -128,7 +129,7 @@ public class UserServicesImpl implements UserService {
         user.setActive(false);
         userRepository.save(user);
 
-        auditService.log(
+        auditPublisher.publishAudit(
                 AuditLog.EntityType.USER,
                 user.getId(),
                 actor,
