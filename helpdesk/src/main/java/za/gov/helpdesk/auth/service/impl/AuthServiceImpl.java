@@ -6,6 +6,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.transaction.annotation.Transactional;
+import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auditlog.service.AuditService;
 import za.gov.helpdesk.auth.dto.response.AuthResponse;
@@ -31,7 +32,7 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
     private final JwtService jwtService;
-    private final AuditService auditService;
+    private final AuditEventPublisher auditPublisher;
 
     @Value("${app.security.max-login-attempts}")
     private int maxLoginAttempts;
@@ -46,7 +47,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
         if (!user.isEnabled()) {
-            auditService.logAuth(
+            auditPublisher.publishAuthAudit(
                     AuditLog.AuditAction.LOGIN_FAILED,
                     user.getId(),
                     user.getName(),
@@ -68,7 +69,7 @@ public class AuthServiceImpl implements AuthService {
                 user.setActive(false);
                 userRepository.save(user);
 
-                auditService.logAuth(
+                auditPublisher.publishAuthAudit(
                         AuditLog.AuditAction.ACCOUNT_LOCKED,
                         user.getId(), user.getName(), user.getRole().name(), attempts + " consecutive failed login attempts"
                 );
@@ -83,7 +84,7 @@ public class AuthServiceImpl implements AuthService {
         user.setLoginAttempts(0);
         userRepository.save(user);
 
-        auditService.logAuth(
+        auditPublisher.publishAuthAudit(
                 AuditLog.AuditAction.LOGIN_SUCCESS,
                 user.getId(), user.getName(), user.getRole().name(),
                 "Login successful"
@@ -105,7 +106,7 @@ public class AuthServiceImpl implements AuthService {
             throw new BadCredentialsException("Invalid or expired refresh token");
         }
 
-        auditService.logAuth(
+        auditPublisher.publishAuthAudit(
                 AuditLog.AuditAction.TOKEN_REFRESHED,
                 user.getId(), user.getName(), user.getRole().name(),
                 "Access token refreshed"
