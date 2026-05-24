@@ -14,6 +14,7 @@ import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auditlog.repository.AuditLogRepository;
 import za.gov.helpdesk.auditlog.service.AuditService;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
+import za.gov.helpdesk.notification.messaging.EmailNotificationPublisher;
 import za.gov.helpdesk.ticket.dto.request.CreateTicketRequest;
 import za.gov.helpdesk.ticket.dto.response.TicketResponse;
 import za.gov.helpdesk.ticket.dto.request.UpdateTicketRequest;
@@ -35,6 +36,7 @@ public class TicketServiceImpl implements TicketService {
     private final AgentRepository agentRepository;
     private final UserRepository userRepository;
     private final AuditEventPublisher auditPublisher;
+    private final EmailNotificationPublisher emailPublisher;
 
     @Override
     @Transactional
@@ -55,19 +57,30 @@ public class TicketServiceImpl implements TicketService {
             builder.assignee(agent);
         }
 
-        Ticket saved = ticketRepository.save(builder.build());
+        Ticket savedTicket = ticketRepository.save(builder.build());
 
         auditPublisher.publishAudit(
                 AuditLog.EntityType.TICKET,
-                saved.getId(),
+                savedTicket.getId(),
                 requester,
                 AuditLog.AuditAction.TICKET_CREATED,
                 null,
                 Ticket.Status.OPEN.name(),
-                "Ticket created: " + saved.getSubject()
+                "Ticket created: " + savedTicket.getSubject()
         );
 
-        return toResponse(saved);
+        emailPublisher.publish(
+                savedTicket, requester,
+                savedTicket.getAssignee() != null ? savedTicket.getAssignee().getUser() : null,
+                AuditLog.AuditAction.TICKET_CREATED, null);
+
+        if (savedTicket.getAssignee().getUser().getId() != null) {
+            emailPublisher.publish(
+                    savedTicket, savedTicket.getRequester(), savedTicket.getAssignee().getUser(),
+                    AuditLog.AuditAction.ASSIGNED_TO_AGENT, null);
+        }
+
+        return toResponse(savedTicket);
     }
 
     @Override
@@ -113,6 +126,13 @@ public class TicketServiceImpl implements TicketService {
                     null
             );
             ticket.setStatus(request.getStatus());
+
+            emailPublisher.publish(
+                    ticket,
+                    ticket.getRequester(),
+                    ticket.getAssignee() != null ? ticket.getAssignee().getUser() : null,
+                    AuditLog.AuditAction.STATUS_CHANGED,
+                    null);
         }
 
         // Assignment change
@@ -133,6 +153,13 @@ public class TicketServiceImpl implements TicketService {
             );
 
             ticket.setAssignee(newAgent);
+
+            emailPublisher.publish(
+                    ticket,
+                    ticket.getRequester(),
+                    newAgent.getUser(),
+                    AuditLog.AuditAction.ASSIGNED_TO_AGENT,
+                    null);
         }
 
         // Other fields
@@ -148,6 +175,13 @@ public class TicketServiceImpl implements TicketService {
                     null
             );
             ticket.setPriority(request.getPriority());
+
+            emailPublisher.publish(
+                    ticket,
+                    ticket.getRequester(),
+                    ticket.getAssignee() != null ? ticket.getAssignee().getUser() : null,
+                    AuditLog.AuditAction.PRIORITY_CHANGED,
+                    null);
         }
         if (request.getCategory()  != null) ticket.setCategory(request.getCategory());
         if (request.getEscalated() != null && request.getEscalated() && !ticket.isEscalated()) {
@@ -162,6 +196,13 @@ public class TicketServiceImpl implements TicketService {
                     request.getEscalationReason()
             );
             ticket.setEscalated(true);
+
+            emailPublisher.publish(
+                    ticket,
+                    ticket.getRequester(),
+                    ticket.getAssignee() != null ? ticket.getAssignee().getUser() : null,
+                    AuditLog.AuditAction.ESCALATED,
+                    null);
         }
         return toResponse(ticketRepository.save(ticket));
     }

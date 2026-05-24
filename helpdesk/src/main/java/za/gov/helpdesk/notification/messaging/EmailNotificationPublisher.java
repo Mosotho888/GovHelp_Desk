@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.annotation.Configuration;
+import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.config.messaging.RabbitMQConstants;
 import za.gov.helpdesk.notification.dto.EmailNotificationMessage;
