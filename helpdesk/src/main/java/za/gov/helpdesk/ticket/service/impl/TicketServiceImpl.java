@@ -74,7 +74,7 @@ public class TicketServiceImpl implements TicketService {
                 savedTicket.getAssignee() != null ? savedTicket.getAssignee().getUser() : null,
                 AuditLog.AuditAction.TICKET_CREATED, null);
 
-        if (savedTicket.getAssignee().getUser().getId() != null) {
+        if (savedTicket.getAssignee() != null) {
             emailPublisher.publish(
                     savedTicket, savedTicket.getRequester(), savedTicket.getAssignee().getUser(),
                     AuditLog.AuditAction.ASSIGNED_TO_AGENT, null);

@@ -15,8 +15,8 @@ import za.gov.helpdesk.notification.service.EmailService;
 @Slf4j
 public class EmailServiceImpl implements EmailService {
 
-    private EmailTemplateServiceImpl templates;
-    private JavaMailSender mailSender;
+    private final EmailTemplateServiceImpl templates;
+    private final JavaMailSender mailSender;
 
     @Override
     public void sendTicketCreated(EmailNotificationMessage message) {

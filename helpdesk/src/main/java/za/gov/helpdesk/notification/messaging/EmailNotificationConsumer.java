@@ -43,7 +43,7 @@ public class EmailNotificationConsumer {
             log.info("Email ACKed: trigger={} ticket={}",
                     message.getTrigger(), message.getTicketNumber());
 
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
             // SMTP failed — requeue so it retries
             // After max-attempts it goes to EMAIL_DLQ automatically
             log.warn("Email failed, re-queuing: trigger={} ticket={} error={}",

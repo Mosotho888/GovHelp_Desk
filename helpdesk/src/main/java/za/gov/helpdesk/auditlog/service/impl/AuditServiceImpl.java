@@ -61,6 +61,7 @@ public class AuditServiceImpl implements AuditService {
             AuditLog entry = AuditLog.builder()
                     .entityType(AuditLog.EntityType.AUTH)
                     .entityId(actorId)
+                    .actorId(actorId)
                     .actorName(actorName)
                     .actorRole(actorRole)
                     .ipAddress(ipAddress)

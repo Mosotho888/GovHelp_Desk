@@ -1,6 +1,7 @@
 package za.gov.helpdesk.exception.global;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -18,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -67,6 +69,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiErrorResponse> handleBadCredentials(
             BadCredentialsException ex, HttpServletRequest req) {
+
+        log.warn("Failed login attempt on path: {}", req.getRequestURI(), ex);
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(error(401, "INVALID_CREDENTIALS", "Invalid email or password", req));
     }
@@ -74,6 +78,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({LockedException.class, DisabledException.class})
     public ResponseEntity<ApiErrorResponse> handleLocked(
             RuntimeException ex, HttpServletRequest req) {
+
+        log.warn("Blocked access attempt to locked/disabled account: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(error(403, "ACCOUNT_LOCKED", "Account locked. Contact your administrator.", req));
     }
@@ -89,6 +95,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleGeneric(
             Exception ex, HttpServletRequest req) {
+
+        log.error("Unhandled exception caught on path: {}", req.getRequestURI(), ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(error(500, "INTERNAL_ERROR", "An unexpected error occurred", req));
     }

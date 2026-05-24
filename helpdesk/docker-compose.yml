@@ -41,9 +41,15 @@ services:
     volumes:
       # Mounts container uploads to a local folder named 'uploads' in your project root
       - upload_data:/opt/app/uploads
+      - ./logs:/opt/app/logs
 
     environment:
       SPRING_APPLICATION_NAME: helpdesk
+
+      # Logging Configuration
+      LOGGING_FILE_NAME: /opt/app/logs/application.log
+      LOGGING_LOGBACK_ROLLINGPOLICY_MAX_FILE_SIZE: 10MB
+      LOGGING_LOGBACK_ROLLINGPOLICY_TOTAL_SIZE_CAP: 100MB
 
       # Datasource
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
@@ -100,6 +106,8 @@ services:
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       SPRING_RABBITMQ_TEMPLATE_IS_CHANNEL_TRANSACTED: true
 
+      SPRING_RABBITMQ_LISTENER_SIMPLE_ACKNOWLEDGE_MODE: manual
+
       APP_RABBITMQ_CONCURRENT_CONSUMERS: ${MIN_CONCURRENCY}
       APP_RABBITMQ_MAX_CONCURRENT_CONSUMERS: ${MIN_CONCURRENCY}
 
@@ -128,6 +136,9 @@ services:
       - "5672:5672"
       - "15672:15672"
 
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
     networks:
       - spring-boot-api-network
 
@@ -140,3 +151,4 @@ services:
 volumes:
   postgres_data:
   upload_data:
+  rabbitmq_data:
