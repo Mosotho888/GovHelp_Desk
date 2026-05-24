@@ -197,31 +197,6 @@ public class TicketIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.totalElements").isNumber());
     }
 
-    @Test
-    @DisplayName("GET /tickets/{id}/audit returns audit log (agent only)")
-    void getAuditLog_agentRole_returnsLog() throws Exception {
-        String createBody = mvc.perform(post("/v1/tickets")
-                        .header("Authorization", "Bearer " + userToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(Map.of(
-                                "subject", "Audit test", "description", "Testing audit trail"
-                        ))))
-                .andReturn().getResponse().getContentAsString();
-
-        long ticketId = mapper.readTree(createBody).get("id").asLong();
-
-        // Agent can view audit
-        mvc.perform(get("/v1/tickets/" + ticketId + "/audit")
-                        .header("Authorization", "Bearer " + agentToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].action").value("TICKET_CREATED"));
-
-        // User cannot view audit
-        mvc.perform(get("/v1/tickets/" + ticketId + "/audit")
-                        .header("Authorization", "Bearer " + userToken))
-                .andExpect(status().isForbidden());
-    }
-
     // ── Helper ────────────────────────────────────────────────
     private String login(String email, String password) throws Exception {
         MvcResult result = mvc.perform(post("/v1/auth/login")

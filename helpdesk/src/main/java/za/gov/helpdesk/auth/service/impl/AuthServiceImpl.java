@@ -75,6 +75,8 @@ public class AuthServiceImpl implements AuthService {
                 );
                 throw new LockedException("Account locked after " + maxLoginAttempts
                         + " failed attempts. Contact your administrator.");
+            } else {
+                userRepository.save(user);
             }
 
             throw ex;

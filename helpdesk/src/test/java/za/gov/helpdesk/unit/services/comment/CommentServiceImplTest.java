@@ -7,10 +7,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
+import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.comment.dto.request.CreateCommentRequest;
 import za.gov.helpdesk.comment.dto.response.CommentResponse;
 import za.gov.helpdesk.comment.model.Comment;
@@ -34,6 +37,7 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("CommentService unit tests")
 public class CommentServiceImplTest {
 
     @Mock
@@ -46,6 +50,8 @@ public class CommentServiceImplTest {
     private SecurityContext securityContext;
     @Mock
     private Authentication authentication;
+    @Mock
+    private AuditEventPublisher auditPublisher;
 
     @InjectMocks
     private CommentServiceImpl commentServiceImpl;
@@ -161,7 +167,7 @@ public class CommentServiceImplTest {
         given(authentication.getName()).willReturn("john@citizen.za");
         given(userRepository.findByEmail("john@citizen.za")).willReturn(Optional.of(endUser));
         given(commentRepository.findById(100L)).willReturn(Optional.of(comment));
-        given(commentRepository.save(any(Comment.class))).willAnswer(invocation -> invocation.getArgument(0));
+        given(commentRepository.save(any(Comment.class))).willReturn(replyComment);
 
         CommentResponse response = commentServiceImpl.addReply(100L, req);
 
@@ -175,6 +181,16 @@ public class CommentServiceImplTest {
                         && savedReply.getAuthor().equals(endUser)
                         && savedReply.getBody().equals("Thanks for the update!")
         ));
+
+        then(auditPublisher).should(times(1)).publishAudit(
+                eq(AuditLog.EntityType.COMMENT),
+                eq(replyComment.getId()),
+                eq(endUser),
+                eq(AuditLog.AuditAction.COMMENT_ADDED),
+                isNull(),
+                eq(String.valueOf(replyComment.getId())),
+                any(String.class)
+        );
     }
 
     private void mockAuthenticatedUser() {

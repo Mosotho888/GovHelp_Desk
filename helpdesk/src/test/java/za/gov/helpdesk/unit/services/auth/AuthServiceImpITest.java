@@ -7,9 +7,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
+import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
+import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auth.dto.response.AuthResponse;
 import za.gov.helpdesk.auth.dto.request.LoginRequest;
 import za.gov.helpdesk.auth.jwt.JwtService;
@@ -33,6 +35,8 @@ public class AuthServiceImpITest {
     private UserRepository userRepository;
     @Mock
     private JwtService jwtService;
+    @Mock
+    private AuditEventPublisher auditPublisher;
 
     @InjectMocks
     private AuthServiceImpl authServiceImpl;
@@ -81,7 +85,15 @@ public class AuthServiceImpITest {
         assertThat(authResponse.getRefreshToken()).isEqualTo("refresh.token.here");
         assertThat(authResponse.getTokenType()).isEqualTo("Bearer");
         assertThat(authResponse.getUser().getEmail()).isEqualTo(email);
+
         then(userRepository).should().save(argThat(user -> user.getLoginAttempts() == 0));
+        then(auditPublisher).should(times(1)).publishAuthAudit(
+                eq(AuditLog.AuditAction.LOGIN_SUCCESS),
+                eq(testUser.getId()),
+                eq(testUser.getName()),
+                eq(testUser.getRole().name()),
+                any()
+        );
     }
 
     @Test
@@ -114,12 +126,12 @@ public class AuthServiceImpITest {
         request.setPassword("WrongPassword@123");
 
         given(userRepository.findByEmail(email)).willReturn(Optional.of(testUser));
-        given(authManager.authenticate(any())).willThrow(new BadCredentialsException("Bad credentials"));
+        given(authManager.authenticate(any())).willThrow(new LockedException("Account locked"));
         given(userRepository.save(any(User.class))).willReturn(testUser);
 
         // When / Then
         assertThatThrownBy(() -> authServiceImpl.login(request))
-                .isInstanceOf(BadCredentialsException.class);
+                .isInstanceOf(LockedException.class);
         then(userRepository).should().save(argThat(user -> user.getActive() == false));
     }
 
