@@ -154,7 +154,7 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
             case "LOW"      -> "🟢 Low";
             case "MEDIUM"   -> "🟡 Medium";
             case "HIGH"     -> "🔴 High";
-            case "CRITICAL" -> "🚨 Critical";
+            case "URGENT" -> "🚨 Urgent";
             default         -> priority;
         };
     }
