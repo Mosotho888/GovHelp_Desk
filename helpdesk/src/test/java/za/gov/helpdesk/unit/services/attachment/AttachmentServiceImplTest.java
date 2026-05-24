@@ -13,7 +13,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
 import za.gov.helpdesk.attachment.repository.AttachmentRepository;
-import za.gov.helpdesk.attachment.service.AttachmentService;
 import za.gov.helpdesk.attachment.service.impl.AttachmentServiceImpl;
 import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
@@ -42,8 +41,6 @@ public class AttachmentServiceImplTest {
     private SecurityContext securityContext;
     @Mock
     private Authentication authentication;
-    @Mock
-    private AuditEventPublisher auditPublisher;
 
     @InjectMocks
     private AttachmentServiceImpl attachmentServiceImpl;

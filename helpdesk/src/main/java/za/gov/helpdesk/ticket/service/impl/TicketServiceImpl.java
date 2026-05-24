@@ -8,11 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.agent.repository.jpa.AgentRepository;
-import za.gov.helpdesk.auditlog.dto.response.AuditLogResponse;
 import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
-import za.gov.helpdesk.auditlog.repository.AuditLogRepository;
-import za.gov.helpdesk.auditlog.service.AuditService;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
 import za.gov.helpdesk.notification.messaging.EmailNotificationPublisher;
 import za.gov.helpdesk.ticket.dto.request.CreateTicketRequest;
@@ -26,7 +23,6 @@ import za.gov.helpdesk.users.dto.response.UserResponse;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor

@@ -1,6 +1,5 @@
 package za.gov.helpdesk.auditlog.service.impl;
 
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -8,13 +7,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 import za.gov.helpdesk.auditlog.dto.response.AuditLogResponse;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auditlog.repository.AuditLogRepository;
 import za.gov.helpdesk.auditlog.service.AuditService;
-import za.gov.helpdesk.users.model.User;
 
 import java.util.List;
 
