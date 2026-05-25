@@ -16,6 +16,7 @@ import za.gov.helpdesk.auth.jwt.JwtService;
 import za.gov.helpdesk.auth.service.impl.AuthServiceImpl;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
+import za.gov.helpdesk.users.security.CustomUserDetails;
 
 import java.util.Optional;
 
@@ -66,10 +67,12 @@ public class AuthServiceImpITest {
         LoginRequest request = new LoginRequest();
         request.setEmail(email);
         request.setPassword("Password@123");
+        CustomUserDetails principal =
+                new CustomUserDetails(testUser);
 
         given(userRepository.findByEmail(email)).willReturn(Optional.of(testUser));
         given(authManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .willReturn(new UsernamePasswordAuthenticationToken(testUser, null, testUser.getAuthorities()));
+                .willReturn(new UsernamePasswordAuthenticationToken(testUser, null, principal.getAuthorities()));
         given(jwtService.generateAccessToken(testUser)).willReturn("access.token.here");
         given(jwtService.generateRefreshToken(testUser)).willReturn("refresh.token.here");
         given(userRepository.save(any(User.class))).willReturn(testUser);

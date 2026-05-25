@@ -4,7 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.transaction.annotation.Transactional;
 import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
@@ -21,6 +23,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.stereotype.Service;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
+import za.gov.helpdesk.users.security.CustomUserDetails;
 
 
 @Service
@@ -42,56 +45,32 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(noRollbackFor = AuthenticationException.class)
     public AuthResponse login(LoginRequest loginRequest) {
-        User user = userRepository.findByEmail(loginRequest.getEmail())
-                .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
-        if (!user.isEnabled()) {
-            auditPublisher.publishAuthAudit(
-                    AuditLog.AuditAction.LOGIN_FAILED,
-                    user.getId(),
-                    user.getName(),
-                    user.getRole().name(),
-                    "Login attempt on inactive account"
-            );
-            throw new LockedException("Account locked. Contact your administrator.");
-        }
         try {
-            authenticationManager.authenticate(
+            Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
             );
-        } catch (AuthenticationException ex) {
-            // Increment failed attempt counter
-            int attempts = user.getLoginAttempts() + 1;
-            user.setLoginAttempts(attempts);
 
-            if (attempts >= maxLoginAttempts) {
-                user.setActive(false);
-                userRepository.save(user);
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            User user = userDetails.getUser();
 
-                auditPublisher.publishAuthAudit(
-                        AuditLog.AuditAction.ACCOUNT_LOCKED,
-                        user.getId(), user.getName(), user.getRole().name(), attempts + " consecutive failed login attempts"
-                );
-                throw new LockedException("Account locked after " + maxLoginAttempts
-                        + " failed attempts. Contact your administrator.");
-            } else {
-                userRepository.save(user);
-            }
+            // Reset on successful login
+            user.setLoginAttempts(0);
+            userRepository.save(user);
+
+            auditPublisher.publishAuthAudit(
+                    AuditLog.AuditAction.LOGIN_SUCCESS,
+                    user.getId(), user.getName(), user.getRole().name(),
+                    "Login successful"
+            );
+
+            return buildAuthResponse(user);
+
+        } catch (BadCredentialsException ex) {
+            handleFailedLogin(loginRequest.getEmail());
 
             throw ex;
         }
-
-        // Reset on successful login
-        user.setLoginAttempts(0);
-        userRepository.save(user);
-
-        auditPublisher.publishAuthAudit(
-                AuditLog.AuditAction.LOGIN_SUCCESS,
-                user.getId(), user.getName(), user.getRole().name(),
-                "Login successful"
-        );
-
-        return buildAuthResponse(user);
     }
 
     @Override
@@ -116,7 +95,29 @@ public class AuthServiceImpl implements AuthService {
         return buildAuthResponse(user);
     }
 
+    private void handleFailedLogin(String email) {
+        userRepository.findByEmail(email)
+                .ifPresent(user -> {
+                    int attempts = user.getLoginAttempts() + 1;
+
+                    user.setLoginAttempts(attempts);
+
+                    if (attempts >= maxLoginAttempts) {
+                        user.setActive(false);
+
+                        auditPublisher.publishAuthAudit(
+                                AuditLog.AuditAction.ACCOUNT_LOCKED,
+                                user.getId(), user.getName(), user.getRole().name(),
+                                attempts + " consecutive failed login attempts"
+                        );
+                    }
+
+                    userRepository.save(user);
+                });
+    }
+
     private AuthResponse buildAuthResponse(User user) {
+
         return AuthResponse.builder()
                 .accessToken(jwtService.generateAccessToken(user))
                 .refreshToken(jwtService.generateRefreshToken(user))
@@ -126,6 +127,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private UserResponse toUserResponse(User user) {
+
         return UserResponse.builder()
                 .id(user.getId())
                 .name(user.getName())

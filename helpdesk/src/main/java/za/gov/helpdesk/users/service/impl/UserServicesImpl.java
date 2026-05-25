@@ -74,6 +74,15 @@ public class UserServicesImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
+    public UserResponse getUserByEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+
+        return toResponse(user);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Page<UserResponse> getAllUsers(Pageable pageable) {
         return userRepository.findAll(pageable).map(this::toResponse);
     }

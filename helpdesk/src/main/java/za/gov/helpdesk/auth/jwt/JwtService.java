@@ -9,6 +9,7 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import za.gov.helpdesk.users.model.User;
+import za.gov.helpdesk.users.security.CustomUserDetails;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
@@ -28,20 +29,21 @@ public class JwtService {
     @Value("${app.jwt.refresh-token-expiry-ms}")
     private long refreshTokenExpiryMs;
 
-    // ── Token Generation ──────────────────────────────────────
-    public String generateAccessToken(User user) {
+    public String generateAccessToken(User  user) {
+
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", user.getRole().name());
         claims.put("type", "access");
 
-        return buildToken(claims, user.getUsername(), accessTokenExpiryMs);
+        return buildToken(claims, user.getEmail(), accessTokenExpiryMs);
     }
 
-    public String generateRefreshToken(User user) {
+    public String generateRefreshToken(User  user) {
+
         Map<String, Object> claims = new HashMap<>();
         claims.put("type", "refresh");
 
-        return buildToken(claims,user.getUsername(), refreshTokenExpiryMs);
+        return buildToken(claims,user.getEmail(), refreshTokenExpiryMs);
     }
 
     private String buildToken(Map<String, Object> claims, String subject, Long expiryMs) {
@@ -54,7 +56,6 @@ public class JwtService {
                 .compact();
     }
 
-    // ── Token Validation ──────────────────────────────────────
     public boolean isTokenValid(String token, UserDetails user) {
         final String email = extractEmail(token);
 
@@ -65,7 +66,6 @@ public class JwtService {
         return extractExpiration(token).before(new Date());
     }
 
-    // ── Token Validation ──────────────────────────────────────
     public String extractEmail(String token) {
         return extractClaims(token).getSubject();
     }

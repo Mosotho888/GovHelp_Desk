@@ -1,0 +1,52 @@
+package za.gov.helpdesk.users.security;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import za.gov.helpdesk.users.model.User;
+
+import java.util.Collection;
+import java.util.List;
+
+@Getter
+@RequiredArgsConstructor
+public class CustomUserDetails implements UserDetails {
+
+    private final User user;
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
+    }
+
+    @Override
+    public String getPassword() {
+        return user.getPasswordHash();
+    }
+
+    @Override
+    public String getUsername() {
+        return user.getEmail();
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return user.getActive();
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return getUser().getActive();
+    }
+
+    public Long getId() {
+        return user.getId();
+    }
+
+    public User.Role getRole() {
+        return user.getRole();
+    }
+
+}

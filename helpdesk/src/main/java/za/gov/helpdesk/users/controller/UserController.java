@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import za.gov.helpdesk.users.dto.request.CreateUserRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
@@ -39,6 +40,13 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN') or #id == authentication.principal.id")
     public ResponseEntity<UserResponse> getUserById (@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
+    }
+
+    @GetMapping("/me")
+    @Operation(summary = "Get current logged-in user profile")
+    public ResponseEntity<UserResponse> getMyProfile(Authentication authentication) {
+
+        return ResponseEntity.ok(userService.getUserByEmail(authentication.getName()));
     }
 
     @GetMapping
