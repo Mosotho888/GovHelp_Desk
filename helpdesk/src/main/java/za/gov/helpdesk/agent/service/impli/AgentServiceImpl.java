@@ -17,11 +17,8 @@ import za.gov.helpdesk.agent.repository.jdbc.ReportJdbcRepository;
 import za.gov.helpdesk.agent.service.AgentService;
 import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
-import za.gov.helpdesk.auditlog.service.AuditService;
-import za.gov.helpdesk.auth.service.AuthService;
 import za.gov.helpdesk.exception.DuplicateResourceException;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
-import za.gov.helpdesk.users.dto.response.UserResponse;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 
