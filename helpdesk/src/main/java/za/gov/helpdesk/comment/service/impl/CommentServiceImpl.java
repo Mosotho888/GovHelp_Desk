@@ -9,17 +9,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
-import za.gov.helpdesk.auditlog.service.AuditService;
 import za.gov.helpdesk.comment.dto.response.CommentResponse;
 import za.gov.helpdesk.comment.dto.request.CreateCommentRequest;
 import za.gov.helpdesk.comment.dto.request.UpdateCommentRequest;
+import za.gov.helpdesk.comment.mapper.CommentMapper;
 import za.gov.helpdesk.comment.model.Comment;
 import za.gov.helpdesk.comment.repository.CommentRepository;
 import za.gov.helpdesk.comment.service.CommentService;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
-import za.gov.helpdesk.users.dto.response.UserResponse;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 
@@ -31,6 +30,7 @@ import java.util.List;
 public class CommentServiceImpl implements CommentService {
 
     private final CommentRepository commentRepository;
+    private final CommentMapper commentMapper;
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
     private final AuditEventPublisher  auditPublisher;
@@ -74,7 +74,7 @@ public class CommentServiceImpl implements CommentService {
                 (request.isInternal() ? "Internal note" : "Comment") + " on ticket #" + ticketId
         );
 
-        return toResponse(savedComment);
+        return commentMapper.toCommentResponse(savedComment);
     }
 
     @Override
@@ -107,7 +107,7 @@ public class CommentServiceImpl implements CommentService {
                 "Reply to comment #" + parentCommentId + " on ticket #" + parent.getTicket().getId()
         );
 
-        return toResponse(savedReply);
+        return commentMapper.toCommentResponse(savedReply);
     }
 
     @Override
@@ -125,7 +125,7 @@ public class CommentServiceImpl implements CommentService {
                     if (c.isInternal() && !isAgent) return null;
                     return toResponseWithReplies(c, isAgent);
                 })
-                .map(r -> r); // keep nulls filtered naturally by Spring Page
+                .map(r -> r);
     }
 
     @Override
@@ -135,7 +135,7 @@ public class CommentServiceImpl implements CommentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Comment", commentId));
 
         return commentRepository.findByParentId(commentId)
-                .stream().map(this::toResponse).toList();
+                .stream().map(commentMapper::toCommentResponse).toList();
     }
 
     @Override
@@ -169,7 +169,7 @@ public class CommentServiceImpl implements CommentService {
                 null,
                 "Comment edited on ticket #" + comment.getTicket().getId()
         );
-        return toResponse(savedComment);
+        return commentMapper.toCommentResponse(savedComment);
     }
 
     @Override
@@ -209,33 +209,14 @@ public class CommentServiceImpl implements CommentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Authenticated user not found"));
     }
 
-    private CommentResponse toResponse(Comment c) {
-        return CommentResponse.builder()
-                .id(c.getId())
-                .ticketId(c.getTicket().getId())
-                .author(UserResponse.builder()
-                        .id(c.getAuthor().getId())
-                        .name(c.getAuthor().getName())
-                        .email(c.getAuthor().getEmail())
-                        .role(c.getAuthor().getRole())
-                        .build())
-                .parentId(c.getParent() != null ? c.getParent().getId() : null)
-                .body(c.getBody())
-                .internal(c.isInternal())
-                .type(c.getType())
-                .createdAt(c.getCreatedAt())
-                .replies(List.of())
-                .build();
-    }
-
-    private CommentResponse toResponseWithReplies(Comment c, boolean includeInternal) {
-        List<CommentResponse> replies = commentRepository.findByParentId(c.getId())
+    private CommentResponse toResponseWithReplies(Comment comment, boolean includeInternal) {
+        List<CommentResponse> replies = commentRepository.findByParentId(comment.getId())
                 .stream()
                 .filter(r -> includeInternal || !r.isInternal())
-                .map(this::toResponse)
+                .map(commentMapper::toCommentResponse)
                 .toList();
 
-        CommentResponse response = toResponse(c);
+        CommentResponse response = commentMapper.toCommentResponse(comment);
         response.setReplies(replies);
         return response;
     }
