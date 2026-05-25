@@ -16,6 +16,7 @@ import za.gov.helpdesk.ticket.dto.request.CreateTicketRequest;
 import za.gov.helpdesk.ticket.dto.response.TicketResponse;
 import za.gov.helpdesk.ticket.dto.request.UpdateTicketRequest;
 import za.gov.helpdesk.ticket.exception.InvalidStatusTransitionException;
+import za.gov.helpdesk.ticket.mapper.TicketMapper;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
 import za.gov.helpdesk.ticket.service.TicketService;
@@ -29,6 +30,7 @@ import za.gov.helpdesk.users.repository.UserRepository;
 public class TicketServiceImpl implements TicketService {
 
     private final TicketRepository ticketRepository;
+    private final TicketMapper ticketMapper;
     private final AgentRepository agentRepository;
     private final UserRepository userRepository;
     private final AuditEventPublisher auditPublisher;
@@ -76,13 +78,13 @@ public class TicketServiceImpl implements TicketService {
                     AuditLog.AuditAction.ASSIGNED_TO_AGENT, null);
         }
 
-        return toResponse(savedTicket);
+        return ticketMapper.toTicketResponse(savedTicket);
     }
 
     @Override
     @Transactional(readOnly = true)
     public TicketResponse getTicketById(Long ticketId) {
-        return toResponse(findOrThrow(ticketId));
+        return ticketMapper.toTicketResponse(findOrThrow(ticketId));
     }
 
     @Override
@@ -94,10 +96,10 @@ public class TicketServiceImpl implements TicketService {
         // End users can only see their own tickets
         if (currentUser.getRole() == User.Role.USER) {
             return ticketRepository.findByRequester(currentUser, pageable)
-                    .map(this::toResponse);
+                    .map(ticketMapper::toTicketResponse);
         }
         return ticketRepository.findWithFilters(status, priority, assigneeId, pageable)
-                .map(this::toResponse);
+                .map(ticketMapper::toTicketResponse);
     }
 
     @Override
@@ -200,7 +202,7 @@ public class TicketServiceImpl implements TicketService {
                     AuditLog.AuditAction.ESCALATED,
                     null);
         }
-        return toResponse(ticketRepository.save(ticket));
+        return ticketMapper.toTicketResponse(ticketRepository.save(ticket));
     }
 
     @Override
@@ -232,39 +234,5 @@ public class TicketServiceImpl implements TicketService {
 
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Authenticated user not found"));
-    }
-
-    private TicketResponse toResponse(Ticket ticket) {
-        UserResponse assigneeResponse = null;
-
-        if (ticket.getAssignee() != null) {
-            User agentUser = ticket.getAssignee().getUser();
-
-            assigneeResponse = UserResponse.builder()
-                    .id(agentUser.getId())
-                    .name(agentUser.getName())
-                    .email(agentUser.getEmail())
-                    .role(agentUser.getRole())
-                    .build();
-        }
-
-        return TicketResponse.builder()
-                .id(ticket.getId())
-                .subject(ticket.getSubject())
-                .description(ticket.getDescription())
-                .status(ticket.getStatus())
-                .priority(ticket.getPriority())
-                .category(ticket.getCategory())
-                .requester(UserResponse.builder()
-                        .id(ticket.getRequester().getId())
-                        .name(ticket.getRequester().getName())
-                        .email(ticket.getRequester().getEmail())
-                        .role(ticket.getRequester().getRole())
-                        .build())
-                .assignee(assigneeResponse)
-                .escalated(ticket.isEscalated())
-                .createdAt(ticket.getCreatedAt())
-                .updatedAt(ticket.getUpdatedAt())
-                .build();
     }
 }
