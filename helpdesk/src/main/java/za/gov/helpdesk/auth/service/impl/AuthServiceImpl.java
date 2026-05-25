@@ -16,6 +16,7 @@ import za.gov.helpdesk.auth.jwt.JwtService;
 import za.gov.helpdesk.auth.dto.request.LoginRequest;
 import za.gov.helpdesk.auth.service.AuthService;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
+import za.gov.helpdesk.users.converter.UserMapper;
 import za.gov.helpdesk.users.dto.response.UserResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -33,6 +34,7 @@ public class AuthServiceImpl implements AuthService {
     private static final String TOKEN_REFRESH = "refresh";
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
+    private final UserMapper userMapper;
     private final JwtService jwtService;
     private final AuditEventPublisher auditPublisher;
 
@@ -122,21 +124,7 @@ public class AuthServiceImpl implements AuthService {
                 .accessToken(jwtService.generateAccessToken(user))
                 .refreshToken(jwtService.generateRefreshToken(user))
                 .expiresIn(accessTokenExpiryMs / 1000)
-                .user(toUserResponse(user))
-                .build();
-    }
-
-    private UserResponse toUserResponse(User user) {
-
-        return UserResponse.builder()
-                .id(user.getId())
-                .name(user.getName())
-                .email(user.getEmail())
-                .role(user.getRole())
-                .phone(user.getPhone())
-                .timezone(user.getTimezone())
-                .active(user.getActive())
-                .createdAt(user.getCreatedAt())
+                .user(userMapper.toUserResponse(user))
                 .build();
     }
 }
