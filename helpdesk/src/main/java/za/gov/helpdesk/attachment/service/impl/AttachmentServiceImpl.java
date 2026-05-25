@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import za.gov.helpdesk.attachment.dto.response.AttachmentResponse;
+import za.gov.helpdesk.attachment.mapper.AttachmentMapper;
 import za.gov.helpdesk.attachment.model.Attachment;
 import za.gov.helpdesk.attachment.repository.AttachmentRepository;
 import za.gov.helpdesk.attachment.service.AttachmentService;
@@ -34,6 +35,7 @@ import java.util.*;
 public class AttachmentServiceImpl implements AttachmentService {
 
     private final AttachmentRepository attachmentRepository;
+    private final AttachmentMapper attachmentMapper;
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
     private final AuditEventPublisher auditPublisher;
@@ -97,7 +99,7 @@ public class AttachmentServiceImpl implements AttachmentService {
                     "Uploaded to ticket #" + ticketId + " (" + (savedAttachment.getSizeBytes() / 1024) + " KB)"
             );
 
-            responses.add(toResponse(savedAttachment));
+            responses.add(attachmentMapper.toAttachmentResponse(savedAttachment));
         }
 
         return responses;
@@ -108,8 +110,9 @@ public class AttachmentServiceImpl implements AttachmentService {
     public List<AttachmentResponse> getAttachments(Long ticketId) {
         ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
+
         return attachmentRepository.findByTicketId(ticketId)
-                .stream().map(this::toResponse).toList();
+                .stream().map(attachmentMapper::toAttachmentResponse).toList();
     }
 
     @Override
@@ -128,7 +131,7 @@ public class AttachmentServiceImpl implements AttachmentService {
                 "Downloaded to ticket #" + attachment.getTicket().getId()
         );
 
-        return toResponse(attachment);
+        return attachmentMapper.toAttachmentResponse(attachment);
     }
 
     @Override
@@ -207,23 +210,5 @@ public class AttachmentServiceImpl implements AttachmentService {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Authenticated user not found"));
-    }
-
-    private AttachmentResponse toResponse(Attachment a) {
-        return AttachmentResponse.builder()
-                .id(a.getId())
-                .ticketId(a.getTicket().getId())
-                .uploader(UserResponse.builder()
-                        .id(a.getUploader().getId())
-                        .name(a.getUploader().getName())
-                        .email(a.getUploader().getEmail())
-                        .role(a.getUploader().getRole())
-                        .build())
-                .filename(a.getFilename())
-                .contentType(a.getContentType())
-                .sizeBytes(a.getSizeBytes())
-                .downloadUrl("/v1/attachments/" + a.getId())
-                .createdAt(a.getCreatedAt())
-                .build();
     }
 }
