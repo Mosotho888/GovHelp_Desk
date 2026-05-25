@@ -10,6 +10,7 @@ import za.gov.helpdesk.agent.dto.response.AgentResponse;
 import za.gov.helpdesk.agent.dto.response.AgentStatsResponse;
 import za.gov.helpdesk.agent.dto.request.CreateAgentRequest;
 import za.gov.helpdesk.agent.dto.request.UpdateAgentRequest;
+import za.gov.helpdesk.agent.mapper.AgentMapper;
 import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.agent.repository.jpa.AgentRepository;
 import za.gov.helpdesk.agent.repository.jdbc.ReportJdbcRepository;
@@ -32,6 +33,7 @@ public class AgentServiceImpl implements AgentService {
 
     private final AgentRepository agentRepository;
     private final UserRepository userRepository;
+    private final AgentMapper agentMapper;
     private final ReportJdbcRepository reportJdbcRepository;
     private final AuditEventPublisher auditPublisher;
 
@@ -70,21 +72,21 @@ public class AgentServiceImpl implements AgentService {
                 "Registered as agent in department: " + (savedAgent.getDepartment() != null ? savedAgent.getDepartment() : "N/A")
         );
 
-        return toResponse(savedAgent);
+        return agentMapper.toAgentResponse(savedAgent);
     }
 
     @Override
     @Transactional(readOnly = true)
     public AgentResponse getAgentById(Long id) {
 
-        return toResponse(findOrThrow(id));
+        return agentMapper.toAgentResponse(findOrThrow(id));
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<AgentResponse> getAllAgents(Pageable pageable) {
 
-        return agentRepository.findAll(pageable).map(this::toResponse);
+        return agentRepository.findAll(pageable).map(agentMapper::toAgentResponse);
     }
 
     @Override
@@ -139,7 +141,7 @@ public class AgentServiceImpl implements AgentService {
             );
             agent.setDepartment(request.getDepartment());
         }
-        return toResponse(agentRepository.save(agent));
+        return agentMapper.toAgentResponse(agentRepository.save(agent));
     }
 
     private Agent findOrThrow(Long id) {
@@ -150,27 +152,10 @@ public class AgentServiceImpl implements AgentService {
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
+
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Authenticated user not found"));
-    }
-
-    private AgentResponse toResponse(Agent agent) {
-        User user = agent.getUser();
-
-        return AgentResponse.builder()
-                .id(agent.getId())
-                .department(agent.getDepartment())
-                .availability(agent.getAvailability())
-                .user(UserResponse.builder()
-                        .id(user.getId())
-                        .name(user.getName())
-                        .email(user.getEmail())
-                        .role(user.getRole())
-                        .phone(user.getPhone())
-                        .active(user.getActive())
-                        .build())
-                .build();
     }
 
     private long toLong(Object value) {

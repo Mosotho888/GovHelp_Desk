@@ -6,9 +6,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
-import za.gov.helpdesk.auditlog.service.AuditService;
 import za.gov.helpdesk.exception.DuplicateResourceException;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
+import za.gov.helpdesk.users.converter.UserMapper;
 import za.gov.helpdesk.users.dto.request.CreateUserRequest;
 import za.gov.helpdesk.users.dto.request.UpdateUserRequest;
 import za.gov.helpdesk.users.dto.response.UserResponse;
@@ -26,6 +26,7 @@ import za.gov.helpdesk.users.service.UserService;
 public class UserServicesImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final AuditEventPublisher auditPublisher;
 
@@ -63,13 +64,13 @@ public class UserServicesImpl implements UserService {
                 "User created with role " + savedUser.getRole().name()
         );
 
-        return toResponse(savedUser);
+        return userMapper.toUserResponse(savedUser);
     }
 
     @Override
     @Transactional(readOnly = true)
     public UserResponse getUserById(Long id) {
-        return toResponse(findOrThrow(id));
+        return userMapper.toUserResponse(findOrThrow(id));
     }
 
     @Override
@@ -78,13 +79,13 @@ public class UserServicesImpl implements UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
 
-        return toResponse(user);
+        return userMapper.toUserResponse(user);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<UserResponse> getAllUsers(Pageable pageable) {
-        return userRepository.findAll(pageable).map(this::toResponse);
+        return userRepository.findAll(pageable).map(userMapper::toUserResponse);
     }
 
     @Override
@@ -126,7 +127,7 @@ public class UserServicesImpl implements UserService {
             );
         }
 
-        return toResponse(savedUser);
+        return userMapper.toUserResponse(savedUser);
     }
 
     @Override
@@ -167,18 +168,5 @@ public class UserServicesImpl implements UserService {
                     .id(0L).name("System").email("system")
                     .role(User.Role.ADMIN).build();
         }
-    }
-
-    public UserResponse toResponse(User user) {
-        return UserResponse.builder()
-                .id(user.getId())
-                .name(user.getName())
-                .email(user.getEmail())
-                .role(user.getRole())
-                .phone(user.getPhone())
-                .timezone(user.getTimezone())
-                .active(user.getActive())
-                .createdAt(user.getCreatedAt())
-                .build();
     }
 }
