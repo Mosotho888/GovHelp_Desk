@@ -12,7 +12,9 @@ import za.gov.helpdesk.auth.dto.response.AuthResponse;
 import za.gov.helpdesk.auth.dto.request.RefreshTokenRequest;
 import za.gov.helpdesk.auth.jwt.JwtService;
 import za.gov.helpdesk.auth.dto.request.LoginRequest;
+import za.gov.helpdesk.auth.model.RefreshToken;
 import za.gov.helpdesk.auth.service.AuthService;
+import za.gov.helpdesk.auth.service.RefreshTokenService;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
 import za.gov.helpdesk.users.converter.UserMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +36,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserMapper userMapper;
     private final JwtService jwtService;
     private final AuditEventPublisher auditPublisher;
+    private final RefreshTokenService refreshTokenService;
 
     @Value("${app.security.max-login-attempts}")
     private int maxLoginAttempts;
@@ -57,13 +60,16 @@ public class AuthServiceImpl implements AuthService {
             user.setLoginAttempts(0);
             userRepository.save(user);
 
+            String refreshToken = jwtService.generateRefreshToken(user);
+            refreshTokenService.store(refreshToken, user);
+
             auditPublisher.publishAuthAudit(
                     AuditLog.AuditAction.LOGIN_SUCCESS,
                     user.getId(), user.getName(), user.getRole().name(),
                     "Login successful"
             );
 
-            return buildAuthResponse(user);
+            return buildAuthResponse(user, refreshToken);
 
         } catch (BadCredentialsException ex) {
             handleFailedLogin(loginRequest.getEmail());
@@ -75,15 +81,16 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(readOnly = true)
     public AuthResponse refresh(RefreshTokenRequest refreshToken) {
-        String email = jwtService.extractEmail(refreshToken.getRefreshToken());
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        if (!TOKEN_REFRESH.equals(jwtService.extractTokenType(refreshToken.getRefreshToken()))
-                || jwtService.isTokenExpired(refreshToken.getRefreshToken())) {
+        if (jwtService.isRefreshToken(refreshToken.getRefreshToken()) || jwtService.isTokenExpired(refreshToken.getRefreshToken())) {
             throw new BadCredentialsException("Invalid or expired refresh token");
         }
+
+        RefreshToken stored = refreshTokenService.validate(refreshToken.getRefreshToken());
+        User user = stored.getUser();
+
+        String newRefreshToken = jwtService.generateRefreshToken(user);
+        refreshTokenService.store(newRefreshToken, user);
 
         auditPublisher.publishAuthAudit(
                 AuditLog.AuditAction.TOKEN_REFRESHED,
@@ -91,7 +98,7 @@ public class AuthServiceImpl implements AuthService {
                 "Access token refreshed"
         );
 
-        return buildAuthResponse(user);
+        return buildAuthResponse(user, newRefreshToken);
     }
 
     private void handleFailedLogin(String email) {
@@ -115,11 +122,22 @@ public class AuthServiceImpl implements AuthService {
                 });
     }
 
-    private AuthResponse buildAuthResponse(User user) {
+    @Override
+    @Transactional
+    public void logout(String rawRefreshToken, User actor) {
+        refreshTokenService.revokeAll(actor);
+
+        auditPublisher.publishAuthAudit(
+                AuditLog.AuditAction.FORCED_LOGOUT,
+                actor.getId(), actor.getName(), actor.getRole().name(),
+                "User logged out");
+    }
+
+    private AuthResponse buildAuthResponse(User user,  String refreshToken) {
 
         return AuthResponse.builder()
                 .accessToken(jwtService.generateAccessToken(user))
-                .refreshToken(jwtService.generateRefreshToken(user))
+                .refreshToken(refreshToken)
                 .expiresIn(accessTokenExpiryMs / 1000)
                 .user(userMapper.toUserResponse(user))
                 .build();
