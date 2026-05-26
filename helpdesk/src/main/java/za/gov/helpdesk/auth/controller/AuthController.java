@@ -3,6 +3,7 @@ package za.gov.helpdesk.auth.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import za.gov.helpdesk.auth.dto.response.AuthResponse;
 import za.gov.helpdesk.auth.dto.request.RefreshTokenRequest;
 import za.gov.helpdesk.auth.service.AuthService;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import za.gov.helpdesk.users.security.CustomUserDetails;
 
 @RestController
 @RequestMapping("/v1/auth")
@@ -32,5 +34,15 @@ public class AuthController {
     @Operation(summary = "Exchange a refresh token for a new token")
     public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
         return ResponseEntity.ok(authService.refresh(request));
+    }
+
+    @PostMapping("/logout")
+    @Operation(summary = "Logout and revoke refresh token")
+    public ResponseEntity<Void> logout(
+            @RequestBody RefreshTokenRequest request,
+            @AuthenticationPrincipal CustomUserDetails principal) {
+
+        authService.logout(request.getRefreshToken(), principal.getUser());
+        return ResponseEntity.noContent().build();
     }
 }
