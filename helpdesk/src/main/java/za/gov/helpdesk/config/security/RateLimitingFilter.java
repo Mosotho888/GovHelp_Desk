@@ -43,7 +43,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             response.getWriter().write("""
                     {
                         "status": 429,
-                        "error": "RATE_LIMIT_EXCEEDED"
+                        "error": "RATE_LIMIT_EXCEEDED",
                         "message": "Too many requests. Please slow down and retry after one hour"
                     }
                     """);

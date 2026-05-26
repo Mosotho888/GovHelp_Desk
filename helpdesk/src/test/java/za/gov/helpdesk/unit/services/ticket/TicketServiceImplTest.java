@@ -26,6 +26,7 @@ import za.gov.helpdesk.ticket.service.impl.TicketServiceImpl;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 
+import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -95,7 +96,7 @@ public class TicketServiceImplTest {
         given(userRepository.findByEmail("john@citizen.za")).willReturn(Optional.of(endUser));
         given(ticketRepository.save(any(Ticket.class))).willReturn(openTicket);
 
-        TicketResponse response = ticketServiceImpl.createTicket(req);
+        TicketResponse response = ticketServiceImpl.createTicket(req, endUser);
 
         assertThat(response.getSubject()).isEqualTo("Login broken");
         assertThat(response.getStatus()).isEqualTo(Ticket.Status.OPEN);
@@ -126,7 +127,7 @@ public class TicketServiceImplTest {
         given(ticketRepository.findById(100L)).willReturn(Optional.of(openTicket));
         given(ticketRepository.save(any(Ticket.class))).willAnswer(i -> i.getArgument(0));
 
-        TicketResponse response = ticketServiceImpl.updateTicket(100L, req);
+        TicketResponse response = ticketServiceImpl.updateTicket(100L, req, agentUser);
 
         assertThat(response.getStatus()).isEqualTo(Ticket.Status.IN_PROGRESS);
 
@@ -159,7 +160,7 @@ public class TicketServiceImplTest {
         given(userRepository.findByEmail("jane@gov.za")).willReturn(Optional.of(agentUser));
         given(ticketRepository.findById(200L)).willReturn(Optional.of(closedTicket));
 
-        assertThatThrownBy(() -> ticketServiceImpl.updateTicket(200L, req))
+        assertThatThrownBy(() -> ticketServiceImpl.updateTicket(200L, req, agentUser))
                 .isInstanceOf(InvalidStatusTransitionException.class)
                 .hasMessageContaining("CLOSED")
                 .hasMessageContaining("OPEN");
@@ -181,7 +182,7 @@ public class TicketServiceImplTest {
     void getTicketById_unknownId_throwsNotFound() {
         given(ticketRepository.findById(999L)).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> ticketServiceImpl.getTicketById(999L))
+        assertThatThrownBy(() -> ticketServiceImpl.getTicketById(999L, endUser))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("999");
     }
@@ -201,7 +202,7 @@ public class TicketServiceImplTest {
         given(agentRepository.findById(1L)).willReturn(Optional.of(agent));
         given(ticketRepository.save(any(Ticket.class))).willAnswer(i -> i.getArgument(0));
 
-        ticketServiceImpl.updateTicket(100L, req);
+        ticketServiceImpl.updateTicket(100L, req, agentUser);
 
         then(auditPublisher).should(times(1)).publishAudit(
                 eq(AuditLog.EntityType.TICKET),

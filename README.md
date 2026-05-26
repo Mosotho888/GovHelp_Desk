@@ -1,78 +1,92 @@
 # Government HelpDesk API
 
-A production-style Spring Boot REST API for managing government support requests, agents, users, ticket comments, attachments, audit history, and role-based access. The project is built as a backend portfolio piece that demonstrates secure API design, relational data modelling, containerized infrastructure, automated database migrations, and integration testing with real PostgreSQL containers.
+A Spring Boot REST API for managing government-style helpdesk support requests. The system covers authentication, users, agents, tickets, comments, attachments, email/audit events, and role-based access control.
 
-## Highlights
+The project is structured as a production-style backend portfolio project: it uses PostgreSQL with Flyway migrations, JWT security, RabbitMQ-backed asynchronous workflows, Dockerized infrastructure, OpenAPI documentation, and unit/integration tests.
 
-- JWT authentication with access and refresh tokens.
-- Role-based access control for `USER`, `AGENT`, and `ADMIN`.
-- Ticket lifecycle management with guarded status transitions.
-- Agent assignment, availability tracking, and agent statistics.
-- User administration with account deactivation and login lockout.
-- Ticket comments, threaded replies, internal notes, and attachments.
-- Audit logging for ticket creation, assignment, escalation, deletion, and status changes.
-- PostgreSQL schema managed through Flyway migrations.
-- Docker Compose setup for the API, PostgreSQL, and RabbitMQ.
-- Swagger/OpenAPI documentation.
-- Unit and integration test coverage using JUnit, Spring MockMvc, and Testcontainers.
+## What This Project Does
+
+- Authenticates users with JWT access and refresh tokens.
+- Enforces role-based access for `USER`, `AGENT`, and `ADMIN`.
+- Lets users create and track support tickets.
+- Lets agents/admins update ticket status, priority, escalation, and assignment.
+- Supports threaded ticket comments, internal notes, and resolution comments.
+- Supports file uploads/downloads for ticket attachments.
+- Tracks audit history for tickets, users, agents, authentication events, and actor activity.
+- Publishes/consumes RabbitMQ events for audit and email notification workflows.
+- Stores relational data in PostgreSQL and manages schema changes with Flyway.
+- Provides Swagger UI/OpenAPI docs for API exploration.
+- Includes unit and integration tests using JUnit, Mockito, MockMvc, and Testcontainers.
 
 ## Tech Stack
 
 | Area | Technology |
 | --- | --- |
 | Language | Java 17 |
-| Framework | Spring Boot 3.5 |
+| Framework | Spring Boot 3.5.0 |
 | Security | Spring Security, JWT, BCrypt |
 | Database | PostgreSQL, Spring Data JPA, JDBC |
 | Migrations | Flyway |
 | Messaging | RabbitMQ |
 | Email | Spring Mail / JavaMailSender |
+| Templates | Thymeleaf |
 | API Docs | Springdoc OpenAPI / Swagger UI |
-| Testing | JUnit 5, Mockito, MockMvc, Testcontainers, JaCoCo |
+| Testing | JUnit 5, Mockito, MockMvc, Testcontainers, Rest Assured, JaCoCo |
 | Build | Maven Wrapper |
 | Deployment | Docker, Docker Compose, Railway config |
 
 ## Architecture
 
-The application follows a layered backend structure:
-
 ```text
-Controller -> Service -> Repository -> PostgreSQL
-              |
-              -> Security, JWT, validation, audit logging
-              -> RabbitMQ/email configuration for async notification workflows
+Client
+  |
+  v
+Spring MVC Controllers
+  |
+  v
+Service Layer
+  |
+  +--> Spring Data JPA / JDBC repositories
+  +--> JWT security and method-level authorization
+  +--> Audit event publishing
+  +--> RabbitMQ email notification workflows
+  |
+  v
+PostgreSQL / RabbitMQ / File storage
 ```
 
-Main domains:
+Main modules:
 
-- `auth`: login, token refresh, JWT filtering, account lockout.
-- `users`: user creation, updates, deactivation, role management.
-- `agents`: support agent records, availability, and statistics.
-- `ticket`: support ticket lifecycle and audit trails.
-- `comment`: ticket comments, replies, and internal notes.
-- `attachment`: upload, list, download, and delete ticket files.
-- `auditlog`: immutable history for ticket-related activity.
+| Module | Purpose |
+| --- | --- |
+| `auth` | Login, refresh tokens, JWT filtering, user details loading |
+| `users` | User CRUD, profile lookup, deactivation, roles |
+| `agent` | Agent registration, availability, departments, statistics |
+| `ticket` | Ticket creation, filtering, status transitions, assignment |
+| `comment` | Ticket comments, replies, internal notes, edit/delete rules |
+| `attachment` | Multipart upload, list, download, delete |
+| `auditlog` | Immutable audit history and audit queries |
+| `notification` | Email templates, publishing, and consumers |
+| `config` | Security, RabbitMQ, mail, database, OpenAPI, rate limiting |
+| `exception` | Global exception handling and API error responses |
 
 ## Project Structure
 
 ```text
 GovHelp_Desk/
+  README.md
+  INTERVIEW_GUIDE.md
   helpdesk/
-    src/main/java/za/gov/helpdesk/
-      auth/
-      users/
-      agent/
-      ticket/
-      comment/
-      attachment/
-      auditlog/
-      config/
-      exception/
-    src/main/resources/db/migration/
-    src/test/java/za/gov/helpdesk/
-    docker-compose.yml
     Dockerfile
+    docker-compose.yml
     pom.xml
+    railway.json
+    src/main/java/za/gov/helpdesk/
+    src/main/resources/
+      application.properties
+      db/migration/
+    src/test/java/za/gov/helpdesk/
+    src/test/resources/application-test.properties
 ```
 
 ## Getting Started
@@ -94,7 +108,7 @@ cd GovHelp_Desk/helpdesk
 
 ### Environment Variables
 
-Create a `.env` file in the `helpdesk` directory when running with Docker Compose:
+Create a `.env` file inside the `helpdesk` directory for Docker Compose:
 
 ```env
 PG_HOST=localhost
@@ -105,9 +119,11 @@ PG_PASSWORD=helpdesk
 
 HIBERNATE_DIALECT=org.hibernate.dialect.PostgreSQLDialect
 
-JWT_SECRET_KEY=5JzoMbk6E5qIqHSuBTgeQCARtUsxAkBiHwdjXOSW8kWdXzYmP3X51C0
+JWT_SECRET_KEY=replace-with-a-long-random-secret
 JWT_VALIDITY=3600000
 JWT_REFRESH_VALIDITY=604800000
+
+UPLOAD_PATH=./uploads
 
 MAIL_HOST=localhost
 MAIL_PORT=2525
@@ -120,49 +136,31 @@ RABBITMQ_PASSWORD=guest
 RABBITMQ_DEFAULT_USER=guest
 RABBITMQ_DEFAULT_PASS=guest
 
-TECHNICIAN_ASSIGNMENT_QUEUE=technician.assignment.queue
-TICKET_STATUS_CHANGE_QUEUE=ticket.status-change.queue
-TICKET_COMMENT_QUEUE=ticket.comment.queue
-TICKET_CREATION_QUEUE=ticket.creation.queue
-
-TECHNICIAN_ASSIGNMENT_EXCHANGE=technician.assignment.exchange
-TICKET_STATUS_CHANGE_EXCHANGE=ticket.status-change.exchange
-TICKET_COMMENT_EXCHANGE=ticket.comment.exchange
-TICKET_CREATION_EXCHANGE=ticket.creation.exchange
-
-TECHNICIAN_ASSIGNED_ROUTING_KEY=technician.assigned
-TICKET_STATUS_CHANGED_ROUTING_KEY=ticket.status.changed
-TICKET_COMMENT_ADDED_ROUTING_KEY=ticket.comment.added
-TICKET_CREATED_ROUTING_KEY=ticket.created
+MIN_CONCURRENCY=2
 ```
 
-Use stronger secrets and real service credentials outside local development.
+Use strong secrets and real managed-service credentials outside local development.
 
 ## Run Locally
 
 ### With Docker Compose
 
+From `helpdesk/`:
+
 ```bash
 docker compose up --build
 ```
 
-The API runs on:
+Services:
 
-```text
-http://localhost:8080
-```
-
-Swagger UI:
-
-```text
-http://localhost:8080/swagger-ui.html
-```
-
-Health endpoint:
-
-```text
-http://localhost:8080/actuator/health
-```
+| Service | URL |
+| --- | --- |
+| API | `http://localhost:8080` |
+| Swagger UI | `http://localhost:8080/swagger-ui.html` |
+| OpenAPI JSON | `http://localhost:8080/v3/api-docs` |
+| Actuator health | `http://localhost:8080/actuator/health` |
+| RabbitMQ management | `http://localhost:15672` |
+| PostgreSQL | `localhost:5433` |
 
 ### With Maven
 
@@ -192,16 +190,17 @@ On Windows:
 .\mvnw.cmd test
 ```
 
-Current verified result:
+For coverage enforcement:
 
-```text
-Tests run: 44, Failures: 0, Errors: 0, Skipped: 0
-BUILD SUCCESS
+```bash
+./mvnw verify
 ```
+
+JaCoCo is configured with an 80% line coverage threshold during `verify`.
 
 ## API Overview
 
-All protected endpoints require:
+Protected endpoints require:
 
 ```http
 Authorization: Bearer <access-token>
@@ -220,9 +219,10 @@ Authorization: Bearer <access-token>
 | --- | --- | --- | --- |
 | POST | `/v1/users` | Admin | Create a user |
 | GET | `/v1/users` | Admin | List users |
+| GET | `/v1/users/me` | Authenticated | Get the current user profile |
 | GET | `/v1/users/{id}` | Admin or owner | Get user by ID |
-| PUT | `/v1/users/{id}` | Admin or owner | Update a user profile |
-| DELETE | `/v1/users/{id}` | Admin | Deactivate a user |
+| PUT | `/v1/users/{id}` | Admin or owner | Update user profile |
+| DELETE | `/v1/users/{id}` | Admin | Deactivate user |
 
 ### Agents
 
@@ -239,11 +239,10 @@ Authorization: Bearer <access-token>
 | Method | Endpoint | Access | Description |
 | --- | --- | --- | --- |
 | POST | `/v1/tickets` | Authenticated | Create a ticket |
-| GET | `/v1/tickets` | Authenticated | List tickets with filters |
+| GET | `/v1/tickets` | Authenticated | List tickets with optional `status`, `priority`, and `assigneeId` filters |
 | GET | `/v1/tickets/{id}` | Authenticated | Get ticket by ID |
 | PATCH | `/v1/tickets/{id}` | Agent/Admin | Update status, priority, escalation, or assignee |
 | DELETE | `/v1/tickets/{id}` | Admin | Delete a ticket |
-| GET | `/v1/tickets/{id}/audit` | Agent/Admin | View ticket audit history |
 
 ### Comments
 
@@ -253,63 +252,77 @@ Authorization: Bearer <access-token>
 | GET | `/v1/tickets/{ticketId}/comments` | Authenticated | List comments on a ticket |
 | POST | `/v1/comments/{commentId}/replies` | Authenticated | Reply to a comment |
 | GET | `/v1/comments/{commentId}/replies` | Authenticated | List replies |
-| PUT | `/v1/comments/{commentId}` | Author/Admin rules | Edit a comment |
-| DELETE | `/v1/comments/{commentId}` | Author/Admin rules | Delete a comment |
+| PUT | `/v1/comments/{commentId}` | Authenticated | Edit a comment within allowed rules |
+| DELETE | `/v1/comments/{commentId}` | Authenticated | Delete a comment within allowed rules |
 
 ### Attachments
 
 | Method | Endpoint | Access | Description |
 | --- | --- | --- | --- |
-| POST | `/v1/tickets/{ticketId}/attachments` | Authenticated | Upload one or more files |
+| POST | `/v1/tickets/{ticketId}/attachments` | Authenticated | Upload up to 5 files, 20 MB each |
 | GET | `/v1/tickets/{ticketId}/attachments` | Authenticated | List ticket attachments |
-| GET | `/v1/attachments/{attachmentId}` | Authenticated | Download an attachment |
-| DELETE | `/v1/attachments/{attachmentId}` | Authenticated | Delete an attachment |
+| GET | `/v1/attachments/{attachmentId}` | Authenticated | Download attachment |
+| DELETE | `/v1/attachments/{attachmentId}` | Authenticated | Delete attachment |
+
+### Audit Logs
+
+| Method | Endpoint | Access | Description |
+| --- | --- | --- | --- |
+| GET | `/v1/audit/tickets/{id}` | Agent/Admin | Get audit trail for a ticket |
+| GET | `/v1/audit/users/{id}` | Admin | Get audit trail for a user |
+| GET | `/v1/audit/agents/{id}` | Admin | Get audit trail for an agent |
+| GET | `/v1/audit/auth` | Admin | Get authentication audit events |
+| GET | `/v1/audit/actor/{actorId}` | Admin | Get actions performed by one actor |
+| GET | `/v1/audit/action/{action}` | Admin | Get events by action type |
 
 ## Security Features
 
 - Stateless JWT authentication.
-- BCrypt password hashing.
-- Role-based method security using `@PreAuthorize`.
+- BCrypt password hashing with strength 12.
+- Method-level authorization through `@PreAuthorize`.
 - Account lockout after repeated failed login attempts.
 - Inactive users are blocked from authentication.
-- JSON error responses for unauthorized and forbidden requests.
-- Security headers including content security policy and frame protection.
+- Custom JSON responses for unauthorized and forbidden requests.
+- Security headers for HSTS, CSP, and frame protection.
+- Rate-limiting filter wired into the security chain.
 
 ## Database
 
-Flyway migrations create and seed:
-
-- users
-- agents
-- tickets
-- comments
-- attachments
-- audit logs
-
-Migrations live in:
+Flyway migrations live in:
 
 ```text
 helpdesk/src/main/resources/db/migration
 ```
 
-## Portfolio Notes
+Current migration set:
 
-This project demonstrates:
+| Migration | Purpose |
+| --- | --- |
+| `V1__helpdesk_schema.sql` | Creates users, agents, tickets, comments, attachments, and audit log tables |
+| `V2__seed_data.sql` | Inserts local/demo data |
+| `V3__refactor_audit_log.sql` | Refactors audit logging into entity-based audit records |
 
-- Designing a secure REST API around realistic support-desk workflows.
-- Using PostgreSQL constraints and foreign keys to protect domain integrity.
-- Applying Testcontainers for database-backed integration tests.
-- Handling authentication, authorization, validation, and global exception responses.
-- Structuring a Spring Boot codebase into maintainable domain modules.
-- Packaging infrastructure with Docker for local development and deployment.
+## Useful Commands
 
-## Future Improvements
+```bash
+# Run app locally
+./mvnw spring-boot:run
 
-- Add CI with GitHub Actions.
-- Add SLA tracking and ticket due dates.
-- Add notification event consumers for RabbitMQ workflows.
-- Add API examples or a Postman collection.
-- Add a frontend dashboard for users, agents, and admins.
+# Run tests
+./mvnw test
+
+# Run tests and coverage checks
+./mvnw verify
+
+# Build jar
+./mvnw clean package
+
+# Start local infrastructure and API
+docker compose up --build
+
+# Stop local infrastructure
+docker compose down
+```
 
 ## License
 

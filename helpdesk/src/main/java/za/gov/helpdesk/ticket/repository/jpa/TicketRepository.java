@@ -9,6 +9,8 @@ import za.gov.helpdesk.ticket.model.Ticket;
 import org.springframework.data.jpa.repository.JpaRepository;
 import za.gov.helpdesk.users.model.User;
 
+import java.util.Optional;
+
 @Repository
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
@@ -24,6 +26,24 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
             @Param("priority") Ticket.Priority priority,
             @Param("assigneeId") Long assigneeId,
             Pageable pageable
+    );
+
+    @Query("""
+        SELECT t FROM Ticket t
+        WHERE t.id = :ticketId
+        AND (
+            :role = 'ADMIN'
+            OR (:role = 'AGENT'
+                AND (t.assignee IS NULL
+                     OR t.assignee.user.email = :email))
+            OR (:role = 'USER'
+                AND t.requester.email = :email)
+        )
+    """)
+    Optional<Ticket> findByIdAndPrincipal(
+            @Param("ticketId") Long ticketId,
+            @Param("email")    String email,
+            @Param("role")     String role
     );
 
     // For end users: only their own tickets

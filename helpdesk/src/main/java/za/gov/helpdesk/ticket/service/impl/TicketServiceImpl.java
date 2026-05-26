@@ -37,15 +37,14 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional
-    public TicketResponse createTicket(CreateTicketRequest request) {
-        User requester = getCurrentUser();
+    public TicketResponse createTicket(CreateTicketRequest request, User actor) {
 
         Ticket.TicketBuilder builder = Ticket.builder()
                 .subject(request.getSubject())
                 .description(request.getDescription())
                 .priority(request.getPriority() != null ? request.getPriority() : Ticket.Priority.MEDIUM)
                 .category(request.getCategory())
-                .requester(requester)
+                .requester(actor)
                 .status(Ticket.Status.OPEN);
 
         if (request.getAssigneeId() != null) {
@@ -59,7 +58,7 @@ public class TicketServiceImpl implements TicketService {
         auditPublisher.publishAudit(
                 AuditLog.EntityType.TICKET,
                 savedTicket.getId(),
-                requester,
+                actor,
                 AuditLog.AuditAction.TICKET_CREATED,
                 null,
                 Ticket.Status.OPEN.name(),
@@ -67,7 +66,7 @@ public class TicketServiceImpl implements TicketService {
         );
 
         emailPublisher.publish(
-                savedTicket, requester,
+                savedTicket, actor,
                 savedTicket.getAssignee() != null ? savedTicket.getAssignee().getUser() : null,
                 AuditLog.AuditAction.TICKET_CREATED, null);
 
@@ -82,19 +81,17 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional(readOnly = true)
-    public TicketResponse getTicketById(Long ticketId) {
-        return ticketMapper.toTicketResponse(findOrThrow(ticketId));
+    public TicketResponse getTicketById(Long ticketId, User actor) {
+        return ticketMapper.toTicketResponse(findOrThrow(ticketId, actor));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<TicketResponse> getTickets(Ticket.Status status, Ticket.Priority priority, Long assigneeId, Pageable pageable) {
-
-        User currentUser = getCurrentUser();
+    public Page<TicketResponse> getTickets(Ticket.Status status, Ticket.Priority priority, Long assigneeId, Pageable pageable, User actor) {
 
         // End users can only see their own tickets
-        if (currentUser.getRole() == User.Role.USER) {
-            return ticketRepository.findByRequester(currentUser, pageable)
+        if (actor.getRole() == User.Role.USER) {
+            return ticketRepository.findByRequester(actor, pageable)
                     .map(ticketMapper::toTicketResponse);
         }
         return ticketRepository.findWithFilters(status, priority, assigneeId, pageable)
@@ -103,9 +100,9 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional
-    public TicketResponse updateTicket(Long ticketId, UpdateTicketRequest request) {
-        Ticket ticket = findOrThrow(ticketId);
-        User actor = getCurrentUser();
+    public TicketResponse updateTicket(Long ticketId, UpdateTicketRequest request, User user) {
+
+        Ticket ticket = findOrThrow(ticketId, user);
 
         // Status transition with lifecycle guard
         if (request.getStatus() != null && !ticket.getStatus().equals(request.getStatus())) {
@@ -116,7 +113,7 @@ public class TicketServiceImpl implements TicketService {
             auditPublisher.publishAudit(
                     AuditLog.EntityType.TICKET,
                     ticket.getId(),
-                    actor,
+                    user,
                     AuditLog.AuditAction.STATUS_CHANGED,
                     ticket.getStatus().name(),
                     request.getStatus().name(),
@@ -142,7 +139,7 @@ public class TicketServiceImpl implements TicketService {
             auditPublisher.publishAudit(
                     AuditLog.EntityType.TICKET,
                     ticket.getId(),
-                    actor,
+                    user,
                     AuditLog.AuditAction.ASSIGNED_TO_AGENT,
                     oldAssignee,
                     newAgent.getUser().getName(),
@@ -165,7 +162,7 @@ public class TicketServiceImpl implements TicketService {
             auditPublisher.publishAudit(
                     AuditLog.EntityType.TICKET,
                     ticket.getId(),
-                    actor,
+                    user,
                     AuditLog.AuditAction.PRIORITY_CHANGED,
                     ticket.getPriority().name(),
                     request.getPriority().name(),
@@ -186,7 +183,7 @@ public class TicketServiceImpl implements TicketService {
             auditPublisher.publishAudit(
                     AuditLog.EntityType.TICKET,
                     ticket.getId(),
-                    actor,
+                    user,
                     AuditLog.AuditAction.ESCALATED,
                     "false",
                     "true",
@@ -206,32 +203,30 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional
-    public void deleteTicket(Long ticketId) {
-        Ticket ticket = findOrThrow(ticketId);
-        User actor = getCurrentUser();
+    public void deleteTicket(Long ticketId, User user) {
+
+        Ticket ticket = ticketRepository.findById(ticketId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
 
         auditPublisher.publishAudit(
                 AuditLog.EntityType.TICKET,
                 ticket.getId(),
-                actor,
+                user,
                 AuditLog.AuditAction.TICKET_DELETED,
                 ticket.getStatus().name(),
                 "DELETED",
-                "Ticket deleted by " + actor.getName()
+                "Ticket deleted by " + user.getName()
         );
 
         ticketRepository.delete(ticket);
     }
 
-    private Ticket findOrThrow(Long id) {
-        return ticketRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Ticket", id));
-    }
-
-    private User getCurrentUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Authenticated user not found"));
+    private Ticket findOrThrow(Long ticketId, User actor) {
+        return ticketRepository
+                .findByIdAndPrincipal(
+                        ticketId,
+                        actor.getEmail(),
+                        actor.getRole().name()
+                ).orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
     }
 }

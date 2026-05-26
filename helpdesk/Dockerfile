@@ -1,5 +1,5 @@
 # Stage 1: Builder - Building the application
-FROM eclipse-temurin:22.0.2_9-jdk-jammy AS builder
+FROM eclipse-temurin:17-jdk-jammy AS builder
 # Set working directory
 WORKDIR /opt/app
 # Copy Maven wrapper and POM files
@@ -16,16 +16,25 @@ RUN chmod +x mvnw
 RUN ./mvnw dependency:go-offline
 # Copy source files and build the project
 COPY ./src ./src
-RUN ./mvnw clean install -DskipTests
+RUN ./mvnw clean package -DskipTests
 
 
 # Stage 2: Final - Create the runtime image
-FROM eclipse-temurin:22.0.2_9-jre-jammy AS final
+FROM eclipse-temurin:17-jre-jammy AS final
 # Set working directory for the final image
 WORKDIR /opt/app
+
+RUN groupadd -r app && useradd -r -g app app
+RUN mkdir -p /opt/app/uploads /opt/app/logs && chown -R app:app /opt/app
+
+# Copy the JAR file from the builder stage
+COPY --from=builder /opt/app/target/*.jar app.jar
+
+RUN chown app:app app.jar
+
+USER app
+
 # Expose application port
 EXPOSE 8080
-# Copy the JAR file from the builder stage
-COPY --from=builder /opt/app/target/*.jar /opt/app/*.jar
 # Define the entrypoint for the application
-ENTRYPOINT ["java", "-jar", "/opt/app/*.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
