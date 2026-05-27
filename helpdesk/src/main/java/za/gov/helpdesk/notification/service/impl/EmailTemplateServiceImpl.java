@@ -107,6 +107,31 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
         );
     }
 
+    @Override
+    public String passwordResetOtp(String name, String otp, long expiryMinutes) {
+        return baseTemplate(
+                "Password Reset Request",
+                "SYSTEM",
+                "<p>Dear <strong>" + name + "</strong>,</p>" +
+                        "<p>We received a request to reset your password. " +
+                        "Use the OTP code below to complete the process:</p>" +
+                        "<div style='text-align:center;margin:32px 0;'>" +
+                        "<span style='font-size:36px;font-weight:bold;letter-spacing:12px;" +
+                        "color:#1a56db;background:#f0f4ff;padding:16px 24px;" +
+                        "border-radius:8px;display:inline-block;'>" +
+                        otp +
+                        "</span>" +
+                        "</div>" +
+                        "<p style='text-align:center;color:#666;font-size:14px;'>" +
+                        "This code expires in <strong>" + expiryMinutes + " minutes</strong>." +
+                        "</p>" +
+                        "<p style='text-align:center;color:#999;font-size:13px;'>" +
+                        "If you did not request a password reset, ignore this email. " +
+                        "Your account remains secure." +
+                        "</p>"
+        );
+    }
+
     private String detailsTable(EmailNotificationMessage msg) {
         return "<table>" +
                 row("Ticket Number", msg.getTicketNumber()) +

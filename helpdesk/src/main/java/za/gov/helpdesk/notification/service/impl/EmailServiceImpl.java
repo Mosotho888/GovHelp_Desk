@@ -71,6 +71,14 @@ public class EmailServiceImpl implements EmailService {
                 templates.ticketClosedCustomer(message));
     }
 
+    public void sendPasswordResetOtp(String to, String name, String otp, long expiryMinutes) {
+        send(
+            to,
+            "Your Password Reset Code — Government Helpdesk",
+            templates.passwordResetOtp(name, otp, expiryMinutes)
+        );
+    }
+
     private void send(String to, String subject, String html) {
         try {
             MimeMessage mime = mailSender.createMimeMessage();

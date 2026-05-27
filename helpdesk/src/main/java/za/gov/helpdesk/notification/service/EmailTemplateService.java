@@ -12,4 +12,5 @@ public interface EmailTemplateService {
     String commentAddedCustomer(EmailNotificationMessage msg);
     String commentAddedAgent(EmailNotificationMessage msg);
     String ticketClosedCustomer(EmailNotificationMessage msg);
+    String passwordResetOtp(String name, String otp, long expiryMinutes);
 }

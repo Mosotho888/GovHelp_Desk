@@ -9,4 +9,5 @@ public interface EmailService {
     void sendStatusChanged(EmailNotificationMessage message);
     void sendCommentAdded(EmailNotificationMessage message);
     void sendTicketClosed(EmailNotificationMessage message);
+    void sendPasswordResetOtp(String to, String name, String otp, long expiryMinutes);
 }
