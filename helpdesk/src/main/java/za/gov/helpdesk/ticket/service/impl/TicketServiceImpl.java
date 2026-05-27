@@ -3,7 +3,6 @@ package za.gov.helpdesk.ticket.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.gov.helpdesk.agent.model.Agent;
@@ -11,7 +10,7 @@ import za.gov.helpdesk.agent.repository.jpa.AgentRepository;
 import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
-import za.gov.helpdesk.notification.messaging.EmailNotificationPublisher;
+import za.gov.helpdesk.notification.messaging.TicketEmailNotificationPublisher;
 import za.gov.helpdesk.ticket.dto.request.CreateTicketRequest;
 import za.gov.helpdesk.ticket.dto.response.TicketResponse;
 import za.gov.helpdesk.ticket.dto.request.UpdateTicketRequest;
@@ -33,7 +32,7 @@ public class TicketServiceImpl implements TicketService {
     private final AgentRepository agentRepository;
     private final UserRepository userRepository;
     private final AuditEventPublisher auditPublisher;
-    private final EmailNotificationPublisher emailPublisher;
+    private final TicketEmailNotificationPublisher emailPublisher;
 
     @Override
     @Transactional

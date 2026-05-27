@@ -10,7 +10,7 @@ import za.gov.helpdesk.auditlog.model.AuditLog;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class EmailNotificationMessage {
+public class TicketEmailNotificationMessage {
 
     private AuditLog.AuditAction trigger;
 

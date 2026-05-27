@@ -1,13 +1,15 @@
-package za.gov.helpdesk.notification.service.impl;
+package za.gov.helpdesk.notification.service.ticket.impl;
 
 import org.springframework.stereotype.Service;
-import za.gov.helpdesk.notification.dto.EmailNotificationMessage;
-import za.gov.helpdesk.notification.service.EmailTemplateService;
+import za.gov.helpdesk.notification.dto.PasswordResetEmailNotificationMessage;
+import za.gov.helpdesk.notification.dto.TicketEmailNotificationMessage;
+import za.gov.helpdesk.notification.service.ticket.TicketEmailTemplateService;
 
 @Service
-public class EmailTemplateServiceImpl implements EmailTemplateService {
+public class TicketEmailTemplateServiceImpl implements TicketEmailTemplateService {
+
     @Override
-    public String ticketCreatedCustomer(EmailNotificationMessage msg) {
+    public String ticketCreatedCustomer(TicketEmailNotificationMessage msg) {
         return baseTemplate(
                 "Ticket Created",
                 msg.getTicketNumber(),
@@ -19,7 +21,7 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
     }
 
     @Override
-    public String ticketCreatedAgent(EmailNotificationMessage msg) {
+    public String ticketCreatedAgent(TicketEmailNotificationMessage msg) {
         return baseTemplate(
                 "New Ticket Submitted",
                 msg.getTicketNumber(),
@@ -31,7 +33,7 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
     }
 
     @Override
-    public String ticketAssignedCustomer(EmailNotificationMessage msg) {
+    public String ticketAssignedCustomer(TicketEmailNotificationMessage msg) {
         return baseTemplate(
                 "Ticket Assigned",
                 msg.getTicketNumber(),
@@ -43,7 +45,7 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
     }
 
     @Override
-    public String ticketAssignedAgent(EmailNotificationMessage msg) {
+    public String ticketAssignedAgent(TicketEmailNotificationMessage msg) {
         return baseTemplate(
                 "Ticket Assigned to You",
                 msg.getTicketNumber(),
@@ -55,7 +57,7 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
     }
 
     @Override
-    public String statusChangedCustomer(EmailNotificationMessage msg) {
+    public String statusChangedCustomer(TicketEmailNotificationMessage msg) {
         return baseTemplate(
                 "Ticket Status Updated",
                 msg.getTicketNumber(),
@@ -67,7 +69,7 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
     }
 
     @Override
-    public String commentAddedCustomer(EmailNotificationMessage msg) {
+    public String commentAddedCustomer(TicketEmailNotificationMessage msg) {
         return baseTemplate(
                 "New Reply on Your Ticket",
                 msg.getTicketNumber(),
@@ -79,7 +81,7 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
     }
 
     @Override
-    public String commentAddedAgent(EmailNotificationMessage msg) {
+    public String commentAddedAgent(TicketEmailNotificationMessage msg) {
         return baseTemplate(
                 "Customer Replied",
                 msg.getTicketNumber(),
@@ -92,7 +94,7 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
     }
 
     @Override
-    public String ticketClosedCustomer(EmailNotificationMessage msg) {
+    public String ticketClosedCustomer(TicketEmailNotificationMessage msg) {
         return baseTemplate(
                 "Ticket Closed",
                 msg.getTicketNumber(),
@@ -107,32 +109,7 @@ public class EmailTemplateServiceImpl implements EmailTemplateService {
         );
     }
 
-    @Override
-    public String passwordResetOtp(String name, String otp, long expiryMinutes) {
-        return baseTemplate(
-                "Password Reset Request",
-                "SYSTEM",
-                "<p>Dear <strong>" + name + "</strong>,</p>" +
-                        "<p>We received a request to reset your password. " +
-                        "Use the OTP code below to complete the process:</p>" +
-                        "<div style='text-align:center;margin:32px 0;'>" +
-                        "<span style='font-size:36px;font-weight:bold;letter-spacing:12px;" +
-                        "color:#1a56db;background:#f0f4ff;padding:16px 24px;" +
-                        "border-radius:8px;display:inline-block;'>" +
-                        otp +
-                        "</span>" +
-                        "</div>" +
-                        "<p style='text-align:center;color:#666;font-size:14px;'>" +
-                        "This code expires in <strong>" + expiryMinutes + " minutes</strong>." +
-                        "</p>" +
-                        "<p style='text-align:center;color:#999;font-size:13px;'>" +
-                        "If you did not request a password reset, ignore this email. " +
-                        "Your account remains secure." +
-                        "</p>"
-        );
-    }
-
-    private String detailsTable(EmailNotificationMessage msg) {
+    private String detailsTable(TicketEmailNotificationMessage msg) {
         return "<table>" +
                 row("Ticket Number", msg.getTicketNumber()) +
                 row("Subject",       msg.getTicketSubject()) +

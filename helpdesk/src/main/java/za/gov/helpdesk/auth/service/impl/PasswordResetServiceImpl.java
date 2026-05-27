@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auth.dto.request.PasswordResetConfirmRequest;
@@ -13,7 +14,8 @@ import za.gov.helpdesk.auth.model.PasswordResetToken;
 import za.gov.helpdesk.auth.repository.PasswordResetTokenRepository;
 import za.gov.helpdesk.auth.service.PasswordResetService;
 import za.gov.helpdesk.auth.service.RefreshTokenService;
-import za.gov.helpdesk.notification.service.EmailService;
+import za.gov.helpdesk.notification.messaging.PasswordResetEmailNotificationPublisher;
+import za.gov.helpdesk.notification.service.ticket.TicketEmailService;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 
@@ -29,13 +31,15 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
-    private final EmailService emailService;
+    private final TicketEmailService ticketEmailService;
     private final AuditEventPublisher auditPublisher;
+    private final PasswordResetEmailNotificationPublisher emailPublisher;
 
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final long OTP_EXPIRY_MIN = 15;
 
     @Override
+    @Transactional
     public void requestReset(PasswordResetRequest request) {
 
         userRepository.findByEmail(request.getEmail()).ifPresent(user -> {
@@ -51,7 +55,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
                     .expiresAt(LocalDateTime.now().plusMinutes(OTP_EXPIRY_MIN))
                     .build());
 
-            emailService.sendPasswordResetOtp(
+            emailPublisher.publish(
                     user.getEmail(),
                     user.getName(),
                     rawOtp,
@@ -63,6 +67,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     }
 
     @Override
+    @Transactional
     public void confirmReset(PasswordResetConfirmRequest request) {
 
         PasswordResetToken token = tokenRepository

@@ -4,16 +4,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.config.messaging.RabbitMQConstants;
-import za.gov.helpdesk.notification.dto.EmailNotificationMessage;
+import za.gov.helpdesk.notification.dto.TicketEmailNotificationMessage;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.users.model.User;
 
-@Configuration
+@Component
 @RequiredArgsConstructor
 @Slf4j
-public class EmailNotificationPublisher {
+public class TicketEmailNotificationPublisher {
 
     private final RabbitTemplate rabbitTemplate;
 
@@ -23,7 +24,7 @@ public class EmailNotificationPublisher {
                         AuditLog.AuditAction trigger,
                         String comment) {
 
-        EmailNotificationMessage message = EmailNotificationMessage.builder()
+        TicketEmailNotificationMessage message = TicketEmailNotificationMessage.builder()
                 .trigger(trigger)
                 .ticketId(ticket.getId())
                 .ticketNumber("TKT-" + ticket.getId())
@@ -40,7 +41,7 @@ public class EmailNotificationPublisher {
         try {
             rabbitTemplate.convertAndSend(
                     RabbitMQConstants.EXCHANGE,
-                    RabbitMQConstants.EMAIL_ROUTING_KEY,
+                    RabbitMQConstants.TICKET_EMAIL_ROUTING_KEY,
                     message
             );
             log.info("Email notification queued: trigger={} ticket={}",

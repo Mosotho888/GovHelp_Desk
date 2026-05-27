@@ -1,4 +1,4 @@
-package za.gov.helpdesk.agent.service.impli;
+package za.gov.helpdesk.agent.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

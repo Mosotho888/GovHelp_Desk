@@ -39,8 +39,13 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Queue emailDlq() {
-        return QueueBuilder.durable(RabbitMQConstants.EMAIL_DLQ).build();
+    public Queue passwordResetEmailDlq() {
+        return QueueBuilder.durable(RabbitMQConstants.PASSWORD_RESET_EMAIL_DLQ).build();
+    }
+
+    @Bean
+    public Queue ticketEmailDlq() {
+        return QueueBuilder.durable(RabbitMQConstants.TICKET_EMAIL_DLQ).build();
     }
 
     @Bean
@@ -53,11 +58,20 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Queue emailQueue() {
+    public Queue passwordResetEmailQueue() {
 
-        return QueueBuilder.durable(RabbitMQConstants.EMAIL_QUEUE)
+        return QueueBuilder.durable(RabbitMQConstants.PASSWORD_RESET_EMAIL_QUEUE)
                 .withArgument("x-dead-letter-exchange", RabbitMQConstants.DLX)
-                .withArgument("x-dead-letter-routing-key", RabbitMQConstants.EMAIL_DLQ_ROUTING_KEY).build();
+                .withArgument("x-dead-letter-routing-key", RabbitMQConstants.PASSWORD_RESET_EMAIL_DLQ_ROUTING_KEY)
+                .build();
+    }
+
+    @Bean
+    public Queue ticketEmailQueue() {
+
+        return QueueBuilder.durable(RabbitMQConstants.TICKET_EMAIL_QUEUE)
+                .withArgument("x-dead-letter-exchange", RabbitMQConstants.DLX)
+                .withArgument("x-dead-letter-routing-key", RabbitMQConstants.TICKET_EMAIL_DLQ_ROUTING_KEY).build();
     }
 
     @Bean
@@ -66,9 +80,15 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Binding bindEmailQueue(Queue emailQueue, TopicExchange helpdeskExchange) {
-        return BindingBuilder.bind(emailQueue).to(helpdeskExchange).with(RabbitMQConstants.EMAIL_ROUTING_KEY);
+    public Binding bindTicketEmailQueue(Queue ticketEmailQueue, TopicExchange helpdeskExchange) {
+        return BindingBuilder.bind(ticketEmailQueue).to(helpdeskExchange).with(RabbitMQConstants.TICKET_EMAIL_ROUTING_KEY);
     }
+
+    @Bean
+    public Binding bindPasswordResetEmailQueue(Queue passwordResetEmailQueue, TopicExchange helpdeskExchange) {
+        return BindingBuilder.bind(passwordResetEmailQueue).to(helpdeskExchange).with(RabbitMQConstants.PASSWORD_RESET_EMAIL_ROUTING_KEY);
+    }
+
     @Bean
     public Binding bindAuditDlq(Queue auditDlq, TopicExchange deadLetterExchange) {
         return BindingBuilder.bind(auditDlq)
@@ -77,10 +97,17 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Binding bindEmailDlq(Queue emailDlq, TopicExchange deadLetterExchange) {
-        return BindingBuilder.bind(emailDlq)
+    public Binding bindTicketEmailDlq(Queue ticketEmailDlq, TopicExchange deadLetterExchange) {
+        return BindingBuilder.bind(ticketEmailDlq)
                 .to(deadLetterExchange)
-                .with(RabbitMQConstants.EMAIL_DLQ_ROUTING_KEY);
+                .with(RabbitMQConstants.TICKET_EMAIL_DLQ_ROUTING_KEY);
+    }
+
+    @Bean
+    public Binding bindPasswordResetEmailDlq(Queue passwordResetEmailDlq, TopicExchange deadLetterExchange) {
+        return BindingBuilder.bind(passwordResetEmailDlq)
+                .to(deadLetterExchange)
+                .with(RabbitMQConstants.PASSWORD_RESET_EMAIL_DLQ_ROUTING_KEY);
     }
 
     @Bean
