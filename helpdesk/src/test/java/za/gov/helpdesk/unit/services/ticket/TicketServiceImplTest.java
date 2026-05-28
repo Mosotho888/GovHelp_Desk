@@ -192,6 +192,15 @@ class TicketServiceImplTest {
                 eq(AuditLog.AuditAction.TICKET_CLOSED),
                 eq(null)
         );
+        then(auditPublisher).should(times(1)).publishAudit(
+                eq(AuditLog.EntityType.TICKET),
+                eq(100L),
+                eq(agentUser),
+                eq(AuditLog.AuditAction.TICKET_CLOSED),
+                eq("RESOLVED"),
+                eq("CLOSED"),
+                eq(null)
+        );
     }
 
     @Test
@@ -268,6 +277,105 @@ class TicketServiceImplTest {
                 eq(agentUser),
                 eq(AuditLog.AuditAction.ASSIGNED_TO_AGENT),
                 eq(null)
+        );
+    }
+
+    @Test
+    @DisplayName("updateTicket() ignores assignment when agent is unchanged")
+    void updateTicket_sameAssignee_doesNotPublishAuditOrEmail() {
+        Ticket assignedTicket = Ticket.builder()
+                .id(100L)
+                .subject("Login broken")
+                .description("Cannot access dashboard")
+                .status(Ticket.Status.OPEN)
+                .priority(Ticket.Priority.HIGH)
+                .requester(endUser)
+                .assignee(agent)
+                .build();
+        UpdateTicketRequest req = new UpdateTicketRequest();
+        req.setAssigneeId(1L);
+
+        givenAuthorizedTicket(100L, agentUser, assignedTicket);
+        given(agentRepository.findById(1L)).willReturn(Optional.of(agent));
+        given(ticketRepository.save(any(Ticket.class))).willAnswer(i -> i.getArgument(0));
+        given(ticketMapper.toTicketResponse(any(Ticket.class))).willAnswer(i -> responseFor(i.getArgument(0)));
+
+        ticketServiceImpl.updateTicket(100L, req, agentUser);
+
+        then(auditPublisher).shouldHaveNoInteractions();
+        then(emailPublisher).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("updateTicket() priority change publishes PRIORITY_CHANGED")
+    void updateTicket_priorityChange_publishesPriorityChanged() {
+        UpdateTicketRequest req = new UpdateTicketRequest();
+        req.setPriority(Ticket.Priority.URGENT);
+
+        givenAuthorizedTicket(100L, agentUser, openTicket);
+        given(ticketRepository.save(any(Ticket.class))).willAnswer(i -> i.getArgument(0));
+        given(ticketMapper.toTicketResponse(any(Ticket.class))).willAnswer(i -> responseFor(i.getArgument(0)));
+
+        TicketResponse response = ticketServiceImpl.updateTicket(100L, req, agentUser);
+
+        assertThat(response.getPriority()).isEqualTo(Ticket.Priority.URGENT);
+        then(auditPublisher).should(times(1)).publishAudit(
+                eq(AuditLog.EntityType.TICKET),
+                eq(100L),
+                eq(agentUser),
+                eq(AuditLog.AuditAction.PRIORITY_CHANGED),
+                eq("HIGH"),
+                eq("URGENT"),
+                eq(null)
+        );
+        then(emailPublisher).should(times(1)).publish(
+                eq(openTicket),
+                eq(endUser),
+                eq(null),
+                eq(AuditLog.AuditAction.PRIORITY_CHANGED),
+                eq(null)
+        );
+    }
+
+    @Test
+    @DisplayName("updateTicket() escalation marks ticket escalated and status ESCALATED")
+    void updateTicket_escalationFromInProgress_marksEscalatedStatus() {
+        Ticket inProgressTicket = Ticket.builder()
+                .id(100L)
+                .subject("Login broken")
+                .description("Cannot access dashboard")
+                .status(Ticket.Status.IN_PROGRESS)
+                .priority(Ticket.Priority.HIGH)
+                .requester(endUser)
+                .assignee(agent)
+                .build();
+        UpdateTicketRequest req = new UpdateTicketRequest();
+        req.setEscalated(true);
+        req.setEscalationReason("SLA risk");
+
+        givenAuthorizedTicket(100L, agentUser, inProgressTicket);
+        given(ticketRepository.save(any(Ticket.class))).willAnswer(i -> i.getArgument(0));
+        given(ticketMapper.toTicketResponse(any(Ticket.class))).willAnswer(i -> responseFor(i.getArgument(0)));
+
+        TicketResponse response = ticketServiceImpl.updateTicket(100L, req, agentUser);
+
+        assertThat(response.isEscalated()).isTrue();
+        assertThat(response.getStatus()).isEqualTo(Ticket.Status.ESCALATED);
+        then(auditPublisher).should(times(1)).publishAudit(
+                eq(AuditLog.EntityType.TICKET),
+                eq(100L),
+                eq(agentUser),
+                eq(AuditLog.AuditAction.ESCALATED),
+                eq("false"),
+                eq("true"),
+                eq("SLA risk")
+        );
+        then(emailPublisher).should(times(1)).publish(
+                eq(inProgressTicket),
+                eq(endUser),
+                eq(agentUser),
+                eq(AuditLog.AuditAction.ESCALATED),
+                eq("SLA risk")
         );
     }
 

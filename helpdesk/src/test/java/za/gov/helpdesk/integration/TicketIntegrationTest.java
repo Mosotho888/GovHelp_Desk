@@ -9,6 +9,8 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import za.gov.helpdesk.agent.model.Agent;
+import za.gov.helpdesk.agent.repository.jpa.AgentRepository;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
@@ -31,16 +33,20 @@ public class TicketIntegrationTest extends BaseIntegrationTest {
     @Autowired
     private UserRepository userRepository;
     @Autowired
+    private AgentRepository agentRepository;
+    @Autowired
     private TicketRepository ticketRepository;
     @Autowired
     private PasswordEncoder passwordEncoder;
 
     private String userToken;
     private String agentToken;
+    private Long agentId;
 
     @BeforeEach
     void setUp() throws Exception {
         ticketRepository.deleteAll();
+        agentRepository.deleteAll();
         userRepository.deleteAll();
 
         userRepository.save(User.builder()
@@ -49,11 +55,15 @@ public class TicketIntegrationTest extends BaseIntegrationTest {
                 .role(User.Role.USER).active(true).loginAttempts(0)
                 .timezone("Africa/Johannesburg").build());
 
-        userRepository.save(User.builder()
+        User agentUser = userRepository.save(User.builder()
                 .name("Jane Agent").email("jane@gov.za")
                 .passwordHash(passwordEncoder.encode("AgentPass1!"))
                 .role(User.Role.AGENT).active(true).loginAttempts(0)
                 .timezone("Africa/Johannesburg").build());
+        agentId = agentRepository.save(Agent.builder()
+                .user(agentUser)
+                .availability(Agent.Availability.ONLINE)
+                .build()).getId();
 
         userToken  = login("john@citizen.za", "UserPass1!");
         agentToken = login("jane@gov.za",      "AgentPass1!");
@@ -118,6 +128,14 @@ public class TicketIntegrationTest extends BaseIntegrationTest {
 
         long ticketId = mapper.readTree(createBody).get("id").asLong();
 
+        mvc.perform(get("/v1/tickets/" + ticketId + "/sla")
+                        .header("Authorization", "Bearer " + agentToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.responseDueAt").exists())
+                .andExpect(jsonPath("$.resolutionDueAt").exists())
+                .andExpect(jsonPath("$.firstResponseAt").isEmpty())
+                .andExpect(jsonPath("$.resolvedAt").isEmpty());
+
         // Agent moves to IN_PROGRESS
         mvc.perform(patch("/v1/tickets/" + ticketId)
                         .header("Authorization", "Bearer " + agentToken)
@@ -126,6 +144,12 @@ public class TicketIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("IN_PROGRESS"));
 
+        mvc.perform(get("/v1/tickets/" + ticketId + "/sla")
+                        .header("Authorization", "Bearer " + agentToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.firstResponseAt").exists())
+                .andExpect(jsonPath("$.resolvedAt").isEmpty());
+
         // Agent resolves
         mvc.perform(patch("/v1/tickets/" + ticketId)
                         .header("Authorization", "Bearer " + agentToken)
@@ -133,6 +157,11 @@ public class TicketIntegrationTest extends BaseIntegrationTest {
                         .content(mapper.writeValueAsString(Map.of("status", "RESOLVED"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("RESOLVED"));
+
+        mvc.perform(get("/v1/tickets/" + ticketId + "/sla")
+                        .header("Authorization", "Bearer " + agentToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resolvedAt").exists());
 
         // User closes
         mvc.perform(patch("/v1/tickets/" + ticketId)
@@ -171,6 +200,51 @@ public class TicketIntegrationTest extends BaseIntegrationTest {
                         .content(mapper.writeValueAsString(Map.of("status", "CLOSED"))))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.error").value("INVALID_STATUS_TRANSITION"));
+    }
+
+    @Test
+    @DisplayName("PATCH /tickets/{id} supports assignment, priority, and escalation")
+    void updateTicket_assignmentPriorityEscalation_succeeds() throws Exception {
+        String createBody = mvc.perform(post("/v1/tickets")
+                        .header("Authorization", "Bearer " + userToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(Map.of(
+                                "subject", "Network unstable",
+                                "description", "VPN disconnects repeatedly"
+                        ))))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        long ticketId = mapper.readTree(createBody).get("id").asLong();
+
+        mvc.perform(patch("/v1/tickets/" + ticketId)
+                        .header("Authorization", "Bearer " + agentToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(Map.of(
+                                "assigneeId", agentId,
+                                "priority", "URGENT"
+                        ))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.priority").value("URGENT"))
+                .andExpect(jsonPath("$.assignee.email").value("jane@gov.za"));
+
+        mvc.perform(patch("/v1/tickets/" + ticketId)
+                        .header("Authorization", "Bearer " + agentToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(Map.of("status", "IN_PROGRESS"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("IN_PROGRESS"));
+
+        mvc.perform(patch("/v1/tickets/" + ticketId)
+                        .header("Authorization", "Bearer " + agentToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(Map.of(
+                                "escalated", true,
+                                "escalationReason", "Service outage risk"
+                        ))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ESCALATED"))
+                .andExpect(jsonPath("$.escalated").value(true));
     }
 
     @Test

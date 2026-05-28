@@ -13,7 +13,10 @@ import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auth.dto.response.AuthResponse;
 import za.gov.helpdesk.auth.dto.request.LoginRequest;
 import za.gov.helpdesk.auth.jwt.JwtService;
+import za.gov.helpdesk.auth.service.RefreshTokenService;
 import za.gov.helpdesk.auth.service.impl.AuthServiceImpl;
+import za.gov.helpdesk.users.converter.UserMapper;
+import za.gov.helpdesk.users.dto.response.UserResponse;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 import za.gov.helpdesk.users.security.CustomUserDetails;
@@ -32,9 +35,13 @@ public class AuthServiceImpITest {
     @Mock
     private UserRepository userRepository;
     @Mock
+    private UserMapper userMapper;
+    @Mock
     private JwtService jwtService;
     @Mock
     private AuditEventPublisher auditPublisher;
+    @Mock
+    private RefreshTokenService refreshTokenService;
 
     @InjectMocks
     private AuthServiceImpl authServiceImpl;
@@ -70,12 +77,12 @@ public class AuthServiceImpITest {
         CustomUserDetails principal =
                 new CustomUserDetails(testUser);
 
-        given(userRepository.findByEmail(email)).willReturn(Optional.of(testUser));
         given(authManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .willReturn(new UsernamePasswordAuthenticationToken(testUser, null, principal.getAuthorities()));
+                .willReturn(new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
         given(jwtService.generateAccessToken(testUser)).willReturn("access.token.here");
         given(jwtService.generateRefreshToken(testUser)).willReturn("refresh.token.here");
         given(userRepository.save(any(User.class))).willReturn(testUser);
+        given(userMapper.toUserResponse(testUser)).willReturn(responseFor(testUser));
 
         // When
         AuthResponse authResponse = authServiceImpl.login(request);
@@ -126,12 +133,12 @@ public class AuthServiceImpITest {
         request.setPassword("WrongPassword@123");
 
         given(userRepository.findByEmail(email)).willReturn(Optional.of(testUser));
-        given(authManager.authenticate(any())).willThrow(new LockedException("Account locked"));
+        given(authManager.authenticate(any())).willThrow(new BadCredentialsException("Bad credentials"));
         given(userRepository.save(any(User.class))).willReturn(testUser);
 
         // When / Then
         assertThatThrownBy(() -> authServiceImpl.login(request))
-                .isInstanceOf(LockedException.class);
+                .isInstanceOf(BadCredentialsException.class);
         then(userRepository).should().save(argThat(user -> user.getActive() == false));
     }
 
@@ -144,10 +151,22 @@ public class AuthServiceImpITest {
         request.setEmail(email);
         request.setPassword("WrongPassword@123");
 
+        given(authManager.authenticate(any())).willThrow(new BadCredentialsException("Bad credentials"));
         given(userRepository.findByEmail(email)).willReturn(Optional.empty());
 
         // When / Then
         assertThatThrownBy(() -> authServiceImpl.login(request))
                 .isInstanceOf(BadCredentialsException.class);
+    }
+
+    private UserResponse responseFor(User user) {
+        return UserResponse.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .role(user.getRole())
+                .active(user.getActive())
+                .timezone(user.getTimezone())
+                .build();
     }
 }

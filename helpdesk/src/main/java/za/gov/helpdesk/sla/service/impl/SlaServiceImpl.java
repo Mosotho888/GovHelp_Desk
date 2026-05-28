@@ -16,6 +16,9 @@ import za.gov.helpdesk.ticket.model.Ticket;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -83,12 +86,21 @@ public class SlaServiceImpl implements SlaService {
     @Transactional
     public void checkSlaWarnings() {
         LocalDateTime now = LocalDateTime.now();
+        Map<Ticket.Priority, SlaPolicy> policiesByPriority = slaPolicyRepository.findAll()
+                .stream()
+                .collect(Collectors.toMap(SlaPolicy::getPriority, Function.identity()));
+        int maxWarningThresholdMinutes = policiesByPriority.values()
+                .stream()
+                .mapToInt(SlaPolicy::getWarningThresholdMinutes)
+                .max()
+                .orElse(30);
 
         // Response warnings
         List<TicketSla> responseWarnings =
-                ticketSlaRepository.findResponseWarningsDue(now, now.plusMinutes(30));
+                ticketSlaRepository.findResponseWarningsDue(now, now.plusMinutes(maxWarningThresholdMinutes));
 
         for (TicketSla sla : responseWarnings) {
+            if (!isWarningDue(sla, policiesByPriority, sla.getResponseDueAt(), now)) continue;
             sendWarning(sla, "First Response");
             sla.setResponseWarningSent(true);
             ticketSlaRepository.save(sla);
@@ -96,9 +108,10 @@ public class SlaServiceImpl implements SlaService {
 
         // Resolution warnings
         List<TicketSla> resolutionWarnings =
-                ticketSlaRepository.findResolutionWarningsDue(now, now.plusMinutes(30));
+                ticketSlaRepository.findResolutionWarningsDue(now, now.plusMinutes(maxWarningThresholdMinutes));
 
         for (TicketSla sla : resolutionWarnings) {
+            if (!isWarningDue(sla, policiesByPriority, sla.getResolutionDueAt(), now)) continue;
             sendWarning(sla, "Resolution");
             sla.setResolutionWarningSent(true);
             ticketSlaRepository.save(sla);
@@ -119,6 +132,15 @@ public class SlaServiceImpl implements SlaService {
             sendBreach(sla, "Resolution");
             log.warn("Resolution SLA breached: ticket={}", sla.getTicket().getId());
         });
+    }
+
+    private boolean isWarningDue(TicketSla sla,
+                                 Map<Ticket.Priority, SlaPolicy> policiesByPriority,
+                                 LocalDateTime dueAt,
+                                 LocalDateTime now) {
+        SlaPolicy policy = policiesByPriority.get(sla.getTicket().getPriority());
+        int thresholdMinutes = policy != null ? policy.getWarningThresholdMinutes() : 30;
+        return !dueAt.isAfter(now.plusMinutes(thresholdMinutes));
     }
 
     private void sendWarning(TicketSla sla, String deadlineType) {

@@ -15,6 +15,7 @@ import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.comment.dto.request.CreateCommentRequest;
 import za.gov.helpdesk.comment.dto.response.CommentResponse;
+import za.gov.helpdesk.comment.mapper.CommentMapper;
 import za.gov.helpdesk.comment.model.Comment;
 import za.gov.helpdesk.comment.repository.CommentRepository;
 import za.gov.helpdesk.comment.service.impl.CommentServiceImpl;
@@ -40,6 +41,8 @@ public class CommentServiceImplTest {
 
     @Mock
     private CommentRepository commentRepository;
+    @Mock
+    private CommentMapper commentMapper;
     @Mock
     private TicketRepository ticketRepository;
     @Mock
@@ -91,6 +94,7 @@ public class CommentServiceImplTest {
         given(userRepository.findByEmail("jane@gov.za")).willReturn(Optional.of(agentUser));
         given(ticketRepository.findById(10L)).willReturn(Optional.of(ticket));
         given(commentRepository.save(any(Comment.class))).willReturn(comment);
+        given(commentMapper.toCommentResponse(comment)).willReturn(responseFor(comment));
 //        given(commentRepository.findByParentId(any())).willReturn(List.of());
 
         CommentResponse response = commentServiceImpl.addComment(10L, req);
@@ -166,6 +170,7 @@ public class CommentServiceImplTest {
         given(userRepository.findByEmail("john@citizen.za")).willReturn(Optional.of(endUser));
         given(commentRepository.findById(100L)).willReturn(Optional.of(comment));
         given(commentRepository.save(any(Comment.class))).willReturn(replyComment);
+        given(commentMapper.toCommentResponse(replyComment)).willReturn(responseFor(replyComment));
 
         CommentResponse response = commentServiceImpl.addReply(100L, req);
 
@@ -195,5 +200,17 @@ public class CommentServiceImplTest {
         SecurityContextHolder.setContext(securityContext);
         given(securityContext.getAuthentication()).willReturn(authentication);
 
+    }
+
+    private CommentResponse responseFor(Comment comment) {
+        return CommentResponse.builder()
+                .id(comment.getId())
+                .ticketId(comment.getTicket().getId())
+                .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
+                .body(comment.getBody())
+                .internal(comment.isInternal())
+                .type(comment.getType())
+                .createdAt(comment.getCreatedAt())
+                .build();
     }
 }
