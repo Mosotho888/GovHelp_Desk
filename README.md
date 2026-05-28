@@ -10,6 +10,7 @@ The project is structured as a production-style backend portfolio project: it us
 - Enforces role-based access for `USER`, `AGENT`, and `ADMIN`.
 - Lets users create and track support tickets.
 - Lets agents/admins update ticket status, priority, escalation, and assignment.
+- Tracks SLA response/resolution deadlines using business-hour calculations and priority policies.
 - Supports threaded ticket comments, internal notes, and resolution comments.
 - Supports file uploads/downloads for ticket attachments.
 - Tracks audit history for tickets, users, agents, authentication events, and actor activity.
@@ -62,7 +63,8 @@ Main modules:
 | `auth` | Login, refresh tokens, JWT filtering, user details loading |
 | `users` | User CRUD, profile lookup, deactivation, roles |
 | `agent` | Agent registration, availability, departments, statistics |
-| `ticket` | Ticket creation, filtering, status transitions, assignment |
+| `ticket` | Ticket creation, filtering, status transitions, assignment, escalation |
+| `sla` | SLA policy lookup, ticket SLA deadlines, warnings, breach detection |
 | `comment` | Ticket comments, replies, internal notes, edit/delete rules |
 | `attachment` | Multipart upload, list, download, delete |
 | `auditlog` | Immutable audit history and audit queries |
@@ -178,7 +180,7 @@ On Windows:
 
 ## Testing
 
-The integration tests use Testcontainers, so Docker Desktop must be running.
+The project has unit tests for services, SLA business-hours logic, ticket lifecycle behavior, and notification messaging. Integration tests use MockMvc with Testcontainers-backed PostgreSQL and RabbitMQ.
 
 ```bash
 ./mvnw test
@@ -188,6 +190,21 @@ On Windows:
 
 ```powershell
 .\mvnw.cmd test
+```
+
+If Docker Desktop is not running, Testcontainers integration tests are skipped cleanly while unit tests still run. To execute the full integration suite, start Docker Desktop first.
+
+Useful focused test commands:
+
+```bash
+# Unit tests only
+./mvnw test -Dtest="za.gov.helpdesk.unit.**.*Test"
+
+# SLA-focused tests
+./mvnw test -Dtest="BusinessHoursCalculatorTest,SlaServiceImplTest"
+
+# Ticket service tests
+./mvnw test -Dtest=TicketServiceImplTest
 ```
 
 For coverage enforcement:
@@ -243,6 +260,28 @@ Authorization: Bearer <access-token>
 | GET | `/v1/tickets/{id}` | Authenticated | Get ticket by ID |
 | PATCH | `/v1/tickets/{id}` | Agent/Admin | Update status, priority, escalation, or assignee |
 | DELETE | `/v1/tickets/{id}` | Admin | Delete a ticket |
+
+Ticket lifecycle:
+
+```text
+OPEN -> IN_PROGRESS -> RESOLVED -> CLOSED
+OPEN -> IN_PROGRESS -> ESCALATED -> IN_PROGRESS
+RESOLVED -> OPEN
+```
+
+SLA behavior:
+
+- SLA is initialized when a ticket is created.
+- First response is recorded when a ticket moves to `IN_PROGRESS`.
+- Resolution is recorded when a ticket moves to `RESOLVED`.
+- SLA warnings use each priority policy's `warning_threshold_minutes`.
+- SLA breach checks run on a scheduled job.
+
+### SLA
+
+| Method | Endpoint | Access | Description |
+| --- | --- | --- | --- |
+| GET | `/v1/tickets/{ticketId}/sla` | Agent/Admin | Get SLA status, response deadline, resolution deadline, and breach state |
 
 ### Comments
 
@@ -301,6 +340,9 @@ Current migration set:
 | `V1__helpdesk_schema.sql` | Creates users, agents, tickets, comments, attachments, and audit log tables |
 | `V2__seed_data.sql` | Inserts local/demo data |
 | `V3__refactor_audit_log.sql` | Refactors audit logging into entity-based audit records |
+| `V4__create_refresh_tokens.sql` | Adds persistent refresh tokens |
+| `V5__create_password_reset_tokens.sql` | Adds password reset OTP storage |
+| `V6__create_sla_tables.sql` | Adds SLA policies and ticket SLA tracking |
 
 ## Useful Commands
 
