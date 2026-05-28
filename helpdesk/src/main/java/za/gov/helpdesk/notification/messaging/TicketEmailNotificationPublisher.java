@@ -47,7 +47,7 @@ public class TicketEmailNotificationPublisher {
             log.info("Email notification queued: trigger={} ticket={}",
                     trigger, ticket.getId());
         } catch (Exception e) {
-            // Broker down — log but don't fail the ticket operation
+            // Broker down - log but don't fail the ticket operation
             log.error("Failed to queue email notification: trigger={} ticket={} error={}",
                     trigger, ticket.getId(), e.getMessage());
         }
