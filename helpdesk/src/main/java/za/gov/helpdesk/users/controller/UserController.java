@@ -10,6 +10,9 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import za.gov.helpdesk.users.dto.request.AdminPasswordResetRequest;
+import za.gov.helpdesk.users.dto.request.ChangePasswordRequest;
 import za.gov.helpdesk.users.dto.request.CreateUserRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
@@ -17,7 +20,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.gov.helpdesk.users.dto.request.UpdateUserRequest;
 import za.gov.helpdesk.users.dto.response.UserResponse;
+import za.gov.helpdesk.users.model.User;
+import za.gov.helpdesk.users.security.CustomUserDetails;
 import za.gov.helpdesk.users.service.UserService;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/v1/users")
@@ -32,8 +39,10 @@ public class UserController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Create a new user account (Admin only)")
-    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(request));
+    public ResponseEntity<UserResponse> createUser(
+            @Valid @RequestBody CreateUserRequest request,
+            @AuthenticationPrincipal CustomUserDetails principal) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(request, principal.getUser()));
     }
 
     @GetMapping("/{id}")
@@ -61,8 +70,10 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Deactivate a user account (Admin only)")
-    public void deactivateUser (@PathVariable Long id) {
-        userService.deactivateUser(id);
+    public void deactivateUser (
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails principal) {
+        userService.deactivateUser(id, principal.getUser());
     }
 
     @PutMapping("/{id}")
@@ -70,7 +81,69 @@ public class UserController {
     @Operation(summary = "Update user profile")
     public ResponseEntity<UserResponse> updateUser(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateUserRequest request) {
-        return ResponseEntity.ok(userService.updateUser(id, request));
+            @Valid @RequestBody UpdateUserRequest request,
+            @AuthenticationPrincipal CustomUserDetails principal) {
+        return ResponseEntity.ok(userService.updateUser(id, request, principal.getUser()));
+    }
+
+    @PostMapping("/{id}/reactivate")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(
+            summary = "Reactivate a locked user account (Admin only)",
+            description = "Unlocks the account and resets failed login attempts."
+    )
+    public void reactivateUser(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails principal) {
+
+        userService.reactivateUser(id, principal.getUser());
+    }
+
+    @PatchMapping("/{id}/role")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "Change a user's role (Admin only)",
+            description = "Changes role and revokes all active sessions. Admin cannot change their own role."
+    )
+    public ResponseEntity<UserResponse> changeRole(
+            @PathVariable Long id,
+            @RequestParam User.Role role,
+            @AuthenticationPrincipal CustomUserDetails principal) {
+
+        return ResponseEntity.ok(
+                userService.changeUserRole(id, role, principal.getUser())
+        );
+    }
+
+    @PatchMapping("/{id}/password")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(
+            summary = "Admin resets a user's password (Admin only)",
+            description = "Resets password without requiring the current password. Revokes all active sessions."
+    )
+    public void adminResetPassword(
+            @PathVariable Long id,
+            @Valid @RequestBody AdminPasswordResetRequest request,
+            @AuthenticationPrincipal CustomUserDetails principal) {
+
+        userService.adminResetPassword(id, request, principal.getUser());
+    }
+
+    @PatchMapping("/me/password")
+    @Operation(
+            summary = "Change own password",
+            description = "User changes their own password. Current password required. Revokes sessions on other devices."
+    )
+    public ResponseEntity<Map<String, String>> changeOwnPassword(
+            @Valid @RequestBody ChangePasswordRequest request,
+            @AuthenticationPrincipal CustomUserDetails principal) {
+
+        userService.changeOwnPassword(request, principal.getUser());
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Password updated successfully. Please log in again."
+        ));
     }
 }

@@ -2,9 +2,11 @@ package za.gov.helpdesk.ticket.repository.jpa;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.ticket.model.Ticket;
 import org.springframework.data.jpa.repository.JpaRepository;
 import za.gov.helpdesk.users.model.User;
@@ -50,4 +52,11 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     Page<Ticket> findByRequester(User requester, Pageable pageable);
 
     Long countByAssigneeIdAndStatus(Long assigneeId, Ticket.Status status);
+
+    @Modifying
+    @Query("UPDATE Ticket t SET t.assignee = null " +
+            "WHERE t.assignee = :agent " +
+            "AND t.status NOT IN (za.gov.helpdesk.ticket.model.Ticket.Status.CLOSED, " +
+            "za.gov.helpdesk.ticket.model.Ticket.Status.RESOLVED)")
+    int unassignFromAgent(@Param("agent") Agent agent);
 }

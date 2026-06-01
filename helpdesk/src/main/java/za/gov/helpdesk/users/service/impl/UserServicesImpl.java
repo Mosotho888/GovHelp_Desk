@@ -1,14 +1,21 @@
 package za.gov.helpdesk.users.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
+import za.gov.helpdesk.agent.model.Agent;
+import za.gov.helpdesk.agent.repository.jpa.AgentRepository;
 import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
+import za.gov.helpdesk.auth.service.RefreshTokenService;
 import za.gov.helpdesk.exception.DuplicateResourceException;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
+import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
 import za.gov.helpdesk.users.converter.UserMapper;
+import za.gov.helpdesk.users.dto.request.AdminPasswordResetRequest;
+import za.gov.helpdesk.users.dto.request.ChangePasswordRequest;
 import za.gov.helpdesk.users.dto.request.CreateUserRequest;
 import za.gov.helpdesk.users.dto.request.UpdateUserRequest;
 import za.gov.helpdesk.users.dto.response.UserResponse;
@@ -29,11 +36,12 @@ public class UserServicesImpl implements UserService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final AuditEventPublisher auditPublisher;
+    private final RefreshTokenService refreshTokenService;
 
 
     @Override
     @Transactional
-    public UserResponse createUser(CreateUserRequest request) {
+    public UserResponse createUser(CreateUserRequest request, User actor) {
 
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new DuplicateResourceException(
@@ -52,7 +60,6 @@ public class UserServicesImpl implements UserService {
                 .build();
 
         User savedUser = userRepository.save(user);
-        User actor = getActorOrSystem();
 
         auditPublisher.publishAudit(
                 AuditLog.EntityType.USER,
@@ -90,10 +97,9 @@ public class UserServicesImpl implements UserService {
 
     @Override
     @Transactional
-    public UserResponse updateUser(Long id, UpdateUserRequest request) {
+    public UserResponse updateUser(Long id, UpdateUserRequest request, User actor) {
 
         User user = findOrThrow(id);
-        User actor = getActorOrSystem();
 
         StringBuilder changes = new StringBuilder();
 
@@ -132,9 +138,8 @@ public class UserServicesImpl implements UserService {
 
     @Override
     @Transactional
-    public void deactivateUser(Long id) {
+    public void deactivateUser(Long id, User actor) {
         User user = findOrThrow(id);
-        User actor = getActorOrSystem();
 
         user.setActive(false);
         userRepository.save(user);
@@ -150,23 +155,134 @@ public class UserServicesImpl implements UserService {
         );
     }
 
+    @Override
+    @Transactional
+    public void adminResetPassword(Long targetUserId,
+                                   AdminPasswordResetRequest request,
+                                   User admin) {
+
+        User target = findOrThrow(targetUserId);
+
+        target.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        target.setLoginAttempts(0);          // clear any lockout state
+        userRepository.save(target);
+
+        // Revoke all active sessions — forces re-login
+        refreshTokenService.revokeAll(target);
+
+        auditPublisher.publishAudit(
+                AuditLog.EntityType.USER,
+                target.getId(),
+                admin,
+                AuditLog.AuditAction.PASSWORD_RESET,
+                null, null,
+                "Password reset by admin: " + admin.getEmail()
+                        + (request.getReason() != null ? " — reason: " + request.getReason() : "")
+        );
+
+        log.info("Password reset by admin={} for user={}", admin.getEmail(), target.getEmail());
+    }
+
+    @Override
+    @Transactional
+    public void changeOwnPassword(ChangePasswordRequest request, User actor) {
+
+        User user = findOrThrow(actor.getId());
+
+        // Must verify current password first
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+            throw new BadCredentialsException("Current password is incorrect");
+        }
+
+        // Prevent reuse of the same password
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPasswordHash())) {
+            throw new IllegalArgumentException("New password must differ from current password");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        // Revoke all refresh tokens — forces re-login on other devices
+        refreshTokenService.revokeAll(user);
+
+        auditPublisher.publishAudit(
+                AuditLog.EntityType.USER,
+                user.getId(),
+                user,
+                AuditLog.AuditAction.PASSWORD_RESET,
+                null, null,
+                "User changed their own password"
+        );
+
+        log.info("Password changed by user={}", user.getEmail());
+    }
+
+    @Override
+    @Transactional
+    public void reactivateUser(Long id, User admin) {
+
+        User target = findOrThrow(id);
+
+        if (target.getActive()) {
+            throw new IllegalStateException("User account is already active");
+        }
+
+        target.setActive(true);
+        target.setLoginAttempts(0);
+        userRepository.save(target);
+
+        auditPublisher.publishAudit(
+                AuditLog.EntityType.USER,
+                target.getId(),
+                admin,
+                AuditLog.AuditAction.USER_REACTIVATED,
+                "inactive", "active",
+                "Reactivated by admin: " + admin.getEmail()
+        );
+
+        log.info("User reactivated: user={} by admin={}", target.getEmail(), admin.getEmail());
+    }
+
+    @Override
+    @Transactional
+    public UserResponse changeUserRole(Long id, User.Role newRole, User admin) {
+
+        User target = findOrThrow(id);
+
+        if (target.getRole() == newRole) {
+            throw new IllegalStateException("User already has role " + newRole);
+        }
+
+        // Prevent admin from demoting themselves
+        if (target.getId().equals(admin.getId())) {
+            throw new IllegalStateException("Admin cannot change their own role");
+        }
+
+        User.Role oldRole = target.getRole();
+        target.setRole(newRole);
+        userRepository.save(target);
+
+        // Role change invalidates all sessions - role is embedded in JWT
+        refreshTokenService.revokeAll(target);
+
+        auditPublisher.publishAudit(
+                AuditLog.EntityType.USER,
+                target.getId(),
+                admin,
+                AuditLog.AuditAction.ROLE_CHANGED,
+                oldRole.name(),
+                newRole.name(),
+                "Role changed by admin: " + admin.getEmail()
+        );
+
+        log.info("Role changed: user={} {} -> {} by admin={}",
+                target.getEmail(), oldRole, newRole, admin.getEmail());
+
+        return userMapper.toUserResponse(target);
+    }
+
     private User findOrThrow(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", id));
-    }
-
-    private User getActorOrSystem() {
-        try {
-            String email = SecurityContextHolder.getContext()
-                    .getAuthentication().getName();
-            return userRepository.findByEmail(email)
-                    .orElseThrow(() -> new ResourceNotFoundException(
-                            "Authenticated user not found"));
-        } catch (Exception e) {
-            // Fall back to a synthetic system actor
-            return User.builder()
-                    .id(0L).name("System").email("system")
-                    .role(User.Role.ADMIN).build();
-        }
     }
 }
