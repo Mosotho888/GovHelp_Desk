@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
 import za.gov.helpdesk.sla.dto.TicketSlaResponse;
 import za.gov.helpdesk.sla.repository.TicketSlaRepository;
+import za.gov.helpdesk.sla.service.SlaService;
 
 import java.time.LocalDateTime;
 
@@ -23,31 +24,13 @@ import java.time.LocalDateTime;
 @SecurityRequirement(name = "bearerAuth")
 public class SlaController {
 
-    private final TicketSlaRepository ticketSlaRepository;
+    private final SlaService slaService;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
     @Operation(summary = "Get SLA status for a ticket (Agent/Admin only)")
     public ResponseEntity<TicketSlaResponse> getSla(@PathVariable Long ticketId) {
 
-        return ticketSlaRepository.findByTicketId(ticketId)
-                .map(sla -> TicketSlaResponse.builder()
-                        .responseDueAt(sla.getResponseDueAt())
-                        .resolutionDueAt(sla.getResolutionDueAt())
-                        .firstResponseAt(sla.getFirstResponseAt())
-                        .resolvedAt(sla.getResolvedAt())
-                        .responseBreached(sla.isResponseBreached())
-                        .resolutionBreached(sla.isResolutionBreached())
-                        .status(resolveStatus(sla))
-                        .build())
-                .map(ResponseEntity::ok)
-                .orElseThrow(() -> new ResourceNotFoundException("SLA", ticketId));
-    }
-
-    private String resolveStatus(za.gov.helpdesk.sla.model.TicketSla sla) {
-        if (sla.isResolutionBreached()) return "BREACHED";
-        if (sla.getResolutionDueAt().minusMinutes(30).isBefore(LocalDateTime.now()))
-            return "AT_RISK";
-        return "ON_TRACK";
+        return ResponseEntity.ok(slaService.getSlaStatus(ticketId));
     }
 }

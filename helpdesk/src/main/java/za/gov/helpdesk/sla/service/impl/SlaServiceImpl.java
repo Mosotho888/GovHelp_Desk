@@ -5,7 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import za.gov.helpdesk.exception.ResourceNotFoundException;
 import za.gov.helpdesk.notification.service.sla.SlaEmailService;
+import za.gov.helpdesk.sla.dto.TicketSlaResponse;
 import za.gov.helpdesk.sla.model.SlaPolicy;
 import za.gov.helpdesk.sla.model.TicketSla;
 import za.gov.helpdesk.sla.repository.SlaPolicyRepository;
@@ -28,7 +30,6 @@ public class SlaServiceImpl implements SlaService {
     private final TicketSlaRepository ticketSlaRepository;
     private final SlaPolicyRepository slaPolicyRepository;
     private final BusinessHoursCalculator calculator;
-    private final SlaEmailService emailService;
 
     @Override
     @Transactional
@@ -82,97 +83,37 @@ public class SlaServiceImpl implements SlaService {
         });
     }
 
-    @Scheduled(fixedRateString = "PT5M")
-    @Transactional
-    public void checkSlaWarnings() {
-        LocalDateTime now = LocalDateTime.now();
-        Map<Ticket.Priority, SlaPolicy> policiesByPriority = slaPolicyRepository.findAll()
-                .stream()
-                .collect(Collectors.toMap(SlaPolicy::getPriority, Function.identity()));
-        int maxWarningThresholdMinutes = policiesByPriority.values()
-                .stream()
-                .mapToInt(SlaPolicy::getWarningThresholdMinutes)
-                .max()
+    @Override
+    @Transactional(readOnly = true)
+    public TicketSlaResponse getSlaStatus(Long ticketId) {
+        TicketSla sla = ticketSlaRepository.findByTicketId(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("SLA for ticket", ticketId));
+
+        return TicketSlaResponse.builder()
+                .responseDueAt(sla.getResponseDueAt())
+                .resolutionDueAt(sla.getResolutionDueAt())
+                .firstResponseAt(sla.getFirstResponseAt())
+                .resolvedAt(sla.getResolvedAt())
+                .responseBreached(sla.isResponseBreached())
+                .resolutionBreached(sla.isResolutionBreached())
+                .status(computeStatus(sla))
+                .build();
+    }
+
+    private String computeStatus(TicketSla sla) {
+        if (sla.isResolutionBreached()) return "BREACHED";
+
+        int warningMinutes = slaPolicyRepository
+                .findByPriority(sla.getTicket().getPriority())
+                .map(SlaPolicy::getWarningThresholdMinutes)
                 .orElse(30);
 
-        // Response warnings
-        List<TicketSla> responseWarnings =
-                ticketSlaRepository.findResponseWarningsDue(now, now.plusMinutes(maxWarningThresholdMinutes));
-
-        for (TicketSla sla : responseWarnings) {
-            if (!isWarningDue(sla, policiesByPriority, sla.getResponseDueAt(), now)) continue;
-            sendWarning(sla, "First Response");
-            sla.setResponseWarningSent(true);
-            ticketSlaRepository.save(sla);
+        if (sla.getResolutionDueAt()
+                .minusMinutes(warningMinutes)
+                .isBefore(LocalDateTime.now())) {
+            return "AT_RISK";
         }
 
-        // Resolution warnings
-        List<TicketSla> resolutionWarnings =
-                ticketSlaRepository.findResolutionWarningsDue(now, now.plusMinutes(maxWarningThresholdMinutes));
-
-        for (TicketSla sla : resolutionWarnings) {
-            if (!isWarningDue(sla, policiesByPriority, sla.getResolutionDueAt(), now)) continue;
-            sendWarning(sla, "Resolution");
-            sla.setResolutionWarningSent(true);
-            ticketSlaRepository.save(sla);
-        }
-
-        // Mark response breaches
-        ticketSlaRepository.findUnmarkedResponseBreaches(now).forEach(sla -> {
-            sla.setResponseBreached(true);
-            ticketSlaRepository.save(sla);
-            sendBreach(sla, "First Response");
-            log.warn("Response SLA breached: ticket={}", sla.getTicket().getId());
-        });
-
-        // Mark resolution breaches
-        ticketSlaRepository.findUnmarkedResolutionBreaches(now).forEach(sla -> {
-            sla.setResolutionBreached(true);
-            ticketSlaRepository.save(sla);
-            sendBreach(sla, "Resolution");
-            log.warn("Resolution SLA breached: ticket={}", sla.getTicket().getId());
-        });
-    }
-
-    private boolean isWarningDue(TicketSla sla,
-                                 Map<Ticket.Priority, SlaPolicy> policiesByPriority,
-                                 LocalDateTime dueAt,
-                                 LocalDateTime now) {
-        SlaPolicy policy = policiesByPriority.get(sla.getTicket().getPriority());
-        int thresholdMinutes = policy != null ? policy.getWarningThresholdMinutes() : 30;
-        return !dueAt.isAfter(now.plusMinutes(thresholdMinutes));
-    }
-
-    private void sendWarning(TicketSla sla, String deadlineType) {
-        Ticket ticket = sla.getTicket();
-        if (ticket.getAssignee() == null) return;
-
-        String agentEmail = ticket.getAssignee().getUser().getEmail();
-        String agentName  = ticket.getAssignee().getUser().getName();
-
-        LocalDateTime dueAt = "First Response".equals(deadlineType)
-                ? sla.getResponseDueAt()
-                : sla.getResolutionDueAt();
-
-        emailService.sendSlaWarning(
-                agentEmail, agentName,
-                "TKT-" + ticket.getId(),
-                ticket.getSubject(),
-                deadlineType,
-                dueAt
-        );
-    }
-
-    private void sendBreach(TicketSla sla, String deadlineType) {
-        Ticket ticket = sla.getTicket();
-        if (ticket.getAssignee() == null) return;
-
-        emailService.sendSlaBreach(
-                ticket.getAssignee().getUser().getEmail(),
-                ticket.getAssignee().getUser().getName(),
-                "TKT-" + ticket.getId(),
-                ticket.getSubject(),
-                deadlineType
-        );
+        return "ON_TRACK";
     }
 }
