@@ -15,9 +15,11 @@ import za.gov.helpdesk.sla.service.SlaService;
 import za.gov.helpdesk.ticket.dto.request.CreateTicketRequest;
 import za.gov.helpdesk.ticket.dto.response.TicketResponse;
 import za.gov.helpdesk.ticket.dto.request.UpdateTicketRequest;
+import za.gov.helpdesk.ticket.event.TicketEventDispatcher;
 import za.gov.helpdesk.ticket.exception.InvalidStatusTransitionException;
 import za.gov.helpdesk.ticket.mapper.TicketMapper;
 import za.gov.helpdesk.ticket.model.Ticket;
+import za.gov.helpdesk.ticket.policy.TicketStatusTransitionPolicy;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
 import za.gov.helpdesk.ticket.service.TicketService;
 import za.gov.helpdesk.users.model.User;
@@ -30,8 +32,8 @@ public class TicketServiceImpl implements TicketService {
     private final TicketRepository ticketRepository;
     private final TicketMapper ticketMapper;
     private final AgentRepository agentRepository;
-    private final AuditEventPublisher auditPublisher;
-    private final TicketEmailNotificationPublisher emailPublisher;
+    private final TicketEventDispatcher eventDispatcher;
+    private final TicketStatusTransitionPolicy transitionPolicy;
     private final SlaService slaService;
 
     @Override
@@ -55,25 +57,19 @@ public class TicketServiceImpl implements TicketService {
         Ticket savedTicket = ticketRepository.save(builder.build());
         slaService.initializeSla(savedTicket);
 
-        auditPublisher.publishAudit(
-                AuditLog.EntityType.TICKET,
-                savedTicket.getId(),
-                actor,
+        eventDispatcher.publish(
+                savedTicket, actor,
                 AuditLog.AuditAction.TICKET_CREATED,
-                null,
-                Ticket.Status.OPEN.name(),
-                "Ticket created: " + savedTicket.getSubject()
+                null, Ticket.Status.OPEN.name(),
+                "Ticket created: " + savedTicket.getSubject(),
+                null
         );
 
-        emailPublisher.publish(
-                savedTicket, actor,
-                savedTicket.getAssignee() != null ? savedTicket.getAssignee().getUser() : null,
-                AuditLog.AuditAction.TICKET_CREATED, null);
-
         if (savedTicket.getAssignee() != null) {
-            emailPublisher.publish(
-                    savedTicket, savedTicket.getRequester(), savedTicket.getAssignee().getUser(),
-                    AuditLog.AuditAction.ASSIGNED_TO_AGENT, null);
+            eventDispatcher.publish(savedTicket, actor,
+                    AuditLog.AuditAction.ASSIGNED_TO_AGENT,
+                    null, savedTicket.getAssignee().getUser().getName(),
+                    null, null);
         }
 
         return ticketMapper.toTicketResponse(savedTicket);
@@ -100,20 +96,20 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional
-    public TicketResponse updateTicket(Long ticketId, UpdateTicketRequest request, User user) {
+    public TicketResponse updateTicket(Long ticketId, UpdateTicketRequest request, User actor) {
 
-        Ticket ticket = findOrThrow(ticketId, user);
+        Ticket ticket = findOrThrow(ticketId, actor);
 
         if (request.getStatus() != null && !ticket.getStatus().equals(request.getStatus())) {
-            applyStatusChange(ticket, request.getStatus(), user);
+            applyStatusChange(ticket, request.getStatus(), actor);
         }
 
         if (request.getAssigneeId() != null) {
-            applyAssignmentChange(ticket, request.getAssigneeId(), user);
+            applyAssignmentChange(ticket, request.getAssigneeId(), actor);
         }
 
         if (request.getPriority() != null && !ticket.getPriority().equals(request.getPriority())) {
-            applyPriorityChange(ticket, request.getPriority(), user);
+            applyPriorityChange(ticket, request.getPriority(), actor);
         }
 
         if (request.getCategory() != null) {
@@ -121,7 +117,7 @@ public class TicketServiceImpl implements TicketService {
         }
 
         if (Boolean.TRUE.equals(request.getEscalated()) && !ticket.isEscalated()) {
-            applyEscalation(ticket, request.getEscalationReason(), user);
+            applyEscalation(ticket, request.getEscalationReason(), actor);
         }
 
         return ticketMapper.toTicketResponse(ticketRepository.save(ticket));
@@ -129,19 +125,16 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional
-    public void deleteTicket(Long ticketId, User user) {
+    public void deleteTicket(Long ticketId, User actor) {
 
         Ticket ticket = ticketRepository.findById(ticketId)
                         .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
 
-        auditPublisher.publishAudit(
-                AuditLog.EntityType.TICKET,
-                ticket.getId(),
-                user,
+        eventDispatcher.publish(
+                ticket, actor,
                 AuditLog.AuditAction.TICKET_DELETED,
-                ticket.getStatus().name(),
-                "DELETED",
-                "Ticket deleted by " + user.getName()
+                ticket.getStatus().name(), "DELETED",
+                "Ticket deleted by " + actor.getName(), null
         );
 
         ticketRepository.delete(ticket);
@@ -159,9 +152,7 @@ public class TicketServiceImpl implements TicketService {
     private void applyStatusChange(Ticket ticket, Ticket.Status newStatus, User actor) {
         Ticket.Status oldStatus = ticket.getStatus();
 
-        if (!ticket.canTransitionTo(newStatus)) {
-            throw new InvalidStatusTransitionException(oldStatus, newStatus);
-        }
+        transitionPolicy.canTransition(oldStatus, newStatus);
 
         ticket.setStatus(newStatus);
 
@@ -181,17 +172,10 @@ public class TicketServiceImpl implements TicketService {
                 ? AuditLog.AuditAction.TICKET_CLOSED
                 : AuditLog.AuditAction.STATUS_CHANGED;
 
-        auditPublisher.publishAudit(
-                AuditLog.EntityType.TICKET,
-                ticket.getId(),
-                actor,
-                action,
-                oldStatus.name(),
-                newStatus.name(),
-                null
-        );
+        eventDispatcher.publish(ticket, actor, action,
+                oldStatus.name(), newStatus.name(), null, null);
 
-        publishTicketEmail(ticket, action, null);
+
     }
 
     private void applyAssignmentChange(Ticket ticket, Long assigneeId, User actor) {
@@ -208,34 +192,18 @@ public class TicketServiceImpl implements TicketService {
 
         ticket.setAssignee(newAgent);
 
-        auditPublisher.publishAudit(
-                AuditLog.EntityType.TICKET,
-                ticket.getId(),
-                actor,
+        eventDispatcher.publish(ticket, actor,
                 AuditLog.AuditAction.ASSIGNED_TO_AGENT,
-                oldAssignee,
-                newAgent.getUser().getName(),
-                null
-        );
-
-        publishTicketEmail(ticket, AuditLog.AuditAction.ASSIGNED_TO_AGENT, null);
+                oldAssignee, newAgent.getUser().getName(), null, null);
     }
 
     private void applyPriorityChange(Ticket ticket, Ticket.Priority newPriority, User actor) {
         Ticket.Priority oldPriority = ticket.getPriority();
         ticket.setPriority(newPriority);
 
-        auditPublisher.publishAudit(
-                AuditLog.EntityType.TICKET,
-                ticket.getId(),
-                actor,
+        eventDispatcher.publish(ticket, actor,
                 AuditLog.AuditAction.PRIORITY_CHANGED,
-                oldPriority.name(),
-                newPriority.name(),
-                null
-        );
-
-        publishTicketEmail(ticket, AuditLog.AuditAction.PRIORITY_CHANGED, null);
+                oldPriority.name(), newPriority.name(), null, null);
     }
 
     private void applyEscalation(Ticket ticket, String reason, User actor) {
@@ -245,25 +213,9 @@ public class TicketServiceImpl implements TicketService {
             ticket.setStatus(Ticket.Status.ESCALATED);
         }
 
-        auditPublisher.publishAudit(
-                AuditLog.EntityType.TICKET,
-                ticket.getId(),
-                actor,
+        eventDispatcher.publish(ticket, actor,
                 AuditLog.AuditAction.ESCALATED,
-                "false",
-                "true",
-                reason
-        );
+                "false", "true", reason, reason);
 
-        publishTicketEmail(ticket, AuditLog.AuditAction.ESCALATED, reason);
-    }
-
-    private void publishTicketEmail(Ticket ticket, AuditLog.AuditAction action, String comment) {
-        emailPublisher.publish(
-                ticket,
-                ticket.getRequester(),
-                ticket.getAssignee() != null ? ticket.getAssignee().getUser() : null,
-                action,
-                comment);
     }
 }
