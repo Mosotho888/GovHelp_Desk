@@ -39,7 +39,7 @@ public class User {
 
     @Column(length = 60)
     @Builder.Default
-    private String timezone = "Africa/Johanneburg";
+    private String timezone = "Africa/Johannesburg";
 
     @Column(nullable = false)
     @Builder.Default
