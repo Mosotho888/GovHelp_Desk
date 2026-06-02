@@ -11,6 +11,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import za.gov.helpdesk.auditlog.dto.messaging.AuditLogMessage;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.config.messaging.RabbitMQConstants;
+import za.gov.helpdesk.shared.RequestContextHelper;
 import za.gov.helpdesk.users.model.User;
 
 @Component
@@ -19,6 +20,7 @@ import za.gov.helpdesk.users.model.User;
 public class AuditEventPublisher {
 
     private final RabbitTemplate rabbitTemplate;
+    private final RequestContextHelper requestContextHelper;
 
     public void publishAudit(AuditLog.EntityType entityType, Long entityId, User actor, AuditLog.AuditAction action, String oldValue, String newValue, String description) {
 
@@ -28,7 +30,7 @@ public class AuditEventPublisher {
                 .actorId(actor.getId())
                 .actorName(actor.getName())
                 .actorRole(actor.getRole().name())
-                .ipAddress(resolveIpAddress())
+                .ipAddress(requestContextHelper.getClientIp())
                 .action(action)
                 .oldValue(oldValue)
                 .newValue(newValue)
@@ -47,7 +49,7 @@ public class AuditEventPublisher {
                 .actorId(actorId)
                 .actorName(actorName)
                 .actorRole(actorRole)
-                .ipAddress(resolveIpAddress())
+                .ipAddress(requestContextHelper.getClientIp())
                 .action(action)
                 .description(description)
                 .isAuthLog(true)
@@ -65,27 +67,6 @@ public class AuditEventPublisher {
             log.info("Audit message queued: action={} entity={}/{}", message.getAction(), message.getEntityType(), message.getEntityId());
         } catch (Exception e) {
             log.error("Failed to queue message: action={} entity={}/{} error={}", message.getAction(), message.getEntityType(), message.getEntityId(), e.getMessage());
-        }
-    }
-
-    private String resolveIpAddress() {
-        try {
-            ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
-
-            if (attrs == null) {
-                return "system";
-            }
-
-            HttpServletRequest request = attrs.getRequest();
-            String forwarded =  request.getHeader("X-Forwarded-For");
-
-            if (forwarded != null && !forwarded.isEmpty()) {
-                return forwarded.split(",")[0].trim();
-            }
-
-            return request.getRemoteAddr();
-        } catch (Exception e) {
-            return "unknown";
         }
     }
 }
