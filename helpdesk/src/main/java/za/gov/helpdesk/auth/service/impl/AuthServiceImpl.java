@@ -76,7 +76,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public AuthResponse refresh(RefreshTokenRequest refreshToken) {
 
         String rawRefreshToken = refreshToken.getRefreshToken();

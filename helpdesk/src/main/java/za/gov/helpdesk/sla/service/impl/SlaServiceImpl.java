@@ -2,11 +2,9 @@ package za.gov.helpdesk.sla.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
-import za.gov.helpdesk.notification.service.sla.SlaEmailService;
 import za.gov.helpdesk.sla.dto.TicketSlaResponse;
 import za.gov.helpdesk.sla.model.SlaPolicy;
 import za.gov.helpdesk.sla.model.TicketSla;
@@ -17,10 +15,6 @@ import za.gov.helpdesk.sla.service.SlaService;
 import za.gov.helpdesk.ticket.model.Ticket;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
