@@ -10,12 +10,14 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import za.gov.helpdesk.agent.dto.response.AgentResponse;
 import za.gov.helpdesk.agent.dto.response.AgentStatsResponse;
 import za.gov.helpdesk.agent.dto.request.CreateAgentRequest;
 import za.gov.helpdesk.agent.dto.request.UpdateAgentRequest;
 import za.gov.helpdesk.agent.service.AgentService;
+import za.gov.helpdesk.users.security.CustomUserDetails;
 
 import javax.validation.Valid;
 
@@ -31,8 +33,10 @@ public class AgentController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Register a user as an agent (Admin only)")
-    public ResponseEntity<AgentResponse> createAgent(@Valid @RequestBody CreateAgentRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(agentService.createAgent(request));
+    public ResponseEntity<AgentResponse> createAgent(
+            @Valid @RequestBody CreateAgentRequest request,
+            @AuthenticationPrincipal CustomUserDetails principal) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(agentService.createAgent(request, principal.getUser()));
     }
 
     @GetMapping
@@ -56,9 +60,10 @@ public class AgentController {
     @Operation(summary = "update agent availability or department")
     public ResponseEntity<AgentResponse> updateAgent(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateAgentRequest request) {
+            @Valid @RequestBody UpdateAgentRequest request,
+            @AuthenticationPrincipal CustomUserDetails principal) {
 
-        return ResponseEntity.ok(agentService.updateAgent(id, request));
+        return ResponseEntity.ok(agentService.updateAgent(id, request, principal.getUser()));
     }
 
     @GetMapping("/{id}/stats")

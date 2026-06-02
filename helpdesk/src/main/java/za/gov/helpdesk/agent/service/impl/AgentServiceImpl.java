@@ -36,7 +36,7 @@ public class AgentServiceImpl implements AgentService {
 
     @Override
     @Transactional
-    public AgentResponse createAgent(CreateAgentRequest request) {
+    public AgentResponse createAgent(CreateAgentRequest request, User actor) {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User", request.getUserId()));
 
@@ -57,7 +57,6 @@ public class AgentServiceImpl implements AgentService {
                 .build();
 
         Agent savedAgent = agentRepository.save(agent);
-        User actor = getCurrentUser();
 
         auditPublisher.publishAudit(
                 AuditLog.EntityType.AGENT,
@@ -107,9 +106,8 @@ public class AgentServiceImpl implements AgentService {
 
     @Override
     @Transactional
-    public AgentResponse updateAgent(Long id, UpdateAgentRequest request) {
+    public AgentResponse updateAgent(Long id, UpdateAgentRequest request, User actor) {
         Agent agent = findOrThrow(id);
-        User actor = getCurrentUser();
 
         if (request.getAvailability() != null && !request.getAvailability().equals(agent.getAvailability())) {
 
@@ -144,15 +142,6 @@ public class AgentServiceImpl implements AgentService {
     private Agent findOrThrow(Long id) {
         return agentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Agent", id));
-    }
-
-    private User getCurrentUser() {
-        String email = SecurityContextHolder.getContext()
-                .getAuthentication().getName();
-
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Authenticated user not found"));
     }
 
     private long toLong(Object value) {
