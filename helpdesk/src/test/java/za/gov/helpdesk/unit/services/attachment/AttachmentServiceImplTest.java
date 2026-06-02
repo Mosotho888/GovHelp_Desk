@@ -67,7 +67,7 @@ public class AttachmentServiceImplTest {
                 mockFile("d.pdf"), mockFile("e.pdf"), mockFile("f.pdf")
         );
 
-        assertThatThrownBy(() -> attachmentServiceImpl.uploadAttachments(10L, List.copyOf(files)))
+        assertThatThrownBy(() -> attachmentServiceImpl.uploadAttachments(10L, List.copyOf(files), uploader))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Maximum 5 files");
     }
@@ -85,7 +85,7 @@ public class AttachmentServiceImplTest {
                 "file", "malware.exe", "application/x-msdownload", "fake content".getBytes()
         );
 
-        assertThatThrownBy(() -> attachmentServiceImpl.uploadAttachments(10L, List.of(exeFile)))
+        assertThatThrownBy(() -> attachmentServiceImpl.uploadAttachments(10L, List.of(exeFile), uploader))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("not allowed");
     }
@@ -103,7 +103,7 @@ public class AttachmentServiceImplTest {
                 "file", "big.pdf", "application/pdf", bigContent
         );
 
-        assertThatThrownBy(() -> attachmentServiceImpl.uploadAttachments(10L, List.of(bigFile)))
+        assertThatThrownBy(() -> attachmentServiceImpl.uploadAttachments(10L, List.of(bigFile), uploader))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("20 MB");
     }
@@ -114,7 +114,7 @@ public class AttachmentServiceImplTest {
 //        mockAuthenticatedUser();
         given(ticketRepository.findById(999L)).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> attachmentServiceImpl.uploadAttachments(999L, List.of(mockFile("a.pdf"))))
+        assertThatThrownBy(() -> attachmentServiceImpl.uploadAttachments(999L, List.of(mockFile("a.pdf")), uploader))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -123,7 +123,7 @@ public class AttachmentServiceImplTest {
     void delete_unknownAttachment_throwsNotFound() {
         given(attachmentRepository.findById(999L)).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> attachmentServiceImpl.deleteAttachment(999L))
+        assertThatThrownBy(() -> attachmentServiceImpl.deleteAttachment(999L, uploader))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
