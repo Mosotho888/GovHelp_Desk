@@ -97,7 +97,7 @@ public class CommentServiceImplTest {
         given(commentMapper.toCommentResponse(comment)).willReturn(responseFor(comment));
 //        given(commentRepository.findByParentId(any())).willReturn(List.of());
 
-        CommentResponse response = commentServiceImpl.addComment(10L, req);
+        CommentResponse response = commentServiceImpl.addComment(10L, req, agentUser);
 
         assertThat(response.getBody()).isEqualTo("This is a test comment");
         assertThat(response.isInternal()).isFalse();
@@ -118,7 +118,7 @@ public class CommentServiceImplTest {
         given(userRepository.findByEmail("john@citizen.za")).willReturn(Optional.of(endUser));
         given(ticketRepository.findById(10L)).willReturn(Optional.of(ticket));
 
-        assertThatThrownBy(() -> commentServiceImpl.addComment(10L, req))
+        assertThatThrownBy(() -> commentServiceImpl.addComment(10L, req, endUser))
                 .isInstanceOf(AccessDeniedException.class);
 
         then(commentRepository).should(never()).save(any());
@@ -133,7 +133,7 @@ public class CommentServiceImplTest {
 
         given(ticketRepository.findById(999L)).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> commentServiceImpl.addComment(999L, req))
+        assertThatThrownBy(() -> commentServiceImpl.addComment(999L, req, endUser))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -150,7 +150,7 @@ public class CommentServiceImplTest {
         given(userRepository.findByEmail("john@citizen.za")).willReturn(Optional.of(endUser));
         given(commentRepository.findById(200L)).willReturn(Optional.of(oldComment));
 
-        assertThatThrownBy(() -> commentServiceImpl.deleteComment(200L))
+        assertThatThrownBy(() -> commentServiceImpl.deleteComment(200L, endUser))
                 .isInstanceOf(AccessDeniedException.class)
                 .hasMessageContaining("15 minutes");
     }
@@ -172,7 +172,7 @@ public class CommentServiceImplTest {
         given(commentRepository.save(any(Comment.class))).willReturn(replyComment);
         given(commentMapper.toCommentResponse(replyComment)).willReturn(responseFor(replyComment));
 
-        CommentResponse response = commentServiceImpl.addReply(100L, req);
+        CommentResponse response = commentServiceImpl.addReply(100L, req, endUser);
 
         assertThat(response.getParentId()).isEqualTo(100L);
         assertThat(response.getBody()).isEqualTo("Thanks for the update!");

@@ -14,6 +14,7 @@ import za.gov.helpdesk.comment.dto.request.CreateCommentRequest;
 import za.gov.helpdesk.comment.dto.request.UpdateCommentRequest;
 import za.gov.helpdesk.comment.mapper.CommentMapper;
 import za.gov.helpdesk.comment.model.Comment;
+import za.gov.helpdesk.comment.policy.CommentAccessPolicy;
 import za.gov.helpdesk.comment.repository.CommentRepository;
 import za.gov.helpdesk.comment.service.CommentService;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
@@ -32,27 +33,26 @@ public class CommentServiceImpl implements CommentService {
     private final CommentRepository commentRepository;
     private final CommentMapper commentMapper;
     private final TicketRepository ticketRepository;
-    private final UserRepository userRepository;
     private final AuditEventPublisher  auditPublisher;
+    private final CommentAccessPolicy accessPolicy;
 
     private static final int EDIT_WINDOW_MINUTES = 15;
 
     @Override
     @Transactional
-    public CommentResponse addComment(Long ticketId, CreateCommentRequest request) {
+    public CommentResponse addComment(Long ticketId, CreateCommentRequest request, User actor) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
-        User author = getCurrentUser();
 
         // Only agents/admins can post internal notes
-        if (request.isInternal() && author.getRole() == User.Role.USER) {
+        if (request.isInternal() && actor.getRole() == User.Role.USER) {
             throw new AccessDeniedException(
                     "Only agents and admins can post internal notes");
         }
 
         Comment comment = Comment.builder()
                 .ticket(ticket)
-                .author(author)
+                .author(actor)
                 .body(request.getBody())
                 .internal(request.isInternal())
                 .type(request.getType() != null ? request.getType() : Comment.CommentType.REPLY)
@@ -67,7 +67,7 @@ public class CommentServiceImpl implements CommentService {
         auditPublisher.publishAudit(
                 AuditLog.EntityType.COMMENT,
                 savedComment.getId(),
-                author,
+                actor,
                 action,
                 null,
                 String.valueOf(savedComment.getId()),
@@ -79,16 +79,13 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional
-    public CommentResponse addReply(Long parentCommentId, CreateCommentRequest request) {
+    public CommentResponse addReply(Long parentCommentId, CreateCommentRequest request, User actor) {
         Comment parent = commentRepository.findById(parentCommentId)
                 .orElseThrow(() ->  new ResourceNotFoundException("Comment", parentCommentId));
 
-        // Replies inherit the ticket from the parent
-        User author = getCurrentUser();
-
         Comment reply = Comment.builder()
                 .ticket(parent.getTicket())
-                .author(author)
+                .author(actor)
                 .parent(parent)
                 .body(request.getBody())
                 .internal(request.isInternal())
@@ -100,7 +97,7 @@ public class CommentServiceImpl implements CommentService {
         auditPublisher.publishAudit(
                 AuditLog.EntityType.COMMENT,
                 savedReply.getId(),
-                author,
+                actor,
                 AuditLog.AuditAction.COMMENT_ADDED,
                 null,
                 String.valueOf(savedReply.getId()),
@@ -112,20 +109,17 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<CommentResponse> getComments(Long ticketId, Pageable pageable) {
+    public Page<CommentResponse> getComments(Long ticketId, Pageable pageable, User actor) {
         ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
 
-        User current = getCurrentUser();
-        boolean isAgent = current.getRole() != User.Role.USER;
+        boolean isAgent = actor.getRole() != User.Role.USER;
 
         return commentRepository.findByTicketId(ticketId, pageable)
                 .map(c -> {
-                    // Filter out internal notes for end users
                     if (c.isInternal() && !isAgent) return null;
                     return toResponseWithReplies(c, isAgent);
-                })
-                .map(r -> r);
+                });
     }
 
     @Override
@@ -140,13 +134,12 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional
-    public CommentResponse updateComment(Long commentId, UpdateCommentRequest request) {
+    public CommentResponse updateComment(Long commentId, UpdateCommentRequest request,  User actor) {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Comment", commentId));
 
-        User current = getCurrentUser();
-        boolean isAdmin = current.getRole() == User.Role.ADMIN;
-        boolean isAuthor = comment.getAuthor().getId().equals(current.getId());
+        boolean isAdmin = actor.getRole() == User.Role.ADMIN;
+        boolean isAuthor = comment.getAuthor().getId().equals(actor.getId());
         boolean withinWindow = comment.getCreatedAt()
                 .isAfter(LocalDateTime.now().minusMinutes(EDIT_WINDOW_MINUTES));
 
@@ -163,7 +156,7 @@ public class CommentServiceImpl implements CommentService {
         auditPublisher.publishAudit(
                 AuditLog.EntityType.COMMENT,
                 savedComment.getId(),
-                current,
+                actor,
                 AuditLog.AuditAction.COMMENT_EDITED,
                 oldBody.length() > 80 ? oldBody.substring(0, 80) + "…" : oldBody,
                 null,
@@ -174,26 +167,16 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional
-    public void deleteComment(Long commentId) {
+    public void deleteComment(Long commentId,  User actor) {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Comment", commentId));
 
-        User current = getCurrentUser();
-        boolean isAdmin  = current.getRole() == User.Role.ADMIN;
-        boolean isAuthor = comment.getAuthor().getId().equals(current.getId());
-        boolean withinWindow = comment.getCreatedAt()
-                .isAfter(LocalDateTime.now().minusMinutes(EDIT_WINDOW_MINUTES));
-
-        if (!isAdmin && !(isAuthor && withinWindow)) {
-            throw new AccessDeniedException(
-                    "Comments can only be deleted within " + EDIT_WINDOW_MINUTES
-                            + " minutes of creation, or by an admin");
-        }
+        accessPolicy.assertCanMutate(actor, comment);
 
         auditPublisher.publishAudit(
                 AuditLog.EntityType.COMMENT,
                 comment.getId(),
-                current,
+                actor,
                 AuditLog.AuditAction.COMMENT_DELETED,
                 String.valueOf(comment.getId()),
                 null,
@@ -201,12 +184,6 @@ public class CommentServiceImpl implements CommentService {
         );
 
         commentRepository.delete(comment);
-    }
-
-    private User getCurrentUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Authenticated user not found"));
     }
 
     private CommentResponse toResponseWithReplies(Comment comment, boolean includeInternal) {

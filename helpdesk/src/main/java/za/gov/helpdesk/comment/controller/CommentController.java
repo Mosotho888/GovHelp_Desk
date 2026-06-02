@@ -11,11 +11,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import za.gov.helpdesk.comment.dto.response.CommentResponse;
 import za.gov.helpdesk.comment.dto.request.CreateCommentRequest;
 import za.gov.helpdesk.comment.dto.request.UpdateCommentRequest;
 import za.gov.helpdesk.comment.service.CommentService;
+import za.gov.helpdesk.users.security.CustomUserDetails;
 
 import java.util.List;
 
@@ -32,26 +34,29 @@ public class CommentController {
     @Operation(summary = "Add a comment to a ticket")
     public ResponseEntity<CommentResponse> addComment(
             @PathVariable Long ticketId,
-            @Valid @RequestBody CreateCommentRequest request) {
+            @Valid @RequestBody CreateCommentRequest request,
+            @AuthenticationPrincipal CustomUserDetails principal) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(commentService.addComment(ticketId, request));
+                .body(commentService.addComment(ticketId, request, principal.getUser()));
     }
 
     @GetMapping("/tickets/{ticketId}/comments")
     @Operation(summary = "List comments on a ticket (internal notes hidden for end users)")
     public ResponseEntity<Page<CommentResponse>> getComments(
             @PathVariable Long ticketId,
-            @PageableDefault(size = 25, sort = "createdAt", direction = Sort.Direction.ASC) Pageable pageable) {
-        return ResponseEntity.ok(commentService.getComments(ticketId, pageable));
+            @PageableDefault(size = 25, sort = "createdAt", direction = Sort.Direction.ASC) Pageable pageable,
+            @AuthenticationPrincipal CustomUserDetails principal) {
+        return ResponseEntity.ok(commentService.getComments(ticketId, pageable, principal.getUser()));
     }
 
     @PostMapping("/comments/{commentId}/replies")
     @Operation(summary = "Reply to an existing comment")
     public ResponseEntity<CommentResponse> addReply(
             @PathVariable Long commentId,
-            @Valid @RequestBody CreateCommentRequest request) {
+            @Valid @RequestBody CreateCommentRequest request,
+            @AuthenticationPrincipal CustomUserDetails principal) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(commentService.addReply(commentId, request));
+                .body(commentService.addReply(commentId, request, principal.getUser()));
     }
 
     @GetMapping("/comments/{commentId}/replies")
@@ -64,15 +69,18 @@ public class CommentController {
     @Operation(summary = "Edit a comment (within 15 minutes of creation, or admin)")
     public ResponseEntity<CommentResponse> updateComment(
             @PathVariable Long commentId,
-            @Valid @RequestBody UpdateCommentRequest request) {
-        return ResponseEntity.ok(commentService.updateComment(commentId, request));
+            @Valid @RequestBody UpdateCommentRequest request,
+            @AuthenticationPrincipal CustomUserDetails principal) {
+        return ResponseEntity.ok(commentService.updateComment(commentId, request, principal.getUser()));
     }
 
     @DeleteMapping("/comments/{commentId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Delete a comment (within 15 minutes of creation, or admin)")
-    public void deleteComment(@PathVariable Long commentId) {
+    public void deleteComment(
+            @PathVariable Long commentId,
+            @AuthenticationPrincipal CustomUserDetails principal) {
 
-        commentService.deleteComment(commentId);
+        commentService.deleteComment(commentId,  principal.getUser());
     }
 }
