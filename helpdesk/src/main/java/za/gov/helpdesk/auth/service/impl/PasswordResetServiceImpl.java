@@ -12,6 +12,7 @@ import za.gov.helpdesk.auth.dto.request.PasswordResetConfirmRequest;
 import za.gov.helpdesk.auth.dto.request.PasswordResetRequest;
 import za.gov.helpdesk.auth.model.PasswordResetToken;
 import za.gov.helpdesk.auth.repository.PasswordResetTokenRepository;
+import za.gov.helpdesk.auth.service.OtpGeneratorService;
 import za.gov.helpdesk.auth.service.PasswordResetService;
 import za.gov.helpdesk.auth.service.RefreshTokenService;
 import za.gov.helpdesk.notification.messaging.PasswordResetEmailNotificationPublisher;
@@ -31,11 +32,10 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
-    private final TicketEmailService ticketEmailService;
+    private final OtpGeneratorService otpGeneratorService;
     private final AuditEventPublisher auditPublisher;
     private final PasswordResetEmailNotificationPublisher emailPublisher;
 
-    private static final SecureRandom RANDOM = new SecureRandom();
     private static final long OTP_EXPIRY_MIN = 15;
 
     @Override
@@ -46,7 +46,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
             tokenRepository.invalidateAllByEmail(user.getEmail());
 
-            String rawOtp  = generateOtp();
+            String rawOtp  = otpGeneratorService.generate();
             String hashedOtp = passwordEncoder.encode(rawOtp);
 
             tokenRepository.save(PasswordResetToken.builder()
@@ -110,12 +110,5 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         tokenRepository.deleteExpiredBefore(LocalDateTime.now().minusHours(1));
 
         log.info("Expired password reset tokens purged");
-    }
-
-    private String generateOtp() {
-
-        int otp = 100_000 + RANDOM.nextInt(900_000);
-
-        return String.valueOf(otp);
     }
 }

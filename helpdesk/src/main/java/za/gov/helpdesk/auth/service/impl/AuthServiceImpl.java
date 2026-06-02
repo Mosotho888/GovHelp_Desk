@@ -13,6 +13,8 @@ import za.gov.helpdesk.auth.dto.request.RefreshTokenRequest;
 import za.gov.helpdesk.auth.jwt.JwtService;
 import za.gov.helpdesk.auth.dto.request.LoginRequest;
 import za.gov.helpdesk.auth.model.RefreshToken;
+import za.gov.helpdesk.auth.policy.LoginLockoutService;
+import za.gov.helpdesk.auth.service.AuthResponseFactory;
 import za.gov.helpdesk.auth.service.AuthService;
 import za.gov.helpdesk.auth.service.RefreshTokenService;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
@@ -30,19 +32,14 @@ import za.gov.helpdesk.users.security.CustomUserDetails;
 @Slf4j
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
-    private static final String TOKEN_REFRESH = "refresh";
+
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
-    private final UserMapper userMapper;
     private final JwtService jwtService;
     private final AuditEventPublisher auditPublisher;
     private final RefreshTokenService refreshTokenService;
-
-    @Value("${app.security.max-login-attempts}")
-    private int maxLoginAttempts;
-
-    @Value("${app.jwt.access-token-expiry-ms}")
-    private long accessTokenExpiryMs;
+    private final LoginLockoutService lockoutService;
+    private final AuthResponseFactory authResponseFactory;
 
     @Override
     @Transactional(noRollbackFor = AuthenticationException.class)
@@ -69,11 +66,11 @@ public class AuthServiceImpl implements AuthService {
                     "Login successful"
             );
 
-            return buildAuthResponse(user, refreshToken);
+            return authResponseFactory.build(user, refreshToken);
 
         } catch (BadCredentialsException ex) {
-            handleFailedLogin(loginRequest.getEmail());
 
+            lockoutService.recordFailedAttempt(loginRequest.getEmail());
             throw ex;
         }
     }
@@ -82,11 +79,13 @@ public class AuthServiceImpl implements AuthService {
     @Transactional(readOnly = true)
     public AuthResponse refresh(RefreshTokenRequest refreshToken) {
 
-        if (jwtService.isRefreshToken(refreshToken.getRefreshToken()) || jwtService.isTokenExpired(refreshToken.getRefreshToken())) {
+        String rawRefreshToken = refreshToken.getRefreshToken();
+
+        if (!jwtService.isRefreshToken(rawRefreshToken) || jwtService.isTokenExpired(rawRefreshToken)) {
             throw new BadCredentialsException("Invalid or expired refresh token");
         }
 
-        RefreshToken stored = refreshTokenService.validate(refreshToken.getRefreshToken());
+        RefreshToken stored = refreshTokenService.validate(rawRefreshToken);
         User user = stored.getUser();
 
         String newRefreshToken = jwtService.generateRefreshToken(user);
@@ -98,28 +97,7 @@ public class AuthServiceImpl implements AuthService {
                 "Access token refreshed"
         );
 
-        return buildAuthResponse(user, newRefreshToken);
-    }
-
-    private void handleFailedLogin(String email) {
-        userRepository.findByEmail(email)
-                .ifPresent(user -> {
-                    int attempts = user.getLoginAttempts() + 1;
-
-                    user.setLoginAttempts(attempts);
-
-                    if (attempts >= maxLoginAttempts) {
-                        user.setActive(false);
-
-                        auditPublisher.publishAuthAudit(
-                                AuditLog.AuditAction.ACCOUNT_LOCKED,
-                                user.getId(), user.getName(), user.getRole().name(),
-                                attempts + " consecutive failed login attempts"
-                        );
-                    }
-
-                    userRepository.save(user);
-                });
+        return authResponseFactory.build(user, newRefreshToken);
     }
 
     @Override
@@ -131,15 +109,5 @@ public class AuthServiceImpl implements AuthService {
                 AuditLog.AuditAction.FORCED_LOGOUT,
                 actor.getId(), actor.getName(), actor.getRole().name(),
                 "User logged out");
-    }
-
-    private AuthResponse buildAuthResponse(User user,  String refreshToken) {
-
-        return AuthResponse.builder()
-                .accessToken(jwtService.generateAccessToken(user))
-                .refreshToken(refreshToken)
-                .expiresIn(accessTokenExpiryMs / 1000)
-                .user(userMapper.toUserResponse(user))
-                .build();
     }
 }
