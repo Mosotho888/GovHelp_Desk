@@ -56,7 +56,7 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     @Modifying
     @Query("UPDATE Ticket t SET t.assignee = null " +
             "WHERE t.assignee = :agent " +
-            "AND t.status NOT IN (za.gov.helpdesk.ticket.model.Ticket.Status.CLOSED, " +
-            "za.gov.helpdesk.ticket.model.Ticket.Status.RESOLVED)")
+            "AND t.status NOT IN (Ticket.Status.CLOSED, " +
+            "Ticket.Status.RESOLVED)")
     int unassignFromAgent(@Param("agent") Agent agent);
 }

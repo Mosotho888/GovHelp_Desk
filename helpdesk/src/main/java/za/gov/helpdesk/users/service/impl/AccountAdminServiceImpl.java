@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import za.gov.helpdesk.agent.service.AgentRoleLifecycleService;
 import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auth.service.RefreshTokenService;
@@ -23,6 +24,7 @@ public class AccountAdminServiceImpl implements AccountAdminService {
     private final UserMapper userMapper;
     private final RefreshTokenService refreshTokenService;
     private final AuditEventPublisher auditPublisher;
+    private final AgentRoleLifecycleService agentRoleLifecycle;
 
     @Override
     @Transactional
@@ -80,7 +82,8 @@ public class AccountAdminServiceImpl implements AccountAdminService {
         target.setRole(newRole);
         userRepository.save(target);
 
-        // Role is embedded in the JWT — revoke all sessions to force re-login
+        agentRoleLifecycle.handleRoleChange(target, oldRole, newRole, admin);
+
         refreshTokenService.revokeAll(target);
 
         auditPublisher.publishAudit(
