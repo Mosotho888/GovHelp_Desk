@@ -61,8 +61,10 @@ public class CommentController {
 
     @GetMapping("/comments/{commentId}/replies")
     @Operation(summary = "Get all replies to a comment")
-    public ResponseEntity<List<CommentResponse>> getReplies(@PathVariable Long commentId) {
-        return ResponseEntity.ok(commentService.getReplies(commentId));
+    public ResponseEntity<List<CommentResponse>> getReplies(
+            @PathVariable Long commentId,
+            @AuthenticationPrincipal CustomUserDetails principal) {
+        return ResponseEntity.ok(commentService.getReplies(commentId, principal.getUser()));
     }
 
     @PutMapping("/comments/{commentId}")

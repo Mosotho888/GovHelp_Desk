@@ -41,10 +41,10 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional
     public CommentResponse addComment(Long ticketId, CreateCommentRequest request, User actor) {
-        Ticket ticket = ticketRepository.findById(ticketId)
+        Ticket ticket = ticketRepository
+                .findByIdAndPrincipal(ticketId, actor.getEmail(), actor.getRole().name())
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
 
-        // Only agents/admins can post internal notes
         if (request.isInternal() && actor.getRole() == User.Role.USER) {
             throw new AccessDeniedException(
                     "Only agents and admins can post internal notes");
@@ -80,8 +80,13 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional
     public CommentResponse addReply(Long parentCommentId, CreateCommentRequest request, User actor) {
-        Comment parent = commentRepository.findById(parentCommentId)
+        Comment parent = commentRepository
+                .findByIdForActor(parentCommentId, actor.getEmail(), actor.getRole().name())
                 .orElseThrow(() ->  new ResourceNotFoundException("Comment", parentCommentId));
+
+        if (request.isInternal() && actor.getRole() == User.Role.USER) {
+            throw new AccessDeniedException("Only agents and admins can post internal notes");
+        }
 
         Comment reply = Comment.builder()
                 .ticket(parent.getTicket())
@@ -110,44 +115,39 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional(readOnly = true)
     public Page<CommentResponse> getComments(Long ticketId, Pageable pageable, User actor) {
-        ticketRepository.findById(ticketId)
+        ticketRepository
+                .findByIdAndPrincipal(ticketId, actor.getEmail(), actor.getRole().name())
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
 
         boolean isAgent = actor.getRole() != User.Role.USER;
 
-        return commentRepository.findByTicketId(ticketId, pageable)
-                .map(c -> {
-                    if (c.isInternal() && !isAgent) return null;
-                    return toResponseWithReplies(c, isAgent);
-                });
+        return commentRepository
+                .findVisibleByTicketId(ticketId, actor.getEmail(), actor.getRole().name(), pageable)
+                .map(c -> toResponseWithReplies(c, actor));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<CommentResponse> getReplies(Long commentId) {
-        commentRepository.findById(commentId)
+    public List<CommentResponse> getReplies(Long commentId, User actor) {
+        commentRepository
+                .findByIdForActor(commentId, actor.getEmail(), actor.getRole().name())
                 .orElseThrow(() -> new ResourceNotFoundException("Comment", commentId));
 
-        return commentRepository.findByParentId(commentId)
-                .stream().map(commentMapper::toCommentResponse).toList();
+        return commentRepository
+                .findVisibleReplies(commentId, actor.getRole().name())
+                .stream()
+                .map(commentMapper::toCommentResponse)
+                .toList();
     }
 
     @Override
     @Transactional
     public CommentResponse updateComment(Long commentId, UpdateCommentRequest request,  User actor) {
-        Comment comment = commentRepository.findById(commentId)
+        Comment comment = commentRepository
+                .findByIdForActor(commentId, actor.getEmail(), actor.getRole().name())
                 .orElseThrow(() -> new ResourceNotFoundException("Comment", commentId));
 
-        boolean isAdmin = actor.getRole() == User.Role.ADMIN;
-        boolean isAuthor = comment.getAuthor().getId().equals(actor.getId());
-        boolean withinWindow = comment.getCreatedAt()
-                .isAfter(LocalDateTime.now().minusMinutes(EDIT_WINDOW_MINUTES));
-
-        if (!isAdmin && !(isAuthor && withinWindow)) {
-            throw new AccessDeniedException(
-                    "Comments can only be edited within " + EDIT_WINDOW_MINUTES
-                            + " minutes of creation, or by an admin");
-        }
+        accessPolicy.assertCanMutate(actor, comment);
 
         String oldBody = comment.getBody();
         comment.setBody(request.getBody());
@@ -168,7 +168,8 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional
     public void deleteComment(Long commentId,  User actor) {
-        Comment comment = commentRepository.findById(commentId)
+        Comment comment = commentRepository
+                .findByIdForActor(commentId, actor.getEmail(), actor.getRole().name())
                 .orElseThrow(() -> new ResourceNotFoundException("Comment", commentId));
 
         accessPolicy.assertCanMutate(actor, comment);
@@ -186,10 +187,10 @@ public class CommentServiceImpl implements CommentService {
         commentRepository.delete(comment);
     }
 
-    private CommentResponse toResponseWithReplies(Comment comment, boolean includeInternal) {
-        List<CommentResponse> replies = commentRepository.findByParentId(comment.getId())
+    private CommentResponse toResponseWithReplies(Comment comment, User actor) {
+        List<CommentResponse> replies = commentRepository
+                .findVisibleReplies(comment.getId(), actor.getRole().name())
                 .stream()
-                .filter(r -> includeInternal || !r.isInternal())
                 .map(commentMapper::toCommentResponse)
                 .toList();
 

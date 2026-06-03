@@ -45,8 +45,10 @@ public class AttachmentController {
 
     @GetMapping("/v1/tickets/{ticketId}/attachments")
     @Operation(summary = "List all attachments on a ticket")
-    public ResponseEntity<List<AttachmentResponse>> getAttachments(@PathVariable Long ticketId) {
-        return ResponseEntity.ok(attachmentService.getAttachments(ticketId));
+    public ResponseEntity<List<AttachmentResponse>> getAttachments(
+            @PathVariable Long ticketId,
+            @AuthenticationPrincipal CustomUserDetails principal) {
+        return ResponseEntity.ok(attachmentService.getAttachments(ticketId, principal.getUser()));
     }
 
     @GetMapping("/v1/attachments/{attachmentId}")

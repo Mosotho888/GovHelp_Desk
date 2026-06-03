@@ -10,7 +10,7 @@ import java.util.List;
 public interface AttachmentService {
 
     List<AttachmentResponse> uploadAttachments(Long ticketId, List<MultipartFile> files, User agent);
-    List<AttachmentResponse> getAttachments(Long ticketId);
+    List<AttachmentResponse> getAttachments(Long ticketId, User agent);
     Attachment getAttachmentById(Long attachmentId, User agent);
     void deleteAttachment(Long attachmentId,  User agent);
 

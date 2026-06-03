@@ -14,7 +14,7 @@ public interface CommentService {
     CommentResponse addComment(Long ticketId, CreateCommentRequest request, User actor);
     CommentResponse addReply(Long parentCommentId, CreateCommentRequest request, User actor);
     Page<CommentResponse> getComments(Long ticketId, Pageable pageable, User actor);
-    List<CommentResponse> getReplies(Long commentId);
+    List<CommentResponse> getReplies(Long commentId, User actor);
     CommentResponse updateComment(Long commentId, UpdateCommentRequest request, User actor);
     void deleteComment(Long commentId, User actor);
 }

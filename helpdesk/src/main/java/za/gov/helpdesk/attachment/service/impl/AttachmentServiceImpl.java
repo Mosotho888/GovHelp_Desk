@@ -50,7 +50,8 @@ public class AttachmentServiceImpl implements AttachmentService {
 
         validator.validateBatch(files);
 
-        Ticket ticket = ticketRepository.findById(ticketId)
+        Ticket ticket = ticketRepository
+                .findByIdAndPrincipal(ticketId, actor.getEmail(), actor.getRole().name())
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
 
         List<AttachmentResponse> responses = new ArrayList<>();
@@ -89,8 +90,9 @@ public class AttachmentServiceImpl implements AttachmentService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<AttachmentResponse> getAttachments(Long ticketId) {
-        ticketRepository.findById(ticketId)
+    public List<AttachmentResponse> getAttachments(Long ticketId, User actor) {
+        ticketRepository
+                .findByIdAndPrincipal(ticketId, actor.getEmail(), actor.getRole().name())
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
 
         return attachmentRepository.findByTicketId(ticketId)
@@ -100,7 +102,7 @@ public class AttachmentServiceImpl implements AttachmentService {
     @Override
     @Transactional(readOnly = true)
     public Attachment getAttachmentById(Long attachmentId, User actor) {
-        Attachment attachment = findOrThrow(attachmentId);
+        Attachment attachment = findOrThrow(attachmentId, actor);
 
         auditPublisher.publishAudit(
                 AuditLog.EntityType.ATTACHMENT,
@@ -118,7 +120,7 @@ public class AttachmentServiceImpl implements AttachmentService {
     @Override
     @Transactional
     public void deleteAttachment(Long attachmentId, User actor) {
-        Attachment attachment = findOrThrow(attachmentId);
+        Attachment attachment = findOrThrow(attachmentId, actor);
 
         boolean isAdmin  = actor.getRole() == User.Role.ADMIN;
         boolean isOwner  = attachment.getUploader().getId().equals(actor.getId());
@@ -142,8 +144,9 @@ public class AttachmentServiceImpl implements AttachmentService {
         attachmentRepository.delete(attachment);
     }
 
-    private Attachment findOrThrow(Long id) {
-        return attachmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Attachment", id));
+    private Attachment findOrThrow(Long attachmentId, User actor) {
+        return attachmentRepository
+                .findByIdForActor(attachmentId, actor.getEmail(), actor.getRole().name())
+                .orElseThrow(() -> new ResourceNotFoundException("Attachment", attachmentId));
     }
 }

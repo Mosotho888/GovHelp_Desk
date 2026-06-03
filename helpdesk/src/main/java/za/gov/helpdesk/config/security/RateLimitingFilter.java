@@ -1,5 +1,7 @@
 package za.gov.helpdesk.config.security;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import jakarta.servlet.FilterChain;
@@ -26,16 +28,19 @@ public class RateLimitingFilter extends OncePerRequestFilter {
 
     private final RateLimitPolicyProvider policyProvider;
 
-    private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
+    private final Cache<String, Bucket> buckets = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofHours(2))
+            .maximumSize(50_000)
+            .build();
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         String key = resolveKey(request);
-        Bucket bucket = buckets.computeIfAbsent(key, k -> createBucket(request));
+        Bucket bucket = buckets.get(key, k -> createBucket(request));
 
         if (bucket.tryConsume(1)) {
-            // Add rate-limit headers so clients know their remaining quota
+
             long remaining = bucket.getAvailableTokens();
             response.setHeader("X-Rate-Limit-Remaining", String.valueOf(remaining));
             filterChain.doFilter(request, response);
