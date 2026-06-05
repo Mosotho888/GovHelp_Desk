@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+<div th:replace="~{email/fragments/layout :: emailLayout(
+    heading   = 'Ticket Assigned to You',
+    reference = ${msg.ticketNumber},
+    content   = ~{::section}
+)}">
+    <section>
+        <p>Dear <strong th:text="${msg.agentName}">Agent</strong>,</p>
+        <p>You have been assigned the following support ticket.
+            Please review and respond as soon as possible.</p>
+        <th:block th:replace="~{email/fragments/layout :: detailsTable(${msg})}"></th:block>
+    </section>
+</div>
+</body>
+</html>

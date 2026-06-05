@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+<div th:replace="~{email/fragments/layout :: emailLayout(
+    heading   = 'Ticket Created',
+    reference = ${msg.ticketNumber},
+    content   = ~{::section}
+)}">
+    <section>
+        <p>Dear <strong th:text="${msg.customerName}">Customer</strong>,</p>
+        <p>Your support ticket has been successfully created.
+            Our team will review it shortly and get back to you.</p>
+        <th:block th:replace="~{email/fragments/layout :: detailsTable(${msg})}"></th:block>
+    </section>
+</div>
+</body>
+</html>

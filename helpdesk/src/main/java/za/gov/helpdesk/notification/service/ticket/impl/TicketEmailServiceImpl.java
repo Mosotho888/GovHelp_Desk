@@ -1,76 +1,86 @@
 package za.gov.helpdesk.notification.service.ticket.impl;
 
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-import za.gov.helpdesk.notification.dto.PasswordResetEmailNotificationMessage;
 import za.gov.helpdesk.notification.dto.TicketEmailNotificationMessage;
+import za.gov.helpdesk.notification.service.EmailTemplateRenderer;
 import za.gov.helpdesk.notification.service.MailSenderHelper;
 import za.gov.helpdesk.notification.service.ticket.TicketEmailService;
-import za.gov.helpdesk.notification.service.ticket.TicketEmailTemplateService;
+
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class TicketEmailServiceImpl implements TicketEmailService {
 
-    private final TicketEmailTemplateService templates;
+    private static final String PREFIX = "email/ticket/";
+
+    private final EmailTemplateRenderer renderer;
     private final MailSenderHelper mailer;
 
     @Override
     public void sendTicketCreated(TicketEmailNotificationMessage message) {
+
+        Map<String,Object> model = Map.of("msg", message);
+
         mailer.send(message.getCustomerEmail(),
-                "Ticket " + message.getTicketNumber() + " Created — " + message.getTicketSubject(),
-                templates.ticketCreatedCustomer(message));
+                "Ticket " + message.getTicketNumber() + " Created - " + message.getTicketSubject(),
+                renderer.render(PREFIX + "ticket-created-customer", model));
 
         if (message.getAgentEmail() != null) {
             mailer.send(message.getAgentEmail(),
-                    "[New Ticket] " + message.getTicketNumber() + " — " + message.getTicketSubject(),
-                    templates.ticketCreatedAgent(message));
+                    "[New Ticket] " + message.getTicketNumber() + " - " + message.getTicketSubject(),
+                    renderer.render(PREFIX + "ticket-created-agent", model));
         }
     }
 
     @Override
     public void sendTicketAssigned(TicketEmailNotificationMessage message) {
+        Map<String, Object> model = Map.of("msg", message);
+
         mailer.send(message.getCustomerEmail(),
                 "Your Ticket " + message.getTicketNumber() + " Has Been Assigned",
-                templates.ticketAssignedCustomer(message));
+                renderer.render(PREFIX + "ticket-assigned-customer", model));
 
         if (message.getAgentEmail() != null) {
             mailer.send(message.getAgentEmail(),
-                    "[Assigned to You] " + message.getTicketNumber() + " — " + message.getTicketSubject(),
-                    templates.ticketAssignedAgent(message));
+                    "[Assigned to You] " + message.getTicketNumber() + " - " + message.getTicketSubject(),
+                    renderer.render(PREFIX + "ticket-assigned-agent", model));
         }
     }
 
     @Override
     public void sendStatusChanged(TicketEmailNotificationMessage message) {
+        Map<String, Object> model = Map.of("msg", message);
+
         mailer.send(message.getCustomerEmail(),
                 "Ticket " + message.getTicketNumber() + " Status Updated to " + message.getTicketStatus(),
-                templates.statusChangedCustomer(message));
+                renderer.render(PREFIX + "status-changed-customer", model));
     }
 
     @Override
     public void sendCommentAdded(TicketEmailNotificationMessage message) {
+        Map<String, Object> model = Map.of("msg", message);
+
         mailer.send(message.getCustomerEmail(),
                 "New Reply on Ticket " + message.getTicketNumber(),
-                templates.commentAddedCustomer(message));
+                renderer.render(PREFIX + "comment-added-customer", model));
 
         if (message.getAgentEmail() != null) {
             mailer.send(message.getAgentEmail(),
-                    "[Customer Reply] " + message.getTicketNumber() + " — " + message.getTicketSubject(),
-                    templates.commentAddedAgent(message));
+                    "[Customer Reply] " + message.getTicketNumber() + " - " + message.getTicketSubject(),
+                    renderer.render(PREFIX + "comment-added-agent", model));
         }
     }
 
     @Override
     public void sendTicketClosed(TicketEmailNotificationMessage message) {
+        Map<String, Object> model = Map.of("msg", message);
+
         mailer.send(message.getCustomerEmail(),
                 "Ticket " + message.getTicketNumber() + " Has Been Closed",
-                templates.ticketClosedCustomer(message));
+                renderer.render(PREFIX + "ticket-closed-customer", model));
     }
 }

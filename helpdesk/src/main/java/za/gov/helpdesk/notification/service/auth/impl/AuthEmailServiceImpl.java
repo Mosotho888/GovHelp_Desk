@@ -3,23 +3,32 @@ package za.gov.helpdesk.notification.service.auth.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import za.gov.helpdesk.notification.dto.PasswordResetEmailNotificationMessage;
+import za.gov.helpdesk.notification.service.EmailTemplateRenderer;
 import za.gov.helpdesk.notification.service.MailSenderHelper;
 import za.gov.helpdesk.notification.service.auth.AuthEmailService;
-import za.gov.helpdesk.notification.service.auth.AuthEmailTemplateService;
+
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class AuthEmailServiceImpl implements AuthEmailService {
 
-    private final AuthEmailTemplateService templates;
+    private static final String PREFIX = "email/auth/";
+
+    private final EmailTemplateRenderer renderer;
     private final MailSenderHelper mailer;
 
     @Override
     public void sendPasswordResetOtp(PasswordResetEmailNotificationMessage message) {
+        Map<String, Object> model = Map.of(
+                "actorName",    message.getActorName(),
+                "otp",          message.getOtp(),
+                "otpExpiryMin", message.getOptExpiryMin()   // DTO typo kept as-is
+        );
         mailer.send(
                 message.getEmail(),
                 "Your Password Reset Code - Government Helpdesk",
-                templates.passwordResetOtp(message)
+                renderer.render(PREFIX + "password-reset-otp", model)
         );
     }
 }

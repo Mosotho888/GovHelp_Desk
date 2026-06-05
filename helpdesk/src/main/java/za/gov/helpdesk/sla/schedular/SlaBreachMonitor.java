@@ -53,7 +53,7 @@ public class SlaBreachMonitor {
                 .findResponseWarningsDue(now, now.plusMinutes(maxThreshold));
 
         for (TicketSla sla : responseWarnings) {
-            if (isWithinWarningWindow(sla, policies, sla.getResponseDueAt(), now)) {
+            if (!isWithinWarningWindow(sla, policies, sla.getResponseDueAt(), now)) {
                 continue;
             }
             sendWarning(sla, "First Response");

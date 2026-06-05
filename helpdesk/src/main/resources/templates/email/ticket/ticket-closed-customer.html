@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+<div th:replace="~{email/fragments/layout :: emailLayout(
+    heading   = 'Ticket Closed',
+    reference = ${msg.ticketNumber},
+    content   = ~{::section}
+)}">
+    <section>
+        <p>Dear <strong th:text="${msg.customerName}">Customer</strong>,</p>
+        <p>
+            Your support ticket has been resolved and closed.
+            If your issue has not been fully addressed, please open a new ticket
+            and reference <strong th:text="${msg.ticketNumber}">TKT-000</strong>.
+        </p>
+
+        <!-- Resolution note - only rendered when a closing comment was provided -->
+        <th:block th:if="${msg.comment != null and !#strings.isEmpty(msg.comment)}">
+            <p><strong>Resolution note:</strong></p>
+            <div class="comment-box"
+                 style="background:#f0f4ff;border-left:4px solid #1a56db;padding:14px 18px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14px;line-height:1.6;white-space:pre-wrap;"
+                 th:text="${msg.comment}">Resolution note here.</div>
+        </th:block>
+
+        <th:block th:replace="~{email/fragments/layout :: detailsTable(${msg})}"></th:block>
+    </section>
+</div>
+</body>
+</html>

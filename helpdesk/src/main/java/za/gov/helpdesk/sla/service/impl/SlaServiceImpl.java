@@ -64,6 +64,7 @@ public class SlaServiceImpl implements SlaService {
     }
 
     @Override
+    @Transactional
     public void recordResolution(Long ticketId) {
         ticketSlaRepository.findByTicketId(ticketId).ifPresent(sla -> {
             if (sla.getResolvedAt() == null) {
