@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import za.gov.helpdesk.notification.messaging.SlaEmailNotificationPublisher;
 import za.gov.helpdesk.notification.service.sla.SlaEmailService;
 import za.gov.helpdesk.sla.model.SlaPolicy;
 import za.gov.helpdesk.sla.model.TicketSla;
@@ -25,7 +26,7 @@ public class SlaBreachMonitor {
 
     private final TicketSlaRepository ticketSlaRepository;
     private final SlaPolicyRepository slaPolicyRepository;
-    private final SlaEmailService emailService;
+    private final SlaEmailNotificationPublisher slaEmailPublisher;
 
     @Scheduled(fixedRateString = "PT5M")
     @Transactional
@@ -108,26 +109,28 @@ public class SlaBreachMonitor {
                 ? sla.getResponseDueAt()
                 : sla.getResolutionDueAt();
 
-        emailService.sendSlaWarning(
+        slaEmailPublisher.publishWarning(
                 ticket.getAssignee().getUser().getEmail(),
                 ticket.getAssignee().getUser().getName(),
                 "TKT-" + ticket.getId(),
+                ticket.getId(),
                 ticket.getSubject(),
                 deadlineType,
-                dueAt
-        );
+                dueAt);
+
     }
 
     private void sendBreach(TicketSla sla, String deadlineType) {
         Ticket ticket = sla.getTicket();
         if (ticket.getAssignee() == null) return;
 
-        emailService.sendSlaBreach(
+        slaEmailPublisher.publishBreach(
                 ticket.getAssignee().getUser().getEmail(),
                 ticket.getAssignee().getUser().getName(),
                 "TKT-" + ticket.getId(),
+                ticket.getId(),
                 ticket.getSubject(),
-                deadlineType
-        );
+                deadlineType);
+
     }
 }

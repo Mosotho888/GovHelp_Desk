@@ -4,15 +4,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
+import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.config.messaging.RabbitMQConstants;
 import za.gov.helpdesk.notification.dto.PasswordResetEmailNotificationMessage;
+import za.gov.helpdesk.outbox.model.OutboxEvent;
+import za.gov.helpdesk.outbox.relay.OutboxWriter;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class PasswordResetEmailNotificationPublisher {
 
-    private final RabbitTemplate rabbitTemplate;
+    private final OutboxWriter outboxWriter;
 
     public void publish(String email, String actorName, String rawOtp, long expiryMinutes) {
 
@@ -23,9 +26,10 @@ public class PasswordResetEmailNotificationPublisher {
                 .optExpiryMin(expiryMinutes)
                 .build();
         try {
-            rabbitTemplate.convertAndSend(
-                    RabbitMQConstants.EXCHANGE,
-                    RabbitMQConstants.PASSWORD_RESET_EMAIL_ROUTING_KEY,
+            outboxWriter.write(
+                    OutboxEvent.EventType.PASSWORD_RESET_EMAIL.name(),
+                    AuditLog.EntityType.AUTH.name(),
+                    null,
                     message
             );
             log.info("Password reset email notification queued: email={}", message.getEmail());

@@ -11,6 +11,8 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import za.gov.helpdesk.auditlog.dto.messaging.AuditLogMessage;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.config.messaging.RabbitMQConstants;
+import za.gov.helpdesk.outbox.model.OutboxEvent;
+import za.gov.helpdesk.outbox.relay.OutboxWriter;
 import za.gov.helpdesk.shared.RequestContextHelper;
 import za.gov.helpdesk.users.model.User;
 
@@ -19,7 +21,7 @@ import za.gov.helpdesk.users.model.User;
 @Slf4j
 public class AuditEventPublisher {
 
-    private final RabbitTemplate rabbitTemplate;
+    private final OutboxWriter outboxWriter;
     private final RequestContextHelper requestContextHelper;
 
     public void publishAudit(AuditLog.EntityType entityType, Long entityId, User actor, AuditLog.AuditAction action, String oldValue, String newValue, String description) {
@@ -60,8 +62,11 @@ public class AuditEventPublisher {
 
     private void publish(AuditLogMessage message) {
         try {
-            rabbitTemplate.convertAndSend(
-                    RabbitMQConstants.EXCHANGE, RabbitMQConstants.AUDIT_ROUTING_KEY, message
+            outboxWriter.write(
+                    OutboxEvent.EventType.AUDIT.name(),
+                    message.getEntityType().name(),
+                    message.getEntityId(),
+                    message
             );
 
             log.info("Audit message queued: action={} entity={}/{}", message.getAction(), message.getEntityType(), message.getEntityId());

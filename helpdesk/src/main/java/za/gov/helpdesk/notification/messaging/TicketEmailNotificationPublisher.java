@@ -2,11 +2,14 @@ package za.gov.helpdesk.notification.messaging;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.type.EntityType;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.config.messaging.RabbitMQConstants;
 import za.gov.helpdesk.notification.dto.TicketEmailNotificationMessage;
+import za.gov.helpdesk.outbox.model.OutboxEvent;
+import za.gov.helpdesk.outbox.relay.OutboxWriter;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.users.model.User;
 
@@ -15,7 +18,7 @@ import za.gov.helpdesk.users.model.User;
 @Slf4j
 public class TicketEmailNotificationPublisher {
 
-    private final RabbitTemplate rabbitTemplate;
+    private final OutboxWriter outboxWriter;
 
     public void publish(Ticket ticket,
                         User customer,
@@ -38,11 +41,14 @@ public class TicketEmailNotificationPublisher {
                 .build();
 
         try {
-            rabbitTemplate.convertAndSend(
-                    RabbitMQConstants.EXCHANGE,
-                    RabbitMQConstants.TICKET_EMAIL_ROUTING_KEY,
+
+            outboxWriter.write(
+                    OutboxEvent.EventType.TICKET_EMAIL.name(),
+                    AuditLog.EntityType.TICKET.name(),
+                    message.getTicketId(),
                     message
             );
+
             log.info("Email notification queued: trigger={} ticket={}",
                     trigger, ticket.getId());
         } catch (Exception e) {
