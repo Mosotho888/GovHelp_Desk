@@ -153,7 +153,7 @@ public class TicketServiceImpl implements TicketService {
     private void applyStatusChange(Ticket ticket, Ticket.Status newStatus, User actor) {
         Ticket.Status oldStatus = ticket.getStatus();
 
-        transitionPolicy.canTransition(oldStatus, newStatus);
+        transitionPolicy.assertCanTransition(oldStatus, newStatus);
 
         ticket.setStatus(newStatus);
 
