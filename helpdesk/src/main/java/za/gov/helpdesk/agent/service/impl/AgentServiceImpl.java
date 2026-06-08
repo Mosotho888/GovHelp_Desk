@@ -11,6 +11,7 @@ import za.gov.helpdesk.agent.dto.response.AgentStatsResponse;
 import za.gov.helpdesk.agent.dto.request.CreateAgentRequest;
 import za.gov.helpdesk.agent.dto.request.UpdateAgentRequest;
 import za.gov.helpdesk.agent.mapper.AgentMapper;
+import za.gov.helpdesk.agent.metrics.AgentMetrics;
 import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.agent.repository.jpa.AgentRepository;
 import za.gov.helpdesk.agent.repository.jdbc.ReportJdbcRepository;
@@ -33,10 +34,12 @@ public class AgentServiceImpl implements AgentService {
     private final AgentMapper agentMapper;
     private final ReportJdbcRepository reportJdbcRepository;
     private final AuditEventPublisher auditPublisher;
+    private final AgentMetrics agentMetrics;
 
     @Override
     @Transactional
     public AgentResponse createAgent(CreateAgentRequest request, User actor) {
+
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User", request.getUserId()));
 
@@ -57,6 +60,7 @@ public class AgentServiceImpl implements AgentService {
                 .build();
 
         Agent savedAgent = agentRepository.save(agent);
+        agentMetrics.incrementRegistered();
 
         auditPublisher.publishAudit(
                 AuditLog.EntityType.AGENT,
@@ -121,6 +125,7 @@ public class AgentServiceImpl implements AgentService {
                     null
             );
             agent.setAvailability(request.getAvailability());
+            agentMetrics.incrementAvailabilityChanged();
         }
 
         if (request.getDepartment() != null && !request.getDepartment().equals(agent.getDepartment())) {
@@ -135,6 +140,7 @@ public class AgentServiceImpl implements AgentService {
                     null
             );
             agent.setDepartment(request.getDepartment());
+            agentMetrics.incrementDepartmentChanged();
         }
         return agentMapper.toAgentResponse(agentRepository.save(agent));
     }
