@@ -13,6 +13,7 @@ import za.gov.helpdesk.config.messaging.RabbitMQConstants;
 import za.gov.helpdesk.notification.dto.PasswordResetEmailNotificationMessage;
 import za.gov.helpdesk.notification.dto.SlaEmailNotificationMessage;
 import za.gov.helpdesk.notification.dto.TicketEmailNotificationMessage;
+import za.gov.helpdesk.outbox.metrics.OutboxMetrics;
 import za.gov.helpdesk.outbox.model.OutboxEvent;
 import za.gov.helpdesk.outbox.repository.OutboxEventRepository;
 
@@ -50,11 +51,16 @@ public class OutboxRelay {
     private final OutboxEventRepository outboxRepository;
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
+    private final OutboxMetrics outboxMetrics;
 
     @Scheduled(fixedDelayString = "${app.outbox.poll-interval:PT5S}")
     @Transactional
     public void relay() {
         List<OutboxEvent> batch = fetchPendingBatch();
+
+        long pending = outboxRepository.countByStatus(OutboxEvent.Status.PENDING);
+        outboxMetrics.setPendingGauge(pending);
+
         if (batch.isEmpty()) return;
 
         log.debug("Outbox relay: processing {} events", batch.size());
@@ -98,6 +104,8 @@ public class OutboxRelay {
             locked.setProcessedAt(LocalDateTime.now());
             outboxRepository.save(locked);
 
+            outboxMetrics.incrementPublished();
+
             log.info("Outbox event published: id={} type={} aggregate={}/{}",
                     locked.getId(), locked.getEventType(),
                     locked.getAggregateType(), locked.getAggregateId());
@@ -105,6 +113,8 @@ public class OutboxRelay {
         } catch (Exception e) {
             log.error("Outbox publish failed: id={} attempt={} error={}",
                     locked.getId(), locked.getAttempts(), e.getMessage());
+
+            outboxMetrics.incrementFailed();
 
             if (locked.getAttempts() >= MAX_ATTEMPTS) {
                 fail(locked, e.getMessage());
@@ -130,6 +140,8 @@ public class OutboxRelay {
         event.setStatus(OutboxEvent.Status.FAILED);
         event.setLastError(error);
         outboxRepository.save(event);
+
+        outboxMetrics.incrementDeadLetter();
         log.error("Outbox event permanently failed after {} attempts: id={} type={} error={}",
                 event.getAttempts(), event.getId(), event.getEventType(), error);
     }

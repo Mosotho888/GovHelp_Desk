@@ -27,4 +27,6 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, Long> 
     @Modifying
     @Query("DELETE FROM OutboxEvent e WHERE e.status = 'PROCESSED' AND e.processedAt < :before")
     int deleteProcessedBefore(@Param("before") LocalDateTime before);
+
+    long countByStatus(OutboxEvent.Status status);
 }
