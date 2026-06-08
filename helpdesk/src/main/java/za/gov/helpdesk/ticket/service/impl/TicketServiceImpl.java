@@ -18,6 +18,7 @@ import za.gov.helpdesk.ticket.dto.request.UpdateTicketRequest;
 import za.gov.helpdesk.ticket.event.TicketEventDispatcher;
 import za.gov.helpdesk.ticket.exception.InvalidStatusTransitionException;
 import za.gov.helpdesk.ticket.mapper.TicketMapper;
+import za.gov.helpdesk.ticket.metrics.TicketMetrics;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.policy.TicketStatusTransitionPolicy;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
@@ -35,6 +36,7 @@ public class TicketServiceImpl implements TicketService {
     private final TicketEventDispatcher eventDispatcher;
     private final TicketStatusTransitionPolicy transitionPolicy;
     private final SlaService slaService;
+    private final TicketMetrics ticketMetrics;
 
     @Override
     @Transactional
@@ -56,6 +58,8 @@ public class TicketServiceImpl implements TicketService {
 
         Ticket savedTicket = ticketRepository.save(builder.build());
         slaService.initializeSla(savedTicket);
+
+        ticketMetrics.incrementCreated();
 
         eventDispatcher.publish(
                 savedTicket, actor,
@@ -162,10 +166,20 @@ public class TicketServiceImpl implements TicketService {
 
         if (newStatus == Ticket.Status.RESOLVED) {
             slaService.recordResolution(ticket.getId());
+            ticketMetrics.incrementResolved();
+
+            if (ticket.getCreatedAt() != null) {
+                ticketMetrics.recordResolutionTime(ticket.getCreatedAt());
+            }
+        }
+
+        if (newStatus == Ticket.Status.CLOSED) {
+            ticketMetrics.incrementClosed();
         }
 
         if (newStatus == Ticket.Status.ESCALATED) {
             ticket.setEscalated(true);
+            ticketMetrics.incrementEscalated();
         }
 
         AuditLog.AuditAction action = newStatus == Ticket.Status.CLOSED
@@ -212,6 +226,8 @@ public class TicketServiceImpl implements TicketService {
         if (ticket.getStatus() == Ticket.Status.IN_PROGRESS) {
             ticket.setStatus(Ticket.Status.ESCALATED);
         }
+
+        ticketMetrics.incrementEscalated();
 
         eventDispatcher.publish(ticket, actor,
                 AuditLog.AuditAction.ESCALATED,
