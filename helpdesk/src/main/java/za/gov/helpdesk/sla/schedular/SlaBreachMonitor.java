@@ -5,8 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import za.gov.helpdesk.notification.dto.SlaEmailNotificationMessage;
 import za.gov.helpdesk.notification.messaging.SlaEmailNotificationPublisher;
 import za.gov.helpdesk.notification.service.sla.SlaEmailService;
+import za.gov.helpdesk.sla.metrics.SlaMetrics;
 import za.gov.helpdesk.sla.model.SlaPolicy;
 import za.gov.helpdesk.sla.model.TicketSla;
 import za.gov.helpdesk.sla.repository.SlaPolicyRepository;
@@ -27,6 +29,7 @@ public class SlaBreachMonitor {
     private final TicketSlaRepository ticketSlaRepository;
     private final SlaPolicyRepository slaPolicyRepository;
     private final SlaEmailNotificationPublisher slaEmailPublisher;
+    private final SlaMetrics slaMetrics;
 
     @Scheduled(fixedRateString = "PT5M")
     @Transactional
@@ -60,6 +63,7 @@ public class SlaBreachMonitor {
             sendWarning(sla, "First Response");
             sla.setResponseWarningSent(true);
             ticketSlaRepository.save(sla);
+            slaMetrics.incrementResponseWarning();
         }
 
         List<TicketSla> resolutionWarnings = ticketSlaRepository
@@ -72,6 +76,7 @@ public class SlaBreachMonitor {
             sendWarning(sla, "Resolution");
             sla.setResolutionWarningSent(true);
             ticketSlaRepository.save(sla);
+            slaMetrics.incrementResolutionWarning();
         }
     }
 
@@ -81,6 +86,7 @@ public class SlaBreachMonitor {
             sla.setResponseBreached(true);
             ticketSlaRepository.save(sla);
             sendBreach(sla, "First Response");
+            slaMetrics.incrementResponseBreached();
             log.warn("Response SLA breached: ticket={}", sla.getTicket().getId());
         });
 
@@ -88,6 +94,7 @@ public class SlaBreachMonitor {
             sla.setResolutionBreached(true);
             ticketSlaRepository.save(sla);
             sendBreach(sla, "Resolution");
+            slaMetrics.incrementResolutionBreached();
             log.warn("Resolution SLA breached: ticket={}", sla.getTicket().getId());
         });
     }
