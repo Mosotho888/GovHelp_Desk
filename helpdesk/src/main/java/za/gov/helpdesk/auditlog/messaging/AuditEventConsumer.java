@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import za.gov.helpdesk.auditlog.dto.messaging.AuditLogMessage;
 import za.gov.helpdesk.auditlog.service.AuditService;
 import za.gov.helpdesk.config.messaging.RabbitMQConstants;
+import za.gov.helpdesk.notification.metrics.NotificationMetrics;
 
 import java.io.IOException;
 
@@ -20,6 +21,7 @@ import java.io.IOException;
 public class AuditEventConsumer {
 
     private final AuditService auditService;
+    private final NotificationMetrics notificationMetrics;
 
     @RabbitListener(queues = RabbitMQConstants.AUDIT_QUEUE)
     public void handle(AuditLogMessage message, Message rawMessage, Channel channel) throws IOException {
@@ -53,14 +55,17 @@ public class AuditEventConsumer {
             }
 
             channel.basicAck(tag, false);
+            notificationMetrics.incrementAuditSaved();
             log.info("Audit saved and ACKed: action={} entity={}/{}",
                     message.getAction(), message.getEntityType(), message.getEntityId());
         } catch (DataAccessException e) {
             log.warn("DB unavailable, re-queuing audit log: action={} error={}", message.getAction(), e.getMessage());
+            notificationMetrics.incrementAuditFailed();
             channel.basicNack(tag, false,true);
         } catch (Exception e) {
             log.error("Unrecoverable failure, routing to DLQ: action={} error={}",
                     message.getAction(), e.getMessage());
+            notificationMetrics.incrementAuditDlq();
             channel.basicNack(tag, false, false);
         }
     }

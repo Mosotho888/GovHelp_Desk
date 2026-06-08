@@ -8,6 +8,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import za.gov.helpdesk.config.messaging.RabbitMQConstants;
 import za.gov.helpdesk.notification.dto.TicketEmailNotificationMessage;
+import za.gov.helpdesk.notification.metrics.NotificationMetrics;
 import za.gov.helpdesk.notification.service.ticket.TicketEmailService;
 
 import java.io.IOException;
@@ -18,6 +19,7 @@ import java.io.IOException;
 public class TicketEmailNotificationConsumer {
 
     private final TicketEmailService ticketEmailService;
+    private final NotificationMetrics notificationMetrics;
 
     @RabbitListener(queues = RabbitMQConstants.TICKET_EMAIL_QUEUE)
     public void handle(TicketEmailNotificationMessage message,
@@ -40,6 +42,7 @@ public class TicketEmailNotificationConsumer {
             }
 
             channel.basicAck(tag, false);
+            notificationMetrics.incrementEmailSent();
             log.info("Ticket email ACKed: trigger={} ticket={}",
                     message.getTrigger(), message.getTicketNumber());
 
@@ -48,6 +51,7 @@ public class TicketEmailNotificationConsumer {
             // After max-attempts it goes to TICKET_EMAIL_DLQ automatically
             log.warn("Ticket email failed, re-queuing: trigger={} ticket={} error={}",
                     message.getTrigger(), message.getTicketNumber(), e.getMessage());
+            notificationMetrics.incrementEmailFailed();
             channel.basicNack(tag, false, true);
         }
     }
