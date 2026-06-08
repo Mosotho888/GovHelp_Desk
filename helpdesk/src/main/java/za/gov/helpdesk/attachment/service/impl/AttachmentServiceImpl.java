@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import za.gov.helpdesk.attachment.dto.response.AttachmentResponse;
 import za.gov.helpdesk.attachment.mapper.AttachmentMapper;
+import za.gov.helpdesk.attachment.metrics.AttachmentMetrics;
 import za.gov.helpdesk.attachment.model.Attachment;
 import za.gov.helpdesk.attachment.policy.AttachmentValidator;
 import za.gov.helpdesk.attachment.repository.AttachmentRepository;
@@ -40,6 +41,7 @@ public class AttachmentServiceImpl implements AttachmentService {
     private final AuditEventPublisher auditPublisher;
     private final FileStorageService fileStorageService;
     private final AttachmentValidator validator;
+    private final AttachmentMetrics attachmentMetrics;
 
     @Value("${app.upload.storage-path}")
     private String storagePath;
@@ -72,6 +74,9 @@ public class AttachmentServiceImpl implements AttachmentService {
 
             Attachment savedAttachment = attachmentRepository.save(attachment);
 
+            attachmentMetrics.incrementUploaded();
+            attachmentMetrics.recordUploadedSize(savedAttachment.getSizeBytes());
+
             auditPublisher.publishAudit(
                     AuditLog.EntityType.ATTACHMENT,
                     savedAttachment.getId(),
@@ -103,6 +108,8 @@ public class AttachmentServiceImpl implements AttachmentService {
     @Transactional(readOnly = true)
     public Attachment getAttachmentById(Long attachmentId, User actor) {
         Attachment attachment = findOrThrow(attachmentId, actor);
+
+        attachmentMetrics.incrementDownloaded();
 
         auditPublisher.publishAudit(
                 AuditLog.EntityType.ATTACHMENT,
@@ -142,6 +149,8 @@ public class AttachmentServiceImpl implements AttachmentService {
 
         fileStorageService.delete(attachment.getStoragePath());
         attachmentRepository.delete(attachment);
+
+        attachmentMetrics.incrementDeleted();
     }
 
     private Attachment findOrThrow(Long attachmentId, User actor) {
