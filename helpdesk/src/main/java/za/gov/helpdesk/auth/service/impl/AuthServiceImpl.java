@@ -12,6 +12,7 @@ import za.gov.helpdesk.auth.dto.response.AuthResponse;
 import za.gov.helpdesk.auth.dto.request.RefreshTokenRequest;
 import za.gov.helpdesk.auth.jwt.JwtService;
 import za.gov.helpdesk.auth.dto.request.LoginRequest;
+import za.gov.helpdesk.auth.matrics.AuthMetrics;
 import za.gov.helpdesk.auth.model.RefreshToken;
 import za.gov.helpdesk.auth.policy.LoginLockoutService;
 import za.gov.helpdesk.auth.service.AuthResponseFactory;
@@ -40,6 +41,7 @@ public class AuthServiceImpl implements AuthService {
     private final RefreshTokenService refreshTokenService;
     private final LoginLockoutService lockoutService;
     private final AuthResponseFactory authResponseFactory;
+    private final AuthMetrics authMetrics;
 
     @Override
     @Transactional(noRollbackFor = AuthenticationException.class)
@@ -66,11 +68,14 @@ public class AuthServiceImpl implements AuthService {
                     "Login successful"
             );
 
+            authMetrics.incrementLoginSuccess();
+
             return authResponseFactory.build(user, refreshToken);
 
         } catch (BadCredentialsException ex) {
 
             lockoutService.recordFailedAttempt(loginRequest.getEmail());
+            authMetrics.incrementLoginFailure();
             throw ex;
         }
     }
@@ -97,6 +102,8 @@ public class AuthServiceImpl implements AuthService {
                 "Access token refreshed"
         );
 
+        authMetrics.incrementTokenRefreshed();
+
         return authResponseFactory.build(user, newRefreshToken);
     }
 
@@ -109,5 +116,7 @@ public class AuthServiceImpl implements AuthService {
                 AuditLog.AuditAction.FORCED_LOGOUT,
                 actor.getId(), actor.getName(), actor.getRole().name(),
                 "User logged out");
+
+        authMetrics.incrementLogout();
     }
 }

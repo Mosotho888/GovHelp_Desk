@@ -10,6 +10,7 @@ import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auth.dto.request.PasswordResetConfirmRequest;
 import za.gov.helpdesk.auth.dto.request.PasswordResetRequest;
+import za.gov.helpdesk.auth.matrics.AuthMetrics;
 import za.gov.helpdesk.auth.model.PasswordResetToken;
 import za.gov.helpdesk.auth.repository.PasswordResetTokenRepository;
 import za.gov.helpdesk.auth.service.OtpGeneratorService;
@@ -35,6 +36,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private final OtpGeneratorService otpGeneratorService;
     private final AuditEventPublisher auditPublisher;
     private final PasswordResetEmailNotificationPublisher emailPublisher;
+    private final AuthMetrics authMetrics;
 
     private static final long OTP_EXPIRY_MIN = 15;
 
@@ -61,6 +63,8 @@ public class PasswordResetServiceImpl implements PasswordResetService {
                     rawOtp,
                     OTP_EXPIRY_MIN
             );
+
+            authMetrics.incrementPasswordResetRequested();
 
             log.info("Password reset OTP issued for: {}", user.getEmail());
         });
@@ -101,6 +105,8 @@ public class PasswordResetServiceImpl implements PasswordResetService {
                 user.getId(), user.getName(), user.getRole().name(),
                 "Password reset via OTP"
         );
+
+        authMetrics.incrementPasswordResetConfirmed();
 
         log.info("Password reset completed for: {}", user.getEmail());
     }
