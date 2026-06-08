@@ -28,6 +28,40 @@ services:
       timeout: 5s
       retries: 5
 
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    restart: always
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    networks:
+      - spring-boot-api-network
+    depends_on:
+      - spring-boot-app
+
+  grafana:
+    image: grafana/grafana:10.4.3
+    container_name: grafana
+    restart: always
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - spring-boot-api-network
+    depends_on:
+      - prometheus
+
   spring-boot-app:
     build:
       context: .
@@ -157,3 +191,5 @@ volumes:
   postgres_data:
   upload_data:
   rabbitmq_data:
+  prometheus_data:
+  grafana_data:
