@@ -1,7 +1,6 @@
 package za.gov.helpdesk.auth.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -12,14 +11,12 @@ import za.gov.helpdesk.auth.dto.response.AuthResponse;
 import za.gov.helpdesk.auth.dto.request.RefreshTokenRequest;
 import za.gov.helpdesk.auth.jwt.JwtService;
 import za.gov.helpdesk.auth.dto.request.LoginRequest;
-import za.gov.helpdesk.auth.matrics.AuthMetrics;
+import za.gov.helpdesk.auth.metrics.AuthMetrics;
 import za.gov.helpdesk.auth.model.RefreshToken;
 import za.gov.helpdesk.auth.policy.LoginLockoutService;
 import za.gov.helpdesk.auth.service.AuthResponseFactory;
 import za.gov.helpdesk.auth.service.AuthService;
 import za.gov.helpdesk.auth.service.RefreshTokenService;
-import za.gov.helpdesk.exception.ResourceNotFoundException;
-import za.gov.helpdesk.users.converter.UserMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

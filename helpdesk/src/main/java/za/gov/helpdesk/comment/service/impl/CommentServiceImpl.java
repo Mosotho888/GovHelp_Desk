@@ -13,6 +13,7 @@ import za.gov.helpdesk.comment.dto.response.CommentResponse;
 import za.gov.helpdesk.comment.dto.request.CreateCommentRequest;
 import za.gov.helpdesk.comment.dto.request.UpdateCommentRequest;
 import za.gov.helpdesk.comment.mapper.CommentMapper;
+import za.gov.helpdesk.comment.metrics.CommentMetrics;
 import za.gov.helpdesk.comment.model.Comment;
 import za.gov.helpdesk.comment.policy.CommentAccessPolicy;
 import za.gov.helpdesk.comment.repository.CommentRepository;
@@ -35,6 +36,7 @@ public class CommentServiceImpl implements CommentService {
     private final TicketRepository ticketRepository;
     private final AuditEventPublisher  auditPublisher;
     private final CommentAccessPolicy accessPolicy;
+    private final CommentMetrics commentMetrics;
 
     private static final int EDIT_WINDOW_MINUTES = 15;
 
@@ -59,6 +61,12 @@ public class CommentServiceImpl implements CommentService {
                 .build();
 
         Comment savedComment = commentRepository.save(comment);
+
+        if (request.isInternal()) {
+            commentMetrics.incrementInternalNoteAdded();
+        } else {
+            commentMetrics.incrementAdded();
+        }
 
         AuditLog.AuditAction action = request.isInternal()
                 ? AuditLog.AuditAction.INTERNAL_NOTE_ADDED
@@ -98,6 +106,8 @@ public class CommentServiceImpl implements CommentService {
                 .build();
 
         Comment savedReply = commentRepository.save(reply);
+
+        commentMetrics.incrementAdded();
 
         auditPublisher.publishAudit(
                 AuditLog.EntityType.COMMENT,
@@ -153,6 +163,8 @@ public class CommentServiceImpl implements CommentService {
         comment.setBody(request.getBody());
         Comment savedComment = commentRepository.save(comment);
 
+        commentMetrics.incrementEdited();
+
         auditPublisher.publishAudit(
                 AuditLog.EntityType.COMMENT,
                 savedComment.getId(),
@@ -185,6 +197,7 @@ public class CommentServiceImpl implements CommentService {
         );
 
         commentRepository.delete(comment);
+        commentMetrics.incrementDeleted();
     }
 
     private CommentResponse toResponseWithReplies(Comment comment, User actor) {

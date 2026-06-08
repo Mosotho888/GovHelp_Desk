@@ -1,4 +1,4 @@
-package za.gov.helpdesk.auth.matrics;
+package za.gov.helpdesk.auth.metrics;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;

@@ -10,18 +10,16 @@ import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auth.dto.request.PasswordResetConfirmRequest;
 import za.gov.helpdesk.auth.dto.request.PasswordResetRequest;
-import za.gov.helpdesk.auth.matrics.AuthMetrics;
+import za.gov.helpdesk.auth.metrics.AuthMetrics;
 import za.gov.helpdesk.auth.model.PasswordResetToken;
 import za.gov.helpdesk.auth.repository.PasswordResetTokenRepository;
 import za.gov.helpdesk.auth.service.OtpGeneratorService;
 import za.gov.helpdesk.auth.service.PasswordResetService;
 import za.gov.helpdesk.auth.service.RefreshTokenService;
 import za.gov.helpdesk.notification.messaging.PasswordResetEmailNotificationPublisher;
-import za.gov.helpdesk.notification.service.ticket.TicketEmailService;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 
-import java.security.SecureRandom;
 import java.time.LocalDateTime;
 
 @Service
