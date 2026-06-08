@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,12 +21,7 @@ import za.gov.helpdesk.exception.ResourceNotFoundException;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
 import za.gov.helpdesk.users.model.User;
-import za.gov.helpdesk.users.repository.UserRepository;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 
 @Service

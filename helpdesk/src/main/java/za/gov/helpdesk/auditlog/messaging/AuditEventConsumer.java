@@ -1,6 +1,5 @@
 package za.gov.helpdesk.auditlog.messaging;
 
-import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -6,7 +6,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
 import za.gov.helpdesk.sla.dto.TicketSlaResponse;
-import za.gov.helpdesk.sla.metrics.SlaMetrics;
 import za.gov.helpdesk.sla.model.SlaPolicy;
 import za.gov.helpdesk.sla.model.TicketSla;
 import za.gov.helpdesk.sla.repository.SlaPolicyRepository;

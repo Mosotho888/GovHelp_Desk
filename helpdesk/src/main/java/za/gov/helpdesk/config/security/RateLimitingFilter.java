@@ -16,17 +16,17 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import za.gov.helpdesk.auth.metrics.AuthMetrics;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 @RequiredArgsConstructor
 public class RateLimitingFilter extends OncePerRequestFilter {
 
     private final RateLimitPolicyProvider policyProvider;
+    private final AuthMetrics authMetrics;
 
     private final Cache<String, Bucket> buckets = Caffeine.newBuilder()
             .expireAfterAccess(Duration.ofHours(2))
@@ -54,6 +54,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
                         "message": "Too many requests. Please slow down and retry after one hour"
                     }
                     """);
+            authMetrics.incrementRateLimitExceeded();
         }
     }
 

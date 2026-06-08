@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
@@ -22,9 +21,7 @@ import za.gov.helpdesk.exception.ResourceNotFoundException;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
 import za.gov.helpdesk.users.model.User;
-import za.gov.helpdesk.users.repository.UserRepository;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
