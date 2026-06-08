@@ -37,9 +37,6 @@ public class AttachmentServiceImpl implements AttachmentService {
     private final AttachmentValidator validator;
     private final AttachmentMetrics attachmentMetrics;
 
-    @Value("${app.upload.storage-path}")
-    private String storagePath;
-
     @Override
     @Transactional
     public List<AttachmentResponse> uploadAttachments(Long ticketId, List<MultipartFile> files, User actor) {
