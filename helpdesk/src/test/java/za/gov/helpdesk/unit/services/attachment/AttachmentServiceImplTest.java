@@ -9,9 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
-import za.gov.helpdesk.attachment.mapper.AttachmentMapper;
 import za.gov.helpdesk.attachment.metrics.AttachmentMetrics;
 import za.gov.helpdesk.attachment.model.Attachment;
 import za.gov.helpdesk.attachment.policy.AttachmentValidator;
@@ -32,7 +30,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
@@ -47,8 +44,6 @@ public class AttachmentServiceImplTest {
 
     @Mock
     private AttachmentRepository attachmentRepository;
-    @Mock
-    private AttachmentMapper attachmentMapper;
     @Mock
     private TicketRepository ticketRepository;
     @Mock

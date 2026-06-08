@@ -126,8 +126,6 @@ public class CommentServiceImpl implements CommentService {
                 .findByIdAndPrincipal(ticketId, actor.getEmail(), actor.getRole().name())
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
 
-        boolean isAgent = actor.getRole() != User.Role.USER;
-
         return commentRepository
                 .findVisibleByTicketId(ticketId, actor.getEmail(), actor.getRole().name(), pageable)
                 .map(c -> toResponseWithReplies(c, actor));

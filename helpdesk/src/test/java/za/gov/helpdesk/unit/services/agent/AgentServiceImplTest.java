@@ -45,8 +45,6 @@ public class AgentServiceImplTest {
     @Mock
     private AgentMapper agentMapper;
     @Mock
-    private ReportJdbcRepository reportJdbcRepository;
-    @Mock
     private AuditEventPublisher auditPublisher;
     @Mock
     private AgentMetrics agentMetrics;
