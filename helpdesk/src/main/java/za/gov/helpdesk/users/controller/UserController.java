@@ -136,14 +136,11 @@ public class UserController {
             summary = "Change own password",
             description = "User changes their own password. Current password required. Revokes sessions on other devices."
     )
-    public ResponseEntity<Map<String, String>> changeOwnPassword(
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void changeOwnPassword(
             @Valid @RequestBody ChangePasswordRequest request,
             @AuthenticationPrincipal CustomUserDetails principal) {
 
         userService.changeOwnPassword(request, principal.getUser());
-
-        return ResponseEntity.ok(Map.of(
-                "message", "Password updated successfully. Please log in again."
-        ));
     }
 }
