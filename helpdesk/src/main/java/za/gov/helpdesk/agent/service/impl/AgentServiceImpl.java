@@ -3,6 +3,7 @@ package za.gov.helpdesk.agent.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.gov.helpdesk.agent.dto.response.AgentResponse;
@@ -110,7 +111,16 @@ public class AgentServiceImpl implements AgentService {
     @Override
     @Transactional
     public AgentResponse updateAgent(Long id, UpdateAgentRequest request, User actor) {
-        Agent agent = findOrThrow(id);
+        Agent agent;
+
+        if (actor.getRole() == User.Role.ADMIN) {
+
+            agent = findOrThrow(id);
+        } else {
+
+            agent = agentRepository.findByIdAndUserId(id, actor.getId())
+                    .orElseThrow(() -> new AccessDeniedException("You hdo not have permission to update this agent"));
+        }
 
         if (request.getAvailability() != null && !request.getAvailability().equals(agent.getAvailability())) {
 
