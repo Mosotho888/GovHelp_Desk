@@ -40,9 +40,10 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional
     public CommentResponse addComment(Long ticketId, CreateCommentRequest request, User actor) {
-        Ticket ticket = ticketRepository
-                .findByIdAndPrincipal(ticketId, actor.getEmail(), actor.getRole().name())
+        Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
+
+        validateCommentAccess(ticket, actor);
 
         if (request.isInternal() && actor.getRole() == User.Role.USER) {
             throw new AccessDeniedException(
@@ -123,7 +124,7 @@ public class CommentServiceImpl implements CommentService {
     @Transactional(readOnly = true)
     public Page<CommentResponse> getComments(Long ticketId, Pageable pageable, User actor) {
         ticketRepository
-                .findByIdAndPrincipal(ticketId, actor.getEmail(), actor.getRole().name())
+                .findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
 
         return commentRepository
@@ -176,7 +177,7 @@ public class CommentServiceImpl implements CommentService {
     @Transactional
     public void deleteComment(Long commentId,  User actor) {
         Comment comment = commentRepository
-                .findByIdForActor(commentId, actor.getEmail(), actor.getRole().name())
+                .findById(commentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Comment", commentId));
 
         accessPolicy.assertCanMutate(actor, comment);
@@ -205,5 +206,25 @@ public class CommentServiceImpl implements CommentService {
         CommentResponse response = commentMapper.toCommentResponse(comment);
         response.setReplies(replies);
         return response;
+    }
+
+    private void validateCommentAccess(Ticket ticket, User actor) {
+
+        if (actor.getRole() == User.Role.ADMIN) {
+            return;
+        }
+
+        if (actor.getRole() == User.Role.USER &&
+                ticket.getRequester().getId().equals(actor.getId())) {
+            return;
+        }
+
+        if (actor.getRole() == User.Role.AGENT &&
+                ticket.getAssignee() != null &&
+                ticket.getAssignee().getUser().getId().equals(actor.getId())) {
+            return;
+        }
+
+        throw new AccessDeniedException("You are not allowed to comment on this ticket");
     }
 }
