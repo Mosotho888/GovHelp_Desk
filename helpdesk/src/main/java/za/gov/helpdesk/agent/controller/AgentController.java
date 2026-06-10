@@ -56,7 +56,7 @@ public class AgentController {
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @agentService.getAgentById(#id).user().id == authentication.principal.id")
+    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT')")
     @Operation(summary = "update agent availability or department")
     public ResponseEntity<AgentResponse> updateAgent(
             @PathVariable Long id,
