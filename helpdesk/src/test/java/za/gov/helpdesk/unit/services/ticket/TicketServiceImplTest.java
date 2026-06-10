@@ -167,7 +167,7 @@ class TicketServiceImplTest {
     @Test
     @DisplayName("getTicketById() returns response for authorised principal")
     void getTicketById_authorised_returnsResponse() {
-        given(ticketRepository.findByIdAndPrincipal(100L, endUser.getEmail(), endUser.getRole().name()))
+        given(ticketRepository.findById(100L))
                 .willReturn(Optional.of(openTicket));
         given(ticketMapper.toTicketResponse(openTicket)).willReturn(responseFor(openTicket));
 
@@ -179,7 +179,7 @@ class TicketServiceImplTest {
     @Test
     @DisplayName("getTicketById() throws ResourceNotFoundException for unknown ID")
     void getTicketById_unknownId_throwsNotFound() {
-        given(ticketRepository.findByIdAndPrincipal(999L, endUser.getEmail(), endUser.getRole().name()))
+        given(ticketRepository.findById(999L))
                 .willReturn(Optional.empty());
 
         assertThatThrownBy(() -> ticketService.getTicketById(999L, endUser))
@@ -193,7 +193,7 @@ class TicketServiceImplTest {
         UpdateTicketRequest req = new UpdateTicketRequest();
         req.setStatus(Ticket.Status.IN_PROGRESS);
 
-        givenAuthorizedTicket(100L, agentUser, openTicket);
+        givenAuthorizedTicket(100L, openTicket);
         given(ticketRepository.save(any(Ticket.class))).willAnswer(i -> i.getArgument(0));
         given(ticketMapper.toTicketResponse(any(Ticket.class))).willAnswer(i -> responseFor(i.getArgument(0)));
 
@@ -219,7 +219,7 @@ class TicketServiceImplTest {
         UpdateTicketRequest req = new UpdateTicketRequest();
         req.setStatus(Ticket.Status.RESOLVED);
 
-        givenAuthorizedTicket(100L, agentUser, inProgress);
+        givenAuthorizedTicket(100L, inProgress);
         given(ticketRepository.save(any(Ticket.class))).willAnswer(i -> i.getArgument(0));
         given(ticketMapper.toTicketResponse(any(Ticket.class))).willAnswer(i -> responseFor(i.getArgument(0)));
 
@@ -242,7 +242,7 @@ class TicketServiceImplTest {
         UpdateTicketRequest req = new UpdateTicketRequest();
         req.setStatus(Ticket.Status.CLOSED);
 
-        givenAuthorizedTicket(100L, agentUser, resolved);
+        givenAuthorizedTicket(100L, resolved);
         given(ticketRepository.save(any(Ticket.class))).willAnswer(i -> i.getArgument(0));
         given(ticketMapper.toTicketResponse(any(Ticket.class))).willAnswer(i -> responseFor(i.getArgument(0)));
 
@@ -270,7 +270,7 @@ class TicketServiceImplTest {
         UpdateTicketRequest req = new UpdateTicketRequest();
         req.setStatus(Ticket.Status.OPEN);
 
-        givenAuthorizedTicket(200L, agentUser, closed);
+        givenAuthorizedTicket(200L, closed);
         // real policy so the exception is actually thrown
         willThrow(new InvalidStatusTransitionException(Ticket.Status.CLOSED, Ticket.Status.OPEN))
                 .given(transitionPolicy).assertCanTransition(Ticket.Status.CLOSED, Ticket.Status.OPEN);
@@ -291,7 +291,7 @@ class TicketServiceImplTest {
         UpdateTicketRequest req = new UpdateTicketRequest();
         req.setAssigneeId(1L);
 
-        givenAuthorizedTicket(100L, agentUser, openTicket);
+        givenAuthorizedTicket(100L, openTicket);
         given(agentRepository.findById(1L)).willReturn(Optional.of(agent));
         given(ticketRepository.save(any(Ticket.class))).willAnswer(i -> i.getArgument(0));
         given(ticketMapper.toTicketResponse(any(Ticket.class))).willAnswer(i -> responseFor(i.getArgument(0)));
@@ -315,7 +315,7 @@ class TicketServiceImplTest {
         UpdateTicketRequest req = new UpdateTicketRequest();
         req.setAssigneeId(1L);
 
-        givenAuthorizedTicket(100L, agentUser, assigned);
+        givenAuthorizedTicket(100L, assigned);
         given(agentRepository.findById(1L)).willReturn(Optional.of(agent));
         given(ticketRepository.save(any(Ticket.class))).willAnswer(i -> i.getArgument(0));
         given(ticketMapper.toTicketResponse(any(Ticket.class))).willAnswer(i -> responseFor(i.getArgument(0)));
@@ -331,7 +331,7 @@ class TicketServiceImplTest {
         UpdateTicketRequest req = new UpdateTicketRequest();
         req.setPriority(Ticket.Priority.URGENT);
 
-        givenAuthorizedTicket(100L, agentUser, openTicket);
+        givenAuthorizedTicket(100L, openTicket);
         given(ticketRepository.save(any(Ticket.class))).willAnswer(i -> i.getArgument(0));
         given(ticketMapper.toTicketResponse(any(Ticket.class))).willAnswer(i -> responseFor(i.getArgument(0)));
 
@@ -351,7 +351,7 @@ class TicketServiceImplTest {
         UpdateTicketRequest req = new UpdateTicketRequest();
         req.setPriority(Ticket.Priority.HIGH); // same as openTicket
 
-        givenAuthorizedTicket(100L, agentUser, openTicket);
+        givenAuthorizedTicket(100L, openTicket);
         given(ticketRepository.save(any(Ticket.class))).willAnswer(i -> i.getArgument(0));
         given(ticketMapper.toTicketResponse(any(Ticket.class))).willAnswer(i -> responseFor(i.getArgument(0)));
 
@@ -372,7 +372,7 @@ class TicketServiceImplTest {
         req.setEscalated(true);
         req.setEscalationReason("SLA risk");
 
-        givenAuthorizedTicket(100L, agentUser, inProgress);
+        givenAuthorizedTicket(100L, inProgress);
         given(ticketRepository.save(any(Ticket.class))).willAnswer(i -> i.getArgument(0));
         given(ticketMapper.toTicketResponse(any(Ticket.class))).willAnswer(i -> responseFor(i.getArgument(0)));
 
@@ -400,7 +400,7 @@ class TicketServiceImplTest {
         req.setEscalated(true);
         req.setEscalationReason("Again?");
 
-        givenAuthorizedTicket(100L, agentUser, alreadyEscalated);
+        givenAuthorizedTicket(100L, alreadyEscalated);
         given(ticketRepository.save(any(Ticket.class))).willAnswer(i -> i.getArgument(0));
         given(ticketMapper.toTicketResponse(any(Ticket.class))).willAnswer(i -> responseFor(i.getArgument(0)));
 
@@ -435,8 +435,8 @@ class TicketServiceImplTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
-    private void givenAuthorizedTicket(Long ticketId, User actor, Ticket ticket) {
-        given(ticketRepository.findByIdAndPrincipal(ticketId, actor.getEmail(), actor.getRole().name()))
+    private void givenAuthorizedTicket(Long ticketId, Ticket ticket) {
+        given(ticketRepository.findById(ticketId))
                 .willReturn(Optional.of(ticket));
     }
 

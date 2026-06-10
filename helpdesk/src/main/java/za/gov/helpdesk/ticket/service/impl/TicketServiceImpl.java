@@ -142,12 +142,27 @@ public class TicketServiceImpl implements TicketService {
     }
 
     private Ticket findOrThrow(Long ticketId, User actor) {
-        return ticketRepository
-                .findByIdAndPrincipal(
-                        ticketId,
-                        actor.getEmail(),
-                        actor.getRole().name()
-                ).orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
+
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
+
+        return switch (actor.getRole()) {
+            case ADMIN -> ticket;
+            case AGENT -> {
+                // Agent can see unassigned tickets or tickets assigned to them
+                if (ticket.getAssignee() == null ||
+                        ticket.getAssignee().getUser().getEmail().equals(actor.getEmail())) {
+                    yield ticket;
+                }
+                throw new ResourceNotFoundException("Ticket", ticketId);
+            }
+            case USER -> {
+                if (ticket.getRequester().getEmail().equals(actor.getEmail())) {
+                    yield ticket;
+                }
+                throw new ResourceNotFoundException("Ticket", ticketId);
+            }
+        };
     }
 
     private void applyStatusChange(Ticket ticket, Ticket.Status newStatus, User actor) {

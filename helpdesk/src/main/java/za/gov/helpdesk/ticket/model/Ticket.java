@@ -68,15 +68,6 @@ public class Ticket {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public boolean canTransitionTo(Status newStatus) {
-        return switch (this.status) {
-            case OPEN, ESCALATED -> newStatus == Status.IN_PROGRESS;
-            case IN_PROGRESS -> newStatus == Status.RESOLVED || newStatus == Status.ESCALATED;
-            case RESOLVED -> newStatus == Status.CLOSED || newStatus == Status.OPEN;
-            case CLOSED -> false;
-        };
-    }
-
     public enum Status {
         OPEN,
         IN_PROGRESS,
