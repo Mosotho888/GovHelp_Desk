@@ -9,36 +9,37 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.rabbitmq.RabbitMQContainer;
 
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Testcontainers(disabledWithoutDocker = true)
 public abstract class BaseIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @Container
     static final PostgreSQLContainer<?> postgres =
             new PostgreSQLContainer<>("postgres:18-alpine")
                     .withDatabaseName("helpdesk_test")
                     .withUsername("helpdesk")
                     .withPassword("helpdesk");
 
-    @Container
     static final RabbitMQContainer rabbitmq = new RabbitMQContainer("rabbitmq:3.13-management-alpine");
 
     @BeforeEach
     void cleanDatabase() {
         jdbcTemplate.execute("""
-                TRUNCATE TABLE audit_log, attachments, comments, ticket_sla, refresh_tokens,
-                password_reset_tokens, tickets, agents, users RESTART IDENTITY CASCADE
+                TRUNCATE TABLE outbox_events, audit_log, attachments, comments, ticket_sla,
+                refresh_tokens, password_reset_tokens, tickets, agents, users
+                RESTART IDENTITY CASCADE
                 """);
+    }
+
+    static {
+        postgres.start();
+        rabbitmq.start();
     }
 
     @DynamicPropertySource
