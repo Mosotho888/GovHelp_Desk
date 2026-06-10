@@ -1,5 +1,6 @@
 package za.gov.helpdesk.auth.jwt;
 
+import io.jsonwebtoken.JwtException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -8,12 +9,14 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
+import za.gov.helpdesk.exception.InvalidTokenException;
 import za.gov.helpdesk.users.model.User;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -47,6 +50,7 @@ public class JwtService {
 
     private String buildToken(Map<String, Object> claims, String subject, Long expiryMs) {
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .claims(claims)
                 .subject(subject)
                 .issuedAt(new Date())
@@ -82,13 +86,16 @@ public class JwtService {
     }
 
     public Claims extractClaims(String token) {
-        return Jwts
-                .parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-
+        try {
+            return Jwts
+                    .parser()
+                    .verifyWith(getSigningKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (JwtException |  IllegalArgumentException e) {
+            throw new InvalidTokenException("Invalid or malformed refresh token structure");
+        }
     }
 
     private SecretKey getSigningKey() {

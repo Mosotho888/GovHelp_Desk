@@ -10,6 +10,7 @@ import org.springframework.security.authentication.LockedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import za.gov.helpdesk.exception.DuplicateResourceException;
+import za.gov.helpdesk.exception.InvalidTokenException;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
 import za.gov.helpdesk.exception.dto.response.ApiErrorResponse;
 import org.springframework.http.HttpStatus;
@@ -73,6 +74,15 @@ public class GlobalExceptionHandler {
         log.warn("Failed login attempt on path: {}", req.getRequestURI(), ex);
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(error(401, "INVALID_CREDENTIALS", "Invalid email or password", req));
+    }
+
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidToken(
+            InvalidTokenException ex, HttpServletRequest req) {
+
+        log.warn("Invalid token on path: {}", req.getRequestURI(), ex);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(error(401, "INVALID_TOKEN", "Malformed token", req)); // 💡 Uses the actual dynamic message
     }
 
     @ExceptionHandler({LockedException.class, DisabledException.class})
