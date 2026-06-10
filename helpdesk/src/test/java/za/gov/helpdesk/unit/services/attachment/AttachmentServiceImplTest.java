@@ -10,6 +10,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.multipart.MultipartFile;
+import za.gov.helpdesk.attachment.dto.response.AttachmentResponse;
+import za.gov.helpdesk.attachment.mapper.AttachmentMapper;
 import za.gov.helpdesk.attachment.metrics.AttachmentMetrics;
 import za.gov.helpdesk.attachment.model.Attachment;
 import za.gov.helpdesk.attachment.policy.AttachmentValidator;
@@ -21,6 +23,7 @@ import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
+import za.gov.helpdesk.users.dto.response.UserResponse;
 import za.gov.helpdesk.users.model.User;
 
 import java.time.LocalDateTime;
@@ -54,6 +57,8 @@ public class AttachmentServiceImplTest {
     private AttachmentValidator validator;
     @Mock
     private AttachmentMetrics attachmentMetrics;
+    @Mock
+    private AttachmentMapper attachmentMapper;
 
     @InjectMocks
     private AttachmentServiceImpl attachmentService;
@@ -89,6 +94,8 @@ public class AttachmentServiceImplTest {
                 .willReturn(Optional.of(ticket));
         given(fileStorageService.store(10L, file)).willReturn("/tmp/helpdesk-test/10/report.pdf");
         given(attachmentRepository.save(any(Attachment.class))).willReturn(attachment);
+        given(attachmentMapper.toAttachmentResponse(any(Attachment.class)))
+                .willReturn(mockAttachmentResponse());
 
         attachmentService.uploadAttachments(10L, List.of(file), uploader);
 
@@ -256,5 +263,26 @@ public class AttachmentServiceImplTest {
 
     private MockMultipartFile pdfFile(String filename) {
         return new MockMultipartFile("file", filename, "application/pdf", "pdf content".getBytes());
+    }
+
+    private AttachmentResponse mockAttachmentResponse() {
+        UserResponse mockUploader = UserResponse.builder()
+                .id(1L)
+                .name("Jane Agent")
+                .email("jane@gov.za")
+                .role(User.Role.AGENT)
+                .active(true)
+                .build();
+
+        return AttachmentResponse.builder()
+                .id(500L)
+                .ticketId(100L)
+                .uploader(mockUploader)
+                .filename("error_log.txt")
+                .contentType("text/plain")
+                .sizeBytes(2048L)
+                .downloadUrl("https://api.helpdesk.gov.za/v1/attachments/500/download")
+                .createdAt(LocalDateTime.now())
+                .build();
     }
 }
