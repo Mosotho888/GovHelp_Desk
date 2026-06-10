@@ -10,6 +10,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
@@ -27,6 +29,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
 
     private final RateLimitPolicyProvider policyProvider;
     private final AuthMetrics authMetrics;
+    private final Environment environment;
 
     private final Cache<String, Bucket> buckets = Caffeine.newBuilder()
             .expireAfterAccess(Duration.ofHours(2))
@@ -35,6 +38,11 @@ public class RateLimitingFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
+
+        if (environment.acceptsProfiles(Profiles.of("test"))) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         String key = resolveKey(request);
         Bucket bucket = buckets.get(key, k -> createBucket(request));
