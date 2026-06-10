@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
+import za.gov.helpdesk.auth.repository.RefreshTokenRepository;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 
@@ -19,17 +20,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @DisplayName("Auth integration tests")
 public class AuthIntegrationTest extends BaseIntegrationTest {
-    @Autowired
-    private MockMvc mvc;
-    @Autowired
-    private ObjectMapper mapper;
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+
+    @Autowired private MockMvc mvc;
+    @Autowired private ObjectMapper mapper;
+    @Autowired private UserRepository userRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private RefreshTokenRepository refreshTokenRepository;
 
     @BeforeEach
     void setUp() {
+        refreshTokenRepository.deleteAll();
         userRepository.deleteAll();
 
         userRepository.save(User.builder()
@@ -74,6 +74,18 @@ public class AuthIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    @DisplayName("POST /auth/login returns 401 for non-existent email")
+    void login_unknownEmail_returns401() throws Exception {
+        mvc.perform(post("/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(Map.of(
+                                "email", "nobody@gov.za",
+                                "password", "ValidPass1!"
+                        ))))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     @DisplayName("POST /auth/login returns 400 for missing email")
     void login_missingEmail_returns400() throws Exception {
         mvc.perform(post("/v1/auth/login")
@@ -99,6 +111,28 @@ public class AuthIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    @DisplayName("POST /auth/login returns 403 for inactive account")
+    void login_inactiveAccount_returns403() throws Exception {
+        userRepository.save(User.builder()
+                .name("Inactive User")
+                .email("inactive@gov.za")
+                .passwordHash(passwordEncoder.encode("ValidPass1!"))
+                .role(User.Role.USER)
+                .active(false)
+                .loginAttempts(0)
+                .timezone("Africa/Johannesburg")
+                .build());
+
+        mvc.perform(post("/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(Map.of(
+                                "email", "inactive@gov.za",
+                                "password", "ValidPass1!"
+                        ))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @DisplayName("POST /auth/login locks account after 5 failed attempts")
     void login_fiveFailedAttempts_locksAccount() throws Exception {
         for (int i = 0; i < 5; i++) {
@@ -110,7 +144,7 @@ public class AuthIntegrationTest extends BaseIntegrationTest {
                     ))));
         }
 
-        // After 5 failures the account is locked — 6th attempt returns 403
+        // 6th attempt with correct password is still locked
         mvc.perform(post("/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(Map.of(
@@ -121,9 +155,8 @@ public class AuthIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /auth/refresh returns new token from valid refresh token")
+    @DisplayName("POST /auth/refresh returns new access token from valid refresh token")
     void refresh_validRefreshToken_returnsNewAccessToken() throws Exception {
-        // First login to get tokens
         String body = mvc.perform(post("/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(Map.of(
@@ -134,11 +167,66 @@ public class AuthIntegrationTest extends BaseIntegrationTest {
 
         String refreshToken = mapper.readTree(body).get("refreshToken").asText();
 
-        // Then refresh
         mvc.perform(post("/v1/auth/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(Map.of("refreshToken", refreshToken))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty());
+    }
+
+    @Test
+    @DisplayName("POST /auth/refresh returns 401 for invalid refresh token")
+    void refresh_invalidToken_returns401() throws Exception {
+        mvc.perform(post("/v1/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(Map.of("refreshToken", "bogus.token.value"))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.error").value("INVALID_TOKEN"))
+                .andExpect(jsonPath("$.message").value("Malformed token"));
+
+    }
+
+    @Test
+    @DisplayName("POST /auth/logout revokes refresh token — subsequent refresh returns 401")
+    void logout_revokesRefreshToken() throws Exception {
+        String body = mvc.perform(post("/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(Map.of(
+                                "email", "agent@gov.za",
+                                "password", "ValidPass1!"
+                        ))))
+                .andReturn().getResponse().getContentAsString();
+
+        String accessToken  = mapper.readTree(body).get("accessToken").asText();
+        String refreshToken = mapper.readTree(body).get("refreshToken").asText();
+
+        mvc.perform(post("/v1/auth/logout")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(Map.of("refreshToken", refreshToken))))
+                .andExpect(status().isNoContent());
+
+        // Revoked token must no longer work
+        mvc.perform(post("/v1/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(Map.of("refreshToken", refreshToken))))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("POST /auth/password-reset/request always returns 200 (user enumeration safe)")
+    void passwordResetRequest_alwaysReturns200() throws Exception {
+        // Known email
+        mvc.perform(post("/v1/auth/password-reset/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(Map.of("email", "agent@gov.za"))))
+                .andExpect(status().isOk());
+
+        // Unknown email - must also return 200 to prevent enumeration
+        mvc.perform(post("/v1/auth/password-reset/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(Map.of("email", "ghost@gov.za"))))
+                .andExpect(status().isOk());
     }
 }
