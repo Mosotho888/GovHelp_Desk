@@ -8,6 +8,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
+import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.comment.dto.request.CreateCommentRequest;
@@ -55,6 +56,7 @@ public class CommentServiceImplTest {
     private CommentServiceImpl commentService;
 
     private User agentUser;
+    private Agent agent;
     private User endUser;
     private Ticket ticket;
     private Comment comment;
@@ -63,11 +65,14 @@ public class CommentServiceImplTest {
     void setUp() {
         agentUser = User.builder().id(1L).name("Jane Agent").email("jane@gov.za")
                 .role(User.Role.AGENT).active(true).build();
+        agent = Agent.builder().id(1L).user(agentUser).department("Tech").availability(Agent.Availability.ONLINE)
+                .build();
         endUser = User.builder().id(2L).name("John Public").email("john@citizen.za")
                 .role(User.Role.USER).active(true).build();
 
         ticket = Ticket.builder().id(10L).subject("Test ticket").description("desc")
                 .status(Ticket.Status.OPEN).requester(endUser)
+                .assignee(agent)
                 .createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now()).build();
 
         comment = Comment.builder().id(100L).ticket(ticket).author(agentUser)
@@ -84,7 +89,7 @@ public class CommentServiceImplTest {
         req.setBody("Investigating the issue.");
         req.setInternal(false);
 
-        given(ticketRepository.findByIdAndPrincipal(10L, agentUser.getEmail(), agentUser.getRole().name()))
+        given(ticketRepository.findById(10L))
                 .willReturn(Optional.of(ticket));
         given(commentRepository.save(any(Comment.class))).willReturn(comment);
         given(commentMapper.toCommentResponse(comment)).willReturn(responseFor(comment));
@@ -115,7 +120,7 @@ public class CommentServiceImplTest {
         req.setBody("Internal: checking database");
         req.setInternal(true);
 
-        given(ticketRepository.findByIdAndPrincipal(10L, agentUser.getEmail(), agentUser.getRole().name()))
+        given(ticketRepository.findById(10L))
                 .willReturn(Optional.of(ticket));
         given(commentRepository.save(any(Comment.class))).willReturn(internalNote);
         given(commentMapper.toCommentResponse(internalNote)).willReturn(responseFor(internalNote));
@@ -140,7 +145,7 @@ public class CommentServiceImplTest {
         req.setBody("Internal note.");
         req.setInternal(true);
 
-        given(ticketRepository.findByIdAndPrincipal(10L, endUser.getEmail(), endUser.getRole().name()))
+        given(ticketRepository.findById(10L))
                 .willReturn(Optional.of(ticket));
 
         assertThatThrownBy(() -> commentService.addComment(10L, req, endUser))
@@ -155,7 +160,7 @@ public class CommentServiceImplTest {
         CreateCommentRequest req = new CreateCommentRequest();
         req.setBody("Test");
 
-        given(ticketRepository.findByIdAndPrincipal(999L, endUser.getEmail(), endUser.getRole().name()))
+        given(ticketRepository.findById(999L))
                 .willReturn(Optional.empty());
 
         assertThatThrownBy(() -> commentService.addComment(999L, req, endUser))
@@ -255,7 +260,7 @@ public class CommentServiceImplTest {
     @Test
     @DisplayName("deleteComment() publishes COMMENT_DELETED audit and removes from repository")
     void deleteComment_valid_publishesAuditAndDeletes() {
-        given(commentRepository.findByIdForActor(100L, agentUser.getEmail(), agentUser.getRole().name()))
+        given(commentRepository.findById(100L))
                 .willReturn(Optional.of(comment));
 
         commentService.deleteComment(100L, agentUser);
@@ -276,7 +281,7 @@ public class CommentServiceImplTest {
                 .body("Old comment").internal(false).type(Comment.CommentType.REPLY)
                 .createdAt(LocalDateTime.now().minusMinutes(20)).build();
 
-        given(commentRepository.findByIdForActor(200L, endUser.getEmail(), endUser.getRole().name()))
+        given(commentRepository.findById(200L))
                 .willReturn(Optional.of(oldComment));
         willThrow(new AccessDeniedException("Comments can only be edited/deleted within 15 minutes"))
                 .given(accessPolicy).assertCanMutate(endUser, oldComment);
@@ -291,7 +296,7 @@ public class CommentServiceImplTest {
     @Test
     @DisplayName("deleteComment() throws ResourceNotFoundException for unknown comment")
     void deleteComment_unknownComment_throwsNotFound() {
-        given(commentRepository.findByIdForActor(999L, agentUser.getEmail(), agentUser.getRole().name()))
+        given(commentRepository.findById(999L))
                 .willReturn(Optional.empty());
 
         assertThatThrownBy(() -> commentService.deleteComment(999L, agentUser))
