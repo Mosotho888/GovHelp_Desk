@@ -1,5 +1,7 @@
 package za.gov.helpdesk.sla.service.impl;
 
+import java.time.LocalDateTime;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -14,8 +16,6 @@ import za.gov.helpdesk.sla.service.BusinessHoursCalculator;
 import za.gov.helpdesk.sla.service.SlaService;
 import za.gov.helpdesk.ticket.model.Ticket;
 
-import java.time.LocalDateTime;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -25,26 +25,23 @@ public class SlaServiceImpl implements SlaService {
     private final SlaPolicyRepository slaPolicyRepository;
     private final BusinessHoursCalculator calculator;
 
+    private static final int REMINDER = 30;
+
     @Override
     @Transactional
     public TicketSla initializeSla(Ticket ticket) {
-        SlaPolicy policy = slaPolicyRepository
-                .findByPriority(ticket.getPriority())
-                .orElseThrow(() -> new IllegalStateException(
-                        "No SLA policy for priority: " + ticket.getPriority()));
+        SlaPolicy policy = slaPolicyRepository.findByPriority(ticket.getPriority())
+                .orElseThrow(() -> new IllegalStateException("No SLA policy for priority: " + ticket.getPriority()));
 
-        LocalDateTime now           = LocalDateTime.now();
-        LocalDateTime responseDue   = calculator.addBusinessMinutes(now, policy.getResponseMinutes());
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime responseDue = calculator.addBusinessMinutes(now, policy.getResponseMinutes());
         LocalDateTime resolutionDue = calculator.addBusinessMinutes(now, policy.getResolutionMinutes());
 
-        TicketSla sla = TicketSla.builder()
-                .ticket(ticket)
-                .responseDueAt(responseDue)
-                .resolutionDueAt(resolutionDue)
+        TicketSla sla = TicketSla.builder().ticket(ticket).responseDueAt(responseDue).resolutionDueAt(resolutionDue)
                 .build();
 
-        log.info("SLA initialized: ticket={} responseDue={} resolutionDue={}",
-                ticket.getId(), responseDue, resolutionDue);
+        log.info("SLA initialized: ticket={} responseDue={} resolutionDue={}", ticket.getId(), responseDue,
+                resolutionDue);
 
         return ticketSlaRepository.save(sla);
     }
@@ -57,8 +54,7 @@ public class SlaServiceImpl implements SlaService {
                 sla.setFirstResponseAt(LocalDateTime.now());
                 sla.setResponseBreached(LocalDateTime.now().isAfter(sla.getResponseDueAt()));
                 ticketSlaRepository.save(sla);
-                log.info("First response recorded: ticket={} breached={}",
-                        ticketId, sla.isResponseBreached());
+                log.info("First response recorded: ticket={} breached={}", ticketId, sla.isResponseBreached());
             }
         });
     }
@@ -69,11 +65,9 @@ public class SlaServiceImpl implements SlaService {
         ticketSlaRepository.findByTicketId(ticketId).ifPresent(sla -> {
             if (sla.getResolvedAt() == null) {
                 sla.setResolvedAt(LocalDateTime.now());
-                sla.setResolutionBreached(
-                        LocalDateTime.now().isAfter(sla.getResolutionDueAt()));
+                sla.setResolutionBreached(LocalDateTime.now().isAfter(sla.getResolutionDueAt()));
                 ticketSlaRepository.save(sla);
-                log.info("Resolution recorded: ticket={} breached={}",
-                        ticketId, sla.isResolutionBreached());
+                log.info("Resolution recorded: ticket={} breached={}", ticketId, sla.isResolutionBreached());
             }
         });
     }
@@ -84,28 +78,21 @@ public class SlaServiceImpl implements SlaService {
         TicketSla sla = ticketSlaRepository.findByTicketId(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("SLA for ticket", ticketId));
 
-        return TicketSlaResponse.builder()
-                .responseDueAt(sla.getResponseDueAt())
-                .resolutionDueAt(sla.getResolutionDueAt())
-                .firstResponseAt(sla.getFirstResponseAt())
-                .resolvedAt(sla.getResolvedAt())
-                .responseBreached(sla.isResponseBreached())
-                .resolutionBreached(sla.isResolutionBreached())
-                .status(computeStatus(sla))
-                .build();
+        return TicketSlaResponse.builder().responseDueAt(sla.getResponseDueAt())
+                .resolutionDueAt(sla.getResolutionDueAt()).firstResponseAt(sla.getFirstResponseAt())
+                .resolvedAt(sla.getResolvedAt()).responseBreached(sla.isResponseBreached())
+                .resolutionBreached(sla.isResolutionBreached()).status(computeStatus(sla)).build();
     }
 
     private String computeStatus(TicketSla sla) {
-        if (sla.isResolutionBreached()) return "BREACHED";
+        if (sla.isResolutionBreached()) {
+            return "BREACHED";
+        }
 
-        int warningMinutes = slaPolicyRepository
-                .findByPriority(sla.getTicket().getPriority())
-                .map(SlaPolicy::getWarningThresholdMinutes)
-                .orElse(30);
+        int warningMinutes = slaPolicyRepository.findByPriority(sla.getTicket().getPriority())
+                .map(SlaPolicy::getWarningThresholdMinutes).orElse(REMINDER);
 
-        if (sla.getResolutionDueAt()
-                .minusMinutes(warningMinutes)
-                .isBefore(LocalDateTime.now())) {
+        if (sla.getResolutionDueAt().minusMinutes(warningMinutes).isBefore(LocalDateTime.now())) {
             return "AT_RISK";
         }
 

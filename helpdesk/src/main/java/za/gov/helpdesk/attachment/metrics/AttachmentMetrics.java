@@ -18,28 +18,24 @@ public class AttachmentMetrics {
 
     public AttachmentMetrics(MeterRegistry registry) {
 
-        this.uploaded = Counter.builder("helpdesk.attachment.uploaded")
-                .description("Total files uploaded to tickets")
+        this.uploaded = Counter.builder("helpdesk.attachment.uploaded").description("Total files uploaded to tickets")
                 .register(registry);
 
         this.downloaded = Counter.builder("helpdesk.attachment.downloaded")
-                .description("Total attachment download events")
-                .register(registry);
+                .description("Total attachment download events").register(registry);
 
         this.deleted = Counter.builder("helpdesk.attachment.deleted")
-                .description("Total attachments deleted from tickets")
-                .register(registry);
+                .description("Total attachments deleted from tickets").register(registry);
 
         this.uploadBytes = DistributionSummary.builder("helpdesk.attachment.upload.bytes")
-                .description("Distribution of uploaded file sizes in bytes")
-                .baseUnit("bytes")
-                .publishPercentileHistogram()
-                .register(registry);
+                .description("Distribution of uploaded file sizes in bytes").baseUnit("bytes")
+                .publishPercentileHistogram().register(registry);
     }
 
     public void incrementUploaded() {
         this.uploaded.increment();
     }
+
     public void incrementDownloaded() {
         this.downloaded.increment();
     }

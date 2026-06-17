@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+  ══════════════════════════════════════════════════════════════════════
+  GovHelpDesk — Eclipse Java Formatter profile for Spotless
+  ══════════════════════════════════════════════════════════════════════
+
+  WHAT SPOTLESS DOES
+  ──────────────────
+  Spotless is a code FORMATTER, not an analyser. It enforces that code
+  is formatted in one consistent, canonical way - the same way every
+  time, on every machine, for every developer.
+
+  HOW IT DIFFERS FROM THE OTHER TOOLS
+  ─────────────────────────────────────
+    Checkstyle  → tells you WHAT is wrong with formatting
+    Spotless    → FIXES formatting automatically (./mvnw spotless:apply)
+    PMD         → finds code quality problems (complexity, bad patterns)
+    SpotBugs    → finds bytecode-level bugs
+
+  Spotless is the only tool that can auto-fix. The typical workflow is:
+    1. `./mvnw spotless:check` fails in CI (formatting drift detected)
+    2. Developer runs `./mvnw spotless:apply` locally
+    3. Commits the formatting fix
+    4. CI passes
+
+  THIS FILE
+  ─────────
+  This is an Eclipse formatter XML profile. Spotless uses Eclipse's
+  formatting engine regardless of which IDE you use — this ensures
+  IntelliJ, VS Code, and Eclipse developers all produce identical output.
+
+  SETTINGS CHOSEN TO MATCH THE PROJECT'S EXISTING STYLE
+  ───────────────────────────────────────────────────────
+  - Indent: 4 spaces (tabs = false)
+  - Line length: 120 chars (matches Checkstyle)
+  - Import style: static first, then java.*, then others, NO wildcards
+  - Annotation wrapping: each annotation on its own line
+  - Blank lines: 1 between methods, 1 after class open brace
+  - String text blocks: enabled (Java 15+)
+-->
+<profiles version="22">
+    <profile kind="CodeFormatterProfile" name="GovHelpDesk" version="22">
+        <setting id="org.eclipse.jdt.core.formatter.tabulation.char" value="space"/>
+        <setting id="org.eclipse.jdt.core.formatter.tabulation.size" value="4"/>
+        <setting id="org.eclipse.jdt.core.formatter.indentation.size" value="4"/>
+        <setting id="org.eclipse.jdt.core.formatter.use_tabs_only_for_leading_indentations" value="false"/>
+
+        <!-- Line length -->
+        <setting id="org.eclipse.jdt.core.formatter.lineSplit" value="120"/>
+        <setting id="org.eclipse.jdt.core.formatter.comment.line_length" value="120"/>
+
+        <!-- Braces: always use braces, opening brace on same line -->
+        <setting id="org.eclipse.jdt.core.formatter.brace_position_for_block" value="end_of_line"/>
+        <setting id="org.eclipse.jdt.core.formatter.brace_position_for_type_declaration" value="end_of_line"/>
+        <setting id="org.eclipse.jdt.core.formatter.brace_position_for_method_declaration" value="end_of_line"/>
+        <setting id="org.eclipse.jdt.core.formatter.brace_position_for_constructor_declaration" value="end_of_line"/>
+        <setting id="org.eclipse.jdt.core.formatter.brace_position_for_switch" value="end_of_line"/>
+        <setting id="org.eclipse.jdt.core.formatter.brace_position_for_enum_declaration" value="end_of_line"/>
+        <setting id="org.eclipse.jdt.core.formatter.brace_position_for_annotation_type_declaration" value="end_of_line"/>
+        <setting id="org.eclipse.jdt.core.formatter.brace_position_for_record_declaration" value="end_of_line"/>
+        <setting id="org.eclipse.jdt.core.formatter.brace_position_for_record_constructor" value="end_of_line"/>
+
+        <!-- Newline before else/catch/finally on SAME line as closing brace -->
+        <setting id="org.eclipse.jdt.core.formatter.insert_new_line_before_else_in_if_statement" value="do not insert"/>
+        <setting id="org.eclipse.jdt.core.formatter.insert_new_line_before_catch_in_try_statement" value="do not insert"/>
+        <setting id="org.eclipse.jdt.core.formatter.insert_new_line_before_finally_in_try_statement" value="do not insert"/>
+        <setting id="org.eclipse.jdt.core.formatter.insert_new_line_before_while_in_do_statement" value="do not insert"/>
+
+        <!-- Blank lines -->
+        <setting id="org.eclipse.jdt.core.formatter.blank_lines_before_first_class_body_declaration" value="0"/>
+        <setting id="org.eclipse.jdt.core.formatter.blank_lines_after_last_class_body_declaration" value="0"/>
+        <setting id="org.eclipse.jdt.core.formatter.blank_lines_between_type_declarations" value="1"/>
+        <setting id="org.eclipse.jdt.core.formatter.blank_lines_before_method" value="1"/>
+        <setting id="org.eclipse.jdt.core.formatter.blank_lines_before_field" value="0"/>
+        <setting id="org.eclipse.jdt.core.formatter.blank_lines_before_member_type" value="1"/>
+        <setting id="org.eclipse.jdt.core.formatter.blank_lines_after_imports" value="1"/>
+        <setting id="org.eclipse.jdt.core.formatter.blank_lines_after_package" value="1"/>
+        <setting id="org.eclipse.jdt.core.formatter.blank_lines_between_import_groups" value="1"/>
+
+        <!-- Spaces -->
+        <setting id="org.eclipse.jdt.core.formatter.insert_space_before_opening_paren_in_method_invocation" value="do not insert"/>
+        <setting id="org.eclipse.jdt.core.formatter.insert_space_before_opening_paren_in_method_declaration" value="do not insert"/>
+        <setting id="org.eclipse.jdt.core.formatter.insert_space_after_comma_in_method_invocation_arguments" value="insert"/>
+        <setting id="org.eclipse.jdt.core.formatter.insert_space_after_comma_in_method_declaration_parameters" value="insert"/>
+        <setting id="org.eclipse.jdt.core.formatter.insert_space_before_comma_in_method_declaration_parameters" value="do not insert"/>
+        <setting id="org.eclipse.jdt.core.formatter.insert_space_after_opening_paren_in_method_declaration" value="do not insert"/>
+        <setting id="org.eclipse.jdt.core.formatter.insert_space_before_closing_paren_in_method_declaration" value="do not insert"/>
+
+        <!-- Annotations: each on its own line -->
+        <setting id="org.eclipse.jdt.core.formatter.insert_new_line_after_annotation_on_type" value="insert"/>
+        <setting id="org.eclipse.jdt.core.formatter.insert_new_line_after_annotation_on_method" value="insert"/>
+        <setting id="org.eclipse.jdt.core.formatter.insert_new_line_after_annotation_on_field" value="insert"/>
+        <setting id="org.eclipse.jdt.core.formatter.insert_new_line_after_annotation_on_parameter" value="do not insert"/>
+        <setting id="org.eclipse.jdt.core.formatter.insert_new_line_after_annotation_on_local_variable" value="insert"/>
+
+        <!-- Imports: sorted, no wildcards -->
+        <setting id="org.eclipse.jdt.core.formatter.import_static_enabled" value="true"/>
+        <setting id="org.eclipse.jdt.core.formatter.number_of_imports_threshold_for_wildcard" value="999"/>
+        <setting id="org.eclipse.jdt.core.formatter.number_of_static_imports_threshold_for_wildcard" value="999"/>
+
+        <!-- String text blocks (Java 15+): preserve indentation -->
+        <setting id="org.eclipse.jdt.core.formatter.text_block_indentation" value="1"/>
+
+        <!-- Trailing commas in multi-line expressions -->
+        <setting id="org.eclipse.jdt.core.formatter.insert_new_line_at_end_of_file_if_missing" value="insert"/>
+
+        <!-- Comments: wrap Javadoc at line length, preserve formatting in code blocks -->
+        <setting id="org.eclipse.jdt.core.formatter.comment.format_javadoc_comments" value="true"/>
+        <setting id="org.eclipse.jdt.core.formatter.comment.format_block_comments" value="true"/>
+        <setting id="org.eclipse.jdt.core.formatter.comment.format_line_comments" value="false"/>
+        <setting id="org.eclipse.jdt.core.formatter.comment.format_source_code_in_javadoc_comment" value="false"/>
+        <setting id="org.eclipse.jdt.core.formatter.comment.indent_root_tags" value="true"/>
+        <setting id="org.eclipse.jdt.core.formatter.comment.new_lines_at_javadoc_boundaries" value="true"/>
+    </profile>
+</profiles>

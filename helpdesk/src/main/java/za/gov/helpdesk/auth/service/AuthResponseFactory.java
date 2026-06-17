@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import za.gov.helpdesk.auth.dto.response.AuthResponse;
 import za.gov.helpdesk.auth.jwt.JwtService;
-import za.gov.helpdesk.users.converter.UserMapper;
+import za.gov.helpdesk.users.mapper.UserMapper;
 import za.gov.helpdesk.users.model.User;
 
 @Component
@@ -18,12 +18,10 @@ public class AuthResponseFactory {
     @Value("${app.jwt.access-token-expiry-ms}")
     private long accessTokenExpiryMs;
 
+    private static final long MILLISECONDS_PER_SECOND = 1000L;
+
     public AuthResponse build(User user, String refreshToken) {
-        return AuthResponse.builder()
-                .accessToken(jwtService.generateAccessToken(user))
-                .refreshToken(refreshToken)
-                .expiresIn(accessTokenExpiryMs / 1000)
-                .user(userMapper.toUserResponse(user))
-                .build();
+        return AuthResponse.builder().accessToken(jwtService.generateAccessToken(user)).refreshToken(refreshToken)
+                .expiresIn(accessTokenExpiryMs / MILLISECONDS_PER_SECOND).user(userMapper.toUserResponse(user)).build();
     }
 }

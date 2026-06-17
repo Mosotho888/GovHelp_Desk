@@ -1,0 +1,272 @@
+name: GovHelpDesk CI
+
+# --- Triggers ---------------------------------------------------------
+# Run on every push to any branch, and on every pull request targeting main.
+# The docker-publish job is gated to main-branch pushes only (see its `if:`).
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ main, developer ]
+
+# --- Global env -------------------------------------------------
+env:
+  JAVA_VERSION: "17"
+  # Docker Hub image name: <your-dockerhub-username>/govhelpdesk
+  # Set DOCKERHUB_USERNAME in your repo → Settings → Secrets and variables → Actions
+  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/govhelpdesk
+
+# Cancel any in-progress run for the same branch when a new push arrives.
+# Prevents stale pipeline runs wasting GitHub Actions minutes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# ------------------------------------------------------------------------------
+jobs:
+
+  # ------- JOB 1: Compile, test, coverage --------------------------------------
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    # Testcontainers pulls postgres:18-alpine and rabbitmq:3.13-management-alpine
+    # from Docker Hub at runtime. The ubuntu-latest runner has Docker pre-installed
+    # so Testcontainers works without any extra service container declarations here.
+
+    steps:
+
+      # 1. Check out the full commit history so Conventional Commits tooling
+      #    (or future changelog generation) has something to work with.
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 2. Set up Java 17. The `cache: maven` param tells the action to cache
+      #    ~/.m2/repository between runs keyed on pom.xml hash — dramatically
+      #    cuts dependency download time on subsequent runs.
+      - name: Set up Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: maven
+
+      # 3. Make mvnw executable. The repo was developed on Windows so the
+      #    wrapper may not have the execute bit set in Git.
+      - name: Make Maven wrapper executable
+        run: chmod +x mvnw
+
+      # 4. Full verify: compile → unit tests → integration tests → Jacoco report
+      #    → Jacoco check (80% line coverage threshold from pom.xml).
+      #    -B = batch mode (no ANSI color, cleaner logs)
+      #    -Dspring.profiles.active=test activates application-test.properties
+      #    -DspotlessCheck=false skips Spotless in this job - formatting is
+      #    checked in the static-analysis job. Tests run faster without it.
+      - name: Run tests and check coverage
+        run: ./mvnw verify -B
+          -Dspring.profiles.active=test
+          -Dcheckstyle.skip=true
+          -Dspotbugs.skip=true
+          -Dpmd.skip=true
+          -Dspotless.check.skip=true
+        env:
+          # Testcontainers needs to know it's running in a CI environment so it
+          # can reuse containers across test classes where possible.
+          TESTCONTAINERS_RYUK_DISABLED: "true"
+
+      # 5. Upload the Jacoco HTML report as a workflow artifact.
+      #    Download it from the GitHub Actions run page: Actions → run → Artifacts.
+      #    `if: always()` means this uploads even when tests fail, so you can
+      #    see which tests broke the coverage threshold.
+      - name: Upload Jacoco coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/
+          retention-days: 14
+
+      # 6. Upload Surefire test results as an artifact so failures are visible
+      #    in the GitHub Actions summary without downloading the full report.
+      - name: Upload Surefire test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: surefire-results
+          path: target/surefire-reports/
+          retention-days: 7
+
+  # ── JOB 2: Static analysis ────────────────────────────────────────────────
+  #
+  #  Runs four tools in sequence within one job.
+  #  Why one job instead of four parallel jobs?
+  #  - Checkstyle and PMD need source only (fast, <1 min each)
+  #  - SpotBugs needs compiled bytecode — it must run after compile
+  #  - Spotless needs source only
+  #  - Running them in sequence on one runner avoids 4× Maven dependency
+  #    download overhead and keeps the GitHub Actions bill low.
+  #
+  #  The sequence is:
+  #    1. spotless:check   — formatting first (fastest, most obvious fix)
+  #    2. checkstyle:check — naming/style (also fast)
+  #    3. pmd:check        — code quality (source analysis)
+  #    4. pmd:cpd-check    — copy-paste detection
+  #    5. compile          — needed before SpotBugs
+  #    6. spotbugs:check   — bytecode analysis (slowest, last)
+  # ─────────────────────────────────────────────────────────────────────────
+  static-analysis:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+    # Run in parallel with build-and-test — no dependency between them.
+    # If either fails the overall CI status is red.
+
+    steps:
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: maven
+
+      - name: Make Maven wrapper executable
+        run: chmod +x mvnw
+
+        # ── Step 1: Spotless — formatting check ───────────────────────────────
+      # Fails immediately with a diff if any file is not correctly formatted.
+      # Fix locally with: ./mvnw spotless:apply
+      - name: Spotless — check formatting
+        run: ./mvnw spotless:check -B
+
+      # ── Step 2: Checkstyle — naming and style ─────────────────────────────
+      # Fails with file/line/rule for each naming or brace violation.
+      - name: Checkstyle — check source style
+        run: ./mvnw checkstyle:check -B
+
+      # ── Step 3: PMD — code quality and copy-paste ─────────────────────────
+      # pmd:check runs the ruleset; pmd:cpd-check runs copy-paste detection.
+      - name: PMD — check code quality and copy-paste
+        run: ./mvnw pmd:check pmd:cpd-check -B
+
+      # ── Step 4: Compile — needed before SpotBugs ──────────────────────────
+      # SpotBugs analyses bytecode. It cannot run on source alone.
+      # -DskipTests skips Surefire — tests ran in the build-and-test job.
+      - name: Compile (for SpotBugs bytecode analysis)
+        run: ./mvnw compile test-compile -B -DskipTests
+
+      # ── Step 5: SpotBugs — bytecode bug detection ─────────────────────────
+      # Fails with class/method/pattern for each finding above High threshold.
+      - name: SpotBugs — check compiled bytecode
+        run: ./mvnw spotbugs:check -B
+
+      # Upload SpotBugs HTML report whether the job passed or failed.
+      - name: Upload SpotBugs report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: spotbugs-report
+          path: target/spotbugsXml.xml
+          retention-days: 14
+
+      # ── Upload all reports as artifacts ───────────────────────────────────
+      - name: Upload SpotBugs XML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: spotbugs-report
+          path: target/spotbugsXml.xml
+          retention-days: 14
+
+      - name: Upload Checkstyle XML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: checkstyle-report
+          path: target/checkstyle-result.xml
+          retention-days: 14
+
+      - name: Upload PMD XML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pmd-report
+          path: target/pmd.xml
+          retention-days: 14
+
+      - name: Upload CPD XML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cpd-report
+          path: target/cpd.xml
+          retention-days: 14
+
+  # --------- JOB 3: Docker build & push --------
+  docker-publish:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+
+    # Only publish an image when BOTH quality jobs pass AND the push is to main.
+    # Feature branch pushes validate code but never publish an image.
+    needs: [ build-and-test, static-analysis ]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      # Docker Buildx gives access to advanced build features (multi-platform,
+      # cache export). Using it even for single-platform builds is best practice.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Log in to Docker Hub using secrets stored in the repository.
+      # Required secrets (repo -> Settings → Secrets and variables → Actions):
+      #   DOCKERHUB_USERNAME - your Docker Hub username
+      #   DOCKERHUB_TOKEN    - a Docker Hub access token (NOT your password)
+      #                        Create at: hub.docker.com → Account Settings → Security
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Generate image tags:
+      #   latest          - always points to the newest main-branch image
+      #   <short-sha>     - e.g. govhelpdesk:a1b2c3d — immutable, traceable
+      #   YYYY.MM.DD      - calendar version for human-readable sorting
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=,format=short
+            type=raw,value={{date 'YYYY.MM.DD'}}
+
+      # Build the image using the existing multi-stage Dockerfile.
+      # -DskipTests is set inside the Dockerfile's RUN ./mvnw clean package step
+      # already, so tests don't run a second time inside Docker.
+      # `cache-from/cache-to` with `type=gha` stores build layer cache in
+      # GitHub Actions cache — cold builds ~4 min, warm builds ~90 sec.
+      - name: Build and push image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Print the image digest to the log for traceability.
+      - name: Print image digest
+        run: echo "Pushed ${{ env.IMAGE_NAME }} digest ${{ steps.build.outputs.digest }}"

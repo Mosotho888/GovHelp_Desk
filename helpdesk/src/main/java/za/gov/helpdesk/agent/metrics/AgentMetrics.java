@@ -15,16 +15,13 @@ public class AgentMetrics {
 
     public AgentMetrics(MeterRegistry registry) {
 
-        this.registered = Counter.builder("helpdesk.agent.registered")
-                .description("Total agent created")
+        this.registered = Counter.builder("helpdesk.agent.registered").description("Total agent created")
                 .register(registry);
         this.availabilityChanged = Counter.builder("helpdesk.agent.availability.changed")
-                .description("Agent availability status changes")
-                .register(registry);
+                .description("Agent availability status changes").register(registry);
 
         this.departmentChanged = Counter.builder("helpdesk.agent.department.changed")
-                .description("Agent department reassignments")
-                .register(registry);
+                .description("Agent department reassignments").register(registry);
     }
 
     public void incrementRegistered() {

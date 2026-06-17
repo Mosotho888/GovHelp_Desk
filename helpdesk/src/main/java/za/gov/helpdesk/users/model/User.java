@@ -1,15 +1,26 @@
 package za.gov.helpdesk.users.model;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import lombok.*;
-
 import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "users")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -49,10 +60,10 @@ public class User {
     @Builder.Default
     private int loginAttempts = 0;
 
-    @Column(name= "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name="updated_at",  nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
     @PrePersist
@@ -67,8 +78,6 @@ public class User {
     }
 
     public enum Role {
-        USER,
-        AGENT,
-        ADMIN
+        USER, AGENT, ADMIN
     }
 }

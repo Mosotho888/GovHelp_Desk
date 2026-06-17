@@ -15,45 +15,24 @@ public class TicketEventDispatcher {
     private final AuditEventPublisher auditPublisher;
     private final TicketEmailNotificationPublisher emailPublisher;
 
-    public void publish(Ticket ticket,
-                        User actor,
-                        AuditLog.AuditAction action,
-                        String oldValue,
-                        String newValue,
-                        String description,
-                        String comment) {
+    public void publish(Ticket ticket, User actor, AuditLog.AuditAction action, String oldValue, String newValue,
+            String description, String comment) {
 
         publishAudit(ticket, actor, action, oldValue, newValue, description);
         publishEmail(ticket, action, comment);
     }
 
-    public void publishEmail(Ticket ticket,
-                        AuditLog.AuditAction action,
-                        String comment) {
+    public void publishEmail(Ticket ticket, AuditLog.AuditAction action, String comment) {
 
-        User agentUser = ticket.getAssignee() != null
-                ? ticket.getAssignee().getUser()
-                : null;
+        User agentUser = ticket.getAssignee() != null ? ticket.getAssignee().getUser() : null;
 
         emailPublisher.publish(ticket, ticket.getRequester(), agentUser, action, comment);
     }
 
-    public void publishAudit(Ticket ticket,
-                        User actor,
-                        AuditLog.AuditAction action,
-                        String oldValue,
-                        String newValue,
-                        String description) {
+    public void publishAudit(Ticket ticket, User actor, AuditLog.AuditAction action, String oldValue, String newValue,
+            String description) {
 
-
-        auditPublisher.publishAudit(
-                AuditLog.EntityType.TICKET,
-                ticket.getId(),
-                actor,
-                action,
-                oldValue,
-                newValue,
-                description
-        );
+        auditPublisher.publishAudit(AuditLog.EntityType.TICKET, ticket.getId(), actor, action, oldValue, newValue,
+                description);
     }
 }

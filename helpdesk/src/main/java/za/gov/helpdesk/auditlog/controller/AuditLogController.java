@@ -1,5 +1,6 @@
 package za.gov.helpdesk.auditlog.controller;
 
+import java.util.List;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -18,8 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 import za.gov.helpdesk.auditlog.dto.response.AuditLogResponse;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auditlog.service.AuditService;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/v1/audit")
@@ -65,20 +64,16 @@ public class AuditLogController {
     @GetMapping("/actor/{actorId}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get all actions performed by a specific user (Admin only)")
-    public ResponseEntity<Page<AuditLogResponse>> getByActor(
-            @PathVariable Long actorId,
-            @PageableDefault(size = 50, sort = "createdAt", direction = Sort.Direction.DESC)
-            Pageable pageable) {
+    public ResponseEntity<Page<AuditLogResponse>> getByActor(@PathVariable Long actorId,
+            @PageableDefault(size = 50, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(auditService.getLogsByActor(actorId, pageable));
     }
 
     @GetMapping("/action/{action}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get all events of a specific action type (Admin only)")
-    public ResponseEntity<Page<AuditLogResponse>> getByAction(
-            @PathVariable AuditLog.AuditAction action,
-            @PageableDefault(size = 50, sort = "createdAt", direction = Sort.Direction.DESC)
-            Pageable pageable) {
+    public ResponseEntity<Page<AuditLogResponse>> getByAction(@PathVariable AuditLog.AuditAction action,
+            @PageableDefault(size = 50, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(auditService.getLogsByAction(action, pageable));
     }
 }

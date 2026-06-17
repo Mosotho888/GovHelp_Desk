@@ -1,5 +1,11 @@
 package za.gov.helpdesk.sla.schedular;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -13,12 +19,6 @@ import za.gov.helpdesk.sla.repository.SlaPolicyRepository;
 import za.gov.helpdesk.sla.repository.TicketSlaRepository;
 import za.gov.helpdesk.ticket.model.Ticket;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -29,30 +29,27 @@ public class SlaBreachMonitor {
     private final SlaEmailNotificationPublisher slaEmailPublisher;
     private final SlaMetrics slaMetrics;
 
+    private static final int REMINDER = 30;
+
     @Scheduled(fixedRateString = "PT5M")
     @Transactional
     public void run() {
         LocalDateTime now = LocalDateTime.now();
 
-        Map<Ticket.Priority, SlaPolicy> policies = slaPolicyRepository.findAll()
-                .stream()
+        Map<Ticket.Priority, SlaPolicy> policies = slaPolicyRepository.findAll().stream()
                 .collect(Collectors.toMap(SlaPolicy::getPriority, Function.identity()));
 
-        int maxThreshold = policies.values().stream()
-                .mapToInt(SlaPolicy::getWarningThresholdMinutes)
-                .max()
-                .orElse(30);
+        int maxThreshold = policies.values().stream().mapToInt(SlaPolicy::getWarningThresholdMinutes).max()
+                .orElse(REMINDER);
 
         processWarnings(now, policies, maxThreshold);
         processBreaches(now);
     }
 
-    private void processWarnings(LocalDateTime now,
-                                 Map<Ticket.Priority, SlaPolicy> policies,
-                                 int maxThreshold) {
+    private void processWarnings(LocalDateTime now, Map<Ticket.Priority, SlaPolicy> policies, int maxThreshold) {
 
-        List<TicketSla> responseWarnings = ticketSlaRepository
-                .findResponseWarningsDue(now, now.plusMinutes(maxThreshold));
+        List<TicketSla> responseWarnings = ticketSlaRepository.findResponseWarningsDue(now,
+                now.plusMinutes(maxThreshold));
 
         for (TicketSla sla : responseWarnings) {
             if (!isWithinWarningWindow(sla, policies, sla.getResponseDueAt(), now)) {
@@ -64,8 +61,8 @@ public class SlaBreachMonitor {
             slaMetrics.incrementResponseWarning();
         }
 
-        List<TicketSla> resolutionWarnings = ticketSlaRepository
-                .findResolutionWarningsDue(now, now.plusMinutes(maxThreshold));
+        List<TicketSla> resolutionWarnings = ticketSlaRepository.findResolutionWarningsDue(now,
+                now.plusMinutes(maxThreshold));
 
         for (TicketSla sla : resolutionWarnings) {
             if (isWithinWarningWindow(sla, policies, sla.getResolutionDueAt(), now)) {
@@ -97,44 +94,35 @@ public class SlaBreachMonitor {
         });
     }
 
-    private boolean isWithinWarningWindow(TicketSla sla,
-                                          Map<Ticket.Priority, SlaPolicy> policies,
-                                          LocalDateTime dueAt,
-                                          LocalDateTime now) {
+    private boolean isWithinWarningWindow(TicketSla sla, Map<Ticket.Priority, SlaPolicy> policies, LocalDateTime dueAt,
+            LocalDateTime now) {
         SlaPolicy policy = policies.get(sla.getTicket().getPriority());
-        int thresholdMinutes = policy != null ? policy.getWarningThresholdMinutes() : 30;
+        int thresholdMinutes = policy != null ? policy.getWarningThresholdMinutes() : REMINDER;
         return dueAt.isAfter(now.plusMinutes(thresholdMinutes));
     }
 
     private void sendWarning(TicketSla sla, String deadlineType) {
         Ticket ticket = sla.getTicket();
-        if (ticket.getAssignee() == null) return;
+        if (ticket.getAssignee() == null) {
+            return;
+        }
 
-        LocalDateTime dueAt = "First Response".equals(deadlineType)
-                ? sla.getResponseDueAt()
-                : sla.getResolutionDueAt();
+        LocalDateTime dueAt = "First Response".equals(deadlineType) ? sla.getResponseDueAt() : sla.getResolutionDueAt();
 
-        slaEmailPublisher.publishWarning(
-                ticket.getAssignee().getUser().getEmail(),
-                ticket.getAssignee().getUser().getName(),
-                "TKT-" + ticket.getId(),
-                ticket.getId(),
-                ticket.getSubject(),
-                deadlineType,
-                dueAt);
+        slaEmailPublisher.publishWarning(ticket.getAssignee().getUser().getEmail(),
+                ticket.getAssignee().getUser().getName(), "TKT-" + ticket.getId(), ticket.getId(), ticket.getSubject(),
+                deadlineType, dueAt);
 
     }
 
     private void sendBreach(TicketSla sla, String deadlineType) {
         Ticket ticket = sla.getTicket();
-        if (ticket.getAssignee() == null) return;
+        if (ticket.getAssignee() == null) {
+            return;
+        }
 
-        slaEmailPublisher.publishBreach(
-                ticket.getAssignee().getUser().getEmail(),
-                ticket.getAssignee().getUser().getName(),
-                "TKT-" + ticket.getId(),
-                ticket.getId(),
-                ticket.getSubject(),
+        slaEmailPublisher.publishBreach(ticket.getAssignee().getUser().getEmail(),
+                ticket.getAssignee().getUser().getName(), "TKT-" + ticket.getId(), ticket.getId(), ticket.getSubject(),
                 deadlineType);
 
     }

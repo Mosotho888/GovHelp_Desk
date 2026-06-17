@@ -2,10 +2,8 @@ package za.gov.helpdesk.notification.messaging;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 import za.gov.helpdesk.auditlog.model.AuditLog;
-import za.gov.helpdesk.config.messaging.RabbitMQConstants;
 import za.gov.helpdesk.notification.dto.PasswordResetEmailNotificationMessage;
 import za.gov.helpdesk.outbox.model.OutboxEvent;
 import za.gov.helpdesk.outbox.relay.OutboxWriter;
@@ -19,24 +17,16 @@ public class PasswordResetEmailNotificationPublisher {
 
     public void publish(String email, String actorName, String rawOtp, long expiryMinutes) {
 
-        PasswordResetEmailNotificationMessage message = PasswordResetEmailNotificationMessage.builder()
-                .email(email)
-                .actorName(actorName)
-                .otp(rawOtp)
-                .optExpiryMin(expiryMinutes)
-                .build();
+        PasswordResetEmailNotificationMessage message = PasswordResetEmailNotificationMessage.builder().email(email)
+                .actorName(actorName).otp(rawOtp).optExpiryMin(expiryMinutes).build();
         try {
-            outboxWriter.write(
-                    OutboxEvent.EventType.PASSWORD_RESET_EMAIL.name(),
-                    AuditLog.EntityType.AUTH.name(),
-                    null,
-                    message
-            );
+            outboxWriter.write(OutboxEvent.EventType.PASSWORD_RESET_EMAIL.name(), AuditLog.EntityType.AUTH.name(), null,
+                    message);
             log.info("Password reset email notification queued: email={}", message.getEmail());
         } catch (Exception e) {
 
-            log.error("Failed to queue Password reset email notification: email={} error={}",
-                    message.getEmail(), e.getMessage());
+            log.error("Failed to queue Password reset email notification: email={} error={}", message.getEmail(),
+                    e.getMessage());
         }
     }
 }

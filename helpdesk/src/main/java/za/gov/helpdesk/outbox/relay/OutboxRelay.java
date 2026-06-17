@@ -1,5 +1,9 @@
 package za.gov.helpdesk.outbox.relay;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,36 +21,29 @@ import za.gov.helpdesk.outbox.metrics.OutboxMetrics;
 import za.gov.helpdesk.outbox.model.OutboxEvent;
 import za.gov.helpdesk.outbox.repository.OutboxEventRepository;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class OutboxRelay {
 
     private static final int MAX_ATTEMPTS = 5;
-    private static final int BATCH_SIZE   = 50;
+    private static final int BATCH_SIZE = 50;
+    private static final int DAYS = 7;
+    private static final int MIN_PAGE = 0;
+    private static final int INCREMENT = 1;
 
     /** Maps event_type column values to RabbitMQ routing keys. */
-    private static final Map<String, String> ROUTING_KEYS = Map.of(
-            "AUDIT",               RabbitMQConstants.AUDIT_ROUTING_KEY,
-            "TICKET_EMAIL",        RabbitMQConstants.TICKET_EMAIL_ROUTING_KEY,
-            "PASSWORD_RESET_EMAIL", RabbitMQConstants.PASSWORD_RESET_EMAIL_ROUTING_KEY,
-            "SLA_EMAIL",           RabbitMQConstants.SLA_EMAIL_ROUTING_KEY
-    );
+    private static final Map<String, String> ROUTING_KEYS = Map.of("AUDIT", RabbitMQConstants.AUDIT_ROUTING_KEY,
+            "TICKET_EMAIL", RabbitMQConstants.TICKET_EMAIL_ROUTING_KEY, "PASSWORD_RESET_EMAIL",
+            RabbitMQConstants.PASSWORD_RESET_EMAIL_ROUTING_KEY, "SLA_EMAIL", RabbitMQConstants.SLA_EMAIL_ROUTING_KEY);
 
     // Maps eventType column value -> the exact DTO class the consumer expects.
     // Jackson deserialises the JSON payload into this type, so
     // Jackson2JsonMessageConverter writes the correct __TypeId__ header,
     // and the consumer receives a fully-typed object - no cast needed.
-    private static final Map<String, Class<?>> TYPE_MAP = Map.of(
-            "AUDIT",               AuditLogMessage.class,
-            "TICKET_EMAIL",        TicketEmailNotificationMessage.class,
-            "PASSWORD_RESET_EMAIL", PasswordResetEmailNotificationMessage.class,
-            "SLA_EMAIL", SlaEmailNotificationMessage.class
-    );
+    private static final Map<String, Class<?>> TYPE_MAP = Map.of("AUDIT", AuditLogMessage.class, "TICKET_EMAIL",
+            TicketEmailNotificationMessage.class, "PASSWORD_RESET_EMAIL", PasswordResetEmailNotificationMessage.class,
+            "SLA_EMAIL", SlaEmailNotificationMessage.class);
 
     private final OutboxEventRepository outboxRepository;
     private final RabbitTemplate rabbitTemplate;
@@ -61,7 +58,9 @@ public class OutboxRelay {
         long pending = outboxRepository.countByStatus(OutboxEvent.Status.PENDING);
         outboxMetrics.setPendingGauge(pending);
 
-        if (batch.isEmpty()) return;
+        if (batch.isEmpty()) {
+            return;
+        }
 
         log.debug("Outbox relay: processing {} events", batch.size());
         batch.forEach(this::processOne);
@@ -69,7 +68,7 @@ public class OutboxRelay {
 
     @Transactional(readOnly = true)
     public List<OutboxEvent> fetchPendingBatch() {
-        return outboxRepository.findNextPendingBatch(PageRequest.of(0, BATCH_SIZE));
+        return outboxRepository.findNextPendingBatch(PageRequest.of(MIN_PAGE, BATCH_SIZE));
     }
 
     @Transactional
@@ -81,7 +80,7 @@ public class OutboxRelay {
         }
 
         locked.setStatus(OutboxEvent.Status.PROCESSING);
-        locked.setAttempts(locked.getAttempts() + 1);
+        locked.setAttempts(locked.getAttempts() + INCREMENT);
         outboxRepository.save(locked);
 
         String routingKey = ROUTING_KEYS.get(locked.getEventType());
@@ -106,13 +105,12 @@ public class OutboxRelay {
 
             outboxMetrics.incrementPublished();
 
-            log.info("Outbox event published: id={} type={} aggregate={}/{}",
-                    locked.getId(), locked.getEventType(),
+            log.info("Outbox event published: id={} type={} aggregate={}/{}", locked.getId(), locked.getEventType(),
                     locked.getAggregateType(), locked.getAggregateId());
 
         } catch (Exception e) {
-            log.error("Outbox publish failed: id={} attempt={} error={}",
-                    locked.getId(), locked.getAttempts(), e.getMessage());
+            log.error("Outbox publish failed: id={} attempt={} error={}", locked.getId(), locked.getAttempts(),
+                    e.getMessage());
 
             outboxMetrics.incrementFailed();
 
@@ -129,8 +127,7 @@ public class OutboxRelay {
     @Scheduled(cron = "${app.outbox.purge-cron:0 0 3 * * *}")
     @Transactional
     public void purgeProcessed() {
-        int deleted = outboxRepository.deleteProcessedBefore(
-                LocalDateTime.now().minusDays(7));
+        int deleted = outboxRepository.deleteProcessedBefore(LocalDateTime.now().minusDays(DAYS));
         if (deleted > 0) {
             log.info("Outbox purge: deleted {} processed events", deleted);
         }
@@ -142,7 +139,7 @@ public class OutboxRelay {
         outboxRepository.save(event);
 
         outboxMetrics.incrementDeadLetter();
-        log.error("Outbox event permanently failed after {} attempts: id={} type={} error={}",
-                event.getAttempts(), event.getId(), event.getEventType(), error);
+        log.error("Outbox event permanently failed after {} attempts: id={} type={} error={}", event.getAttempts(),
+                event.getId(), event.getEventType(), error);
     }
 }

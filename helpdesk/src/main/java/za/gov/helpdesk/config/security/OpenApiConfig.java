@@ -15,23 +15,11 @@ public class OpenApiConfig {
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
-                .info(new Info()
-                        .title("Helpdesk API")
-                        .version("1.0.0")
+                .info(new Info().title("Helpdesk API").version("1.0.0")
                         .description("Internal API for the ZA Government Helpdesk System")
-                        .contact(new Contact()
-                                .name("IT Support")
-                                .email("support@helpdesk.gov.za")))
-                .addSecurityItem(new SecurityRequirement()
-                        .addList("bearerAuth"))
-                .components(new Components()
-                        .addSecuritySchemes("bearerAuth",
-                                new SecurityScheme()
-                                        .name("Authorization")
-                                        .type(SecurityScheme.Type.HTTP)
-                                        .scheme("bearer")
-                                        .bearerFormat("JWT")
-                        )
-                );
+                        .contact(new Contact().name("IT Support").email("support@helpdesk.gov.za")))
+                .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
+                .components(new Components().addSecuritySchemes("bearerAuth", new SecurityScheme().name("Authorization")
+                        .type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT")));
     }
 }

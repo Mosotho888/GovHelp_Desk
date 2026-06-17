@@ -4,7 +4,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import za.gov.helpdesk.comment.dto.response.CommentResponse;
 import za.gov.helpdesk.comment.model.Comment;
-import za.gov.helpdesk.users.converter.UserMapper;
+import za.gov.helpdesk.users.mapper.UserMapper;
 
 @Mapper(componentModel = "spring", uses = UserMapper.class)
 public interface CommentMapper {

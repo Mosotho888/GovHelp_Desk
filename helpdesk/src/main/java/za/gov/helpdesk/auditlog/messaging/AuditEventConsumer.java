@@ -1,5 +1,7 @@
 package za.gov.helpdesk.auditlog.messaging;
 
+import java.io.IOException;
+
 import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,8 +13,6 @@ import za.gov.helpdesk.auditlog.dto.messaging.AuditLogMessage;
 import za.gov.helpdesk.auditlog.service.AuditService;
 import za.gov.helpdesk.config.messaging.RabbitMQConstants;
 import za.gov.helpdesk.notification.metrics.NotificationMetrics;
-
-import java.io.IOException;
 
 @Component
 @RequiredArgsConstructor
@@ -27,43 +27,29 @@ public class AuditEventConsumer {
 
         long tag = rawMessage.getMessageProperties().getDeliveryTag();
 
-        log.info("Audit message received: action={} entity={}/{}", message.getAction(), message.getEntityType(), message.getEntityId());
+        log.info("Audit message received: action={} entity={}/{}", message.getAction(), message.getEntityType(),
+                message.getEntityId());
 
         try {
             if (message.isAuthLog()) {
-                auditService.logAuth(
-                        message.getAction(),
-                        message.getActorId(),
-                        message.getActorName(),
-                        message.getActorRole(),
-                        message.getIpAddress(),
-                        message.getDescription());
+                auditService.logAuth(message.getAction(), message.getActorId(), message.getActorName(),
+                        message.getActorRole(), message.getIpAddress(), message.getDescription());
             } else {
-                auditService.log(
-                        message.getEntityType(),
-                        message.getEntityId(),
-                        message.getActorId(),
-                        message.getActorName(),
-                        message.getActorRole(),
-                        message.getIpAddress(),
-                        message.getAction(),
-                        message.getOldValue(),
-                        message.getNewValue(),
-                        message.getDescription()
-                );
+                auditService.log(message.getEntityType(), message.getEntityId(), message.getActorId(),
+                        message.getActorName(), message.getActorRole(), message.getIpAddress(), message.getAction(),
+                        message.getOldValue(), message.getNewValue(), message.getDescription());
             }
 
             channel.basicAck(tag, false);
             notificationMetrics.incrementAuditSaved();
-            log.info("Audit saved and ACKed: action={} entity={}/{}",
-                    message.getAction(), message.getEntityType(), message.getEntityId());
+            log.info("Audit saved and ACKed: action={} entity={}/{}", message.getAction(), message.getEntityType(),
+                    message.getEntityId());
         } catch (DataAccessException e) {
             log.warn("DB unavailable, re-queuing audit log: action={} error={}", message.getAction(), e.getMessage());
             notificationMetrics.incrementAuditFailed();
-            channel.basicNack(tag, false,true);
+            channel.basicNack(tag, false, true);
         } catch (Exception e) {
-            log.error("Unrecoverable failure, routing to DLQ: action={} error={}",
-                    message.getAction(), e.getMessage());
+            log.error("Unrecoverable failure, routing to DLQ: action={} error={}", message.getAction(), e.getMessage());
             notificationMetrics.incrementAuditDlq();
             channel.basicNack(tag, false, false);
         }

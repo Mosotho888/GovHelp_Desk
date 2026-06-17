@@ -5,8 +5,7 @@ import java.time.LocalDateTime;
 public interface SlaEmailService {
 
     void sendSlaWarning(String to, String agentName, String ticketNumber, String subject, String deadlineType,
-                        LocalDateTime dueAt);
+            LocalDateTime dueAt);
 
-    void sendSlaBreach(String to, String agentName, String ticketNumber,
-                       String subject, String deadlineType);
+    void sendSlaBreach(String to, String agentName, String ticketNumber, String subject, String deadlineType);
 }

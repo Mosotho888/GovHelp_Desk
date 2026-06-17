@@ -1,23 +1,22 @@
 package za.gov.helpdesk.auditlog.service;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import za.gov.helpdesk.auditlog.dto.response.AuditLogResponse;
 import za.gov.helpdesk.auditlog.model.AuditLog;
-import za.gov.helpdesk.users.model.User;
-
-import java.util.List;
 
 public interface AuditService {
 
-//    void log (AuditLog.EntityType entityType, Long entityId, User actor, AuditLog.AuditAction action,
-//              String oldValue, String newValue, String description);
+    void log(AuditLog.EntityType entityType, Long entityId, Long actorId, String actorName, String actorRole,
+            String ipAddress, AuditLog.AuditAction action, String description);
 
-    void log (AuditLog.EntityType entityType, Long entityId, Long actorId, String actorName, String actorRole, String ipAddress, AuditLog.AuditAction action, String description);
+    void log(AuditLog.EntityType entityType, Long entityId, Long actorId, String actorName, String actorRole,
+            String ipAddress, AuditLog.AuditAction action, String oldValue, String newValue, String description);
 
-    void log(AuditLog.EntityType entityType, Long entityId, Long actorId, String actorName, String actorRole, String ipAddress, AuditLog.AuditAction action, String oldValue, String newValue, String description);
-
-    void logAuth(AuditLog.AuditAction action, Long actorId, String actorName, String actorRole, String ipAddress, String description);
+    void logAuth(AuditLog.AuditAction action, Long actorId, String actorName, String actorRole, String ipAddress,
+            String description);
 
     List<AuditLogResponse> getLogsForEntity(AuditLog.EntityType entityType, Long entityId);
 

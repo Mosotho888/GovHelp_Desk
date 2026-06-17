@@ -1,12 +1,12 @@
 package za.gov.helpdesk.unit.services.sla;
 
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import za.gov.helpdesk.sla.service.BusinessHoursCalculator;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import java.time.LocalDateTime;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import za.gov.helpdesk.sla.service.BusinessHoursCalculator;
 
 @DisplayName("BusinessHoursCalculator unit tests")
 class BusinessHoursCalculatorTest {

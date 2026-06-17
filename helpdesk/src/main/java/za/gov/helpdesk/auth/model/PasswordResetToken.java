@@ -1,12 +1,18 @@
 package za.gov.helpdesk.auth.model;
 
-import jakarta.persistence.*;
+import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "password_reset_tokens")
@@ -40,6 +46,8 @@ public class PasswordResetToken {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    public static final int MAX_ATTEMPTS = 5;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
@@ -50,6 +58,7 @@ public class PasswordResetToken {
     }
 
     public boolean isValid() {
-        return !used && !isExpired() && attempts < 5;
+
+        return !used && !isExpired() && attempts < MAX_ATTEMPTS;
     }
 }

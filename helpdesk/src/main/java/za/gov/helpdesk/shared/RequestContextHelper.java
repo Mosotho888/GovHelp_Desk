@@ -8,16 +8,17 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 @Component
 public class RequestContextHelper {
 
+    private static final int INDEX = 0;
+
     public String getClientIp() {
         try {
-            ServletRequestAttributes attrs =
-                    (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
+            ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
 
             HttpServletRequest request = attrs.getRequest();
             String forwarded = request.getHeader("X-Forwarded-For");
 
             if (forwarded != null && !forwarded.isBlank()) {
-                return forwarded.split(",")[0].trim();
+                return forwarded.split(",")[INDEX].trim();
             }
 
             return request.getRemoteAddr();

@@ -3,7 +3,12 @@ package za.gov.helpdesk.config.messaging;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.core.*;
+import org.springframework.amqp.core.AcknowledgeMode;
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueBuilder;
+import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -58,8 +63,7 @@ public class RabbitMQConfig {
 
         return QueueBuilder.durable(RabbitMQConstants.AUDIT_QUEUE)
                 .withArgument("x-dead-letter-exchange", RabbitMQConstants.DLX)
-                .withArgument("x-dead-letter-routing-key", RabbitMQConstants.AUDIT_DLQ_ROUTING_KEY)
-                .build();
+                .withArgument("x-dead-letter-routing-key", RabbitMQConstants.AUDIT_DLQ_ROUTING_KEY).build();
     }
 
     @Bean
@@ -94,7 +98,8 @@ public class RabbitMQConfig {
 
     @Bean
     public Binding bindTicketEmailQueue(Queue ticketEmailQueue, TopicExchange helpdeskExchange) {
-        return BindingBuilder.bind(ticketEmailQueue).to(helpdeskExchange).with(RabbitMQConstants.TICKET_EMAIL_ROUTING_KEY);
+        return BindingBuilder.bind(ticketEmailQueue).to(helpdeskExchange)
+                .with(RabbitMQConstants.TICKET_EMAIL_ROUTING_KEY);
     }
 
     @Bean
@@ -104,34 +109,30 @@ public class RabbitMQConfig {
 
     @Bean
     public Binding bindPasswordResetEmailQueue(Queue passwordResetEmailQueue, TopicExchange helpdeskExchange) {
-        return BindingBuilder.bind(passwordResetEmailQueue).to(helpdeskExchange).with(RabbitMQConstants.PASSWORD_RESET_EMAIL_ROUTING_KEY);
+        return BindingBuilder.bind(passwordResetEmailQueue).to(helpdeskExchange)
+                .with(RabbitMQConstants.PASSWORD_RESET_EMAIL_ROUTING_KEY);
     }
 
     @Bean
     public Binding bindAuditDlq(Queue auditDlq, TopicExchange deadLetterExchange) {
-        return BindingBuilder.bind(auditDlq)
-                .to(deadLetterExchange)
-                .with(RabbitMQConstants.AUDIT_DLQ_ROUTING_KEY);
+        return BindingBuilder.bind(auditDlq).to(deadLetterExchange).with(RabbitMQConstants.AUDIT_DLQ_ROUTING_KEY);
     }
 
     @Bean
     public Binding bindTicketEmailDlq(Queue ticketEmailDlq, TopicExchange deadLetterExchange) {
-        return BindingBuilder.bind(ticketEmailDlq)
-                .to(deadLetterExchange)
+        return BindingBuilder.bind(ticketEmailDlq).to(deadLetterExchange)
                 .with(RabbitMQConstants.TICKET_EMAIL_DLQ_ROUTING_KEY);
     }
 
     @Bean
     public Binding bindSlaEmailDlq(Queue slaEmailDlq, TopicExchange deadLetterExchange) {
-        return BindingBuilder.bind(slaEmailDlq)
-                .to(deadLetterExchange)
+        return BindingBuilder.bind(slaEmailDlq).to(deadLetterExchange)
                 .with(RabbitMQConstants.SLA_EMAIL_DLQ_ROUTING_KEY);
     }
 
     @Bean
     public Binding bindPasswordResetEmailDlq(Queue passwordResetEmailDlq, TopicExchange deadLetterExchange) {
-        return BindingBuilder.bind(passwordResetEmailDlq)
-                .to(deadLetterExchange)
+        return BindingBuilder.bind(passwordResetEmailDlq).to(deadLetterExchange)
                 .with(RabbitMQConstants.PASSWORD_RESET_EMAIL_DLQ_ROUTING_KEY);
     }
 
@@ -151,7 +152,8 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, Jackson2JsonMessageConverter jsonMessageConverter) {
+    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory,
+            Jackson2JsonMessageConverter jsonMessageConverter) {
 
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setMessageConverter(jsonMessageConverter);
@@ -160,8 +162,7 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
-            ConnectionFactory connectionFactory,
+    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory,
             Jackson2JsonMessageConverter jsonMessageConverter) {
 
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();

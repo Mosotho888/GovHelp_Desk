@@ -1,14 +1,9 @@
 package za.gov.helpdesk.config.messaging;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
+@NoArgsConstructor
 public final class RabbitMQConstants {
-
-    private RabbitMQConstants() {}
 
     public static final String EXCHANGE = "helpdesk.exchange";
     public static final String DLX = "helpdesk.dlx";
@@ -29,6 +24,6 @@ public final class RabbitMQConstants {
 
     public static final String AUDIT_DLQ_ROUTING_KEY = "failed.audit.#";
     public static final String TICKET_EMAIL_DLQ_ROUTING_KEY = "failed.ticket.email.#";
-    public static final String PASSWORD_RESET_EMAIL_DLQ_ROUTING_KEY  = "failed.password.reset.email.#";
+    public static final String PASSWORD_RESET_EMAIL_DLQ_ROUTING_KEY = "failed.password.reset.email.#";
     public static final String SLA_EMAIL_DLQ_ROUTING_KEY = "failed.sla.email.#";
 }

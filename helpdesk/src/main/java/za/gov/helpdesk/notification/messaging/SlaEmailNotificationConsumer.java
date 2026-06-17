@@ -1,5 +1,7 @@
 package za.gov.helpdesk.notification.messaging;
 
+import java.io.IOException;
+
 import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,8 +13,6 @@ import za.gov.helpdesk.config.messaging.RabbitMQConstants;
 import za.gov.helpdesk.notification.dto.SlaEmailNotificationMessage;
 import za.gov.helpdesk.notification.metrics.NotificationMetrics;
 import za.gov.helpdesk.notification.service.sla.SlaEmailService;
-
-import java.io.IOException;
 
 @Component
 @RequiredArgsConstructor
@@ -27,39 +27,31 @@ public class SlaEmailNotificationConsumer {
 
         long tag = rawMessage.getMessageProperties().getDeliveryTag();
 
-        log.info("Sla message received: ticketId={} agentName={} isWarning={}", message.getTicketId(), message.getAgentName(), message.isWarning());
+        log.info("Sla message received: ticketId={} agentName={} isWarning={}", message.getTicketId(),
+                message.getAgentName(), message.isWarning());
 
         try {
             if (message.isWarning()) {
-                slaEmailService.sendSlaWarning(
-                        message.getAgentEmail(),
-                        message.getAgentName(),
-                        message.getTicketNumber(),
-                        message.getTicketSubject(),
-                        message.getDeadlineType(),
-                        message.getDueAt()
-                );
+                slaEmailService.sendSlaWarning(message.getAgentEmail(), message.getAgentName(),
+                        message.getTicketNumber(), message.getTicketSubject(), message.getDeadlineType(),
+                        message.getDueAt());
             } else {
-                slaEmailService.sendSlaBreach(
-                        message.getAgentEmail(),
-                        message.getAgentName(),
-                        message.getTicketNumber(),
-                        message.getTicketSubject(),
-                        message.getDeadlineType()
-                );
+                slaEmailService.sendSlaBreach(message.getAgentEmail(), message.getAgentName(),
+                        message.getTicketNumber(), message.getTicketSubject(), message.getDeadlineType());
             }
 
             channel.basicAck(tag, false);
             notificationMetrics.incrementEmailSent();
-            log.info("sla saved and ACKed: ticketId={} agentName={} isWarning={}",
-                    message.getTicketId(), message.getAgentName(), message.isWarning());
+            log.info("sla saved and ACKed: ticketId={} agentName={} isWarning={}", message.getTicketId(),
+                    message.getAgentName(), message.isWarning());
         } catch (DataAccessException e) {
-            log.warn("DB unavailable, re-queuing sla message: isWarning={} error={}", message.isWarning(), e.getMessage());
+            log.warn("DB unavailable, re-queuing sla message: isWarning={} error={}", message.isWarning(),
+                    e.getMessage());
             notificationMetrics.incrementEmailFailed();
-            channel.basicNack(tag, false,true);
+            channel.basicNack(tag, false, true);
         } catch (Exception e) {
-            log.error("Unrecoverable failure, routing to DLQ: isWarning={} error={}",
-                    message.isWarning(), e.getMessage());
+            log.error("Unrecoverable failure, routing to DLQ: isWarning={} error={}", message.isWarning(),
+                    e.getMessage());
             notificationMetrics.incrementEmailDlq();
             channel.basicNack(tag, false, false);
         }

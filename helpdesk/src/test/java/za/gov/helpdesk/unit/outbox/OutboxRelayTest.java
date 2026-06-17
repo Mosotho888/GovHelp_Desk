@@ -1,5 +1,17 @@
 package za.gov.helpdesk.unit.outbox;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -16,23 +28,16 @@ import za.gov.helpdesk.outbox.model.OutboxEvent;
 import za.gov.helpdesk.outbox.relay.OutboxRelay;
 import za.gov.helpdesk.outbox.repository.OutboxEventRepository;
 
-import java.time.LocalDateTime;
-import java.util.Optional;
-
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.*;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-
 @ExtendWith(MockitoExtension.class)
 @DisplayName("OutboxRelay unit tests")
 public class OutboxRelayTest {
 
-    @Mock private OutboxEventRepository outboxRepository;
-    @Mock private RabbitTemplate rabbitTemplate;
-    @Mock private OutboxMetrics outboxMetrics;
+    @Mock
+    private OutboxEventRepository outboxRepository;
+    @Mock
+    private RabbitTemplate rabbitTemplate;
+    @Mock
+    private OutboxMetrics outboxMetrics;
 
     @InjectMocks
     private OutboxRelay relay;
@@ -48,8 +53,8 @@ public class OutboxRelayTest {
     @Test
     @DisplayName("processOne() deserialises payload, publishes to correct routing key, marks PROCESSED")
     void processOne_validTicketEmail_publishesAndMarksProcessed() throws Exception {
-        TicketEmailNotificationMessage msg = TicketEmailNotificationMessage.builder()
-                .ticketId(100L).ticketNumber("TKT-100").customerEmail("john@citizen.za").build();
+        TicketEmailNotificationMessage msg = TicketEmailNotificationMessage.builder().ticketId(100L)
+                .ticketNumber("TKT-100").customerEmail("john@citizen.za").build();
         String payload = objectMapper.writeValueAsString(msg);
 
         OutboxEvent event = pendingEvent("TICKET_EMAIL", payload);
@@ -62,11 +67,8 @@ public class OutboxRelayTest {
         assertThat(event.getProcessedAt()).isNotNull();
 
         then(outboxMetrics).should(times(1)).incrementPublished();
-        then(rabbitTemplate).should(times(1)).convertAndSend(
-                eq(RabbitMQConstants.EXCHANGE),
-                eq(RabbitMQConstants.TICKET_EMAIL_ROUTING_KEY),
-                any(TicketEmailNotificationMessage.class)
-        );
+        then(rabbitTemplate).should(times(1)).convertAndSend(eq(RabbitMQConstants.EXCHANGE),
+                eq(RabbitMQConstants.TICKET_EMAIL_ROUTING_KEY), any(TicketEmailNotificationMessage.class));
     }
 
     @Test
@@ -104,17 +106,16 @@ public class OutboxRelayTest {
     @Test
     @DisplayName("processOne() keeps event PENDING with lastError recorded after non-final failure")
     void processOne_publishFails_retainsAsPendingWithError() throws Exception {
-        TicketEmailNotificationMessage msg = TicketEmailNotificationMessage.builder()
-                .ticketId(1L).ticketNumber("TKT-1").build();
+        TicketEmailNotificationMessage msg = TicketEmailNotificationMessage.builder().ticketId(1L).ticketNumber("TKT-1")
+                .build();
         String payload = objectMapper.writeValueAsString(msg);
         OutboxEvent event = pendingEvent("TICKET_EMAIL", payload);
         event.setAttempts(1); // only 2 so far - below threshold of 5
 
         given(outboxRepository.findById(event.getId())).willReturn(Optional.of(event));
         given(outboxRepository.save(any(OutboxEvent.class))).willAnswer(i -> i.getArgument(0));
-        willThrow(new RuntimeException("broker unavailable"))
-                .given(rabbitTemplate)
-                .convertAndSend(eq(RabbitMQConstants.EXCHANGE), eq(RabbitMQConstants.TICKET_EMAIL_ROUTING_KEY), any(Object.class));
+        willThrow(new RuntimeException("broker unavailable")).given(rabbitTemplate).convertAndSend(
+                eq(RabbitMQConstants.EXCHANGE), eq(RabbitMQConstants.TICKET_EMAIL_ROUTING_KEY), any(Object.class));
 
         relay.processOne(event);
 
@@ -141,10 +142,7 @@ public class OutboxRelayTest {
     }
 
     private OutboxEvent pendingEvent(String eventType, String payload) {
-        return OutboxEvent.builder()
-                .id(1L).eventType(eventType).aggregateType("TICKET")
-                .aggregateId(100L).payload(payload)
-                .status(OutboxEvent.Status.PENDING).attempts(0)
-                .createdAt(LocalDateTime.now()).build();
+        return OutboxEvent.builder().id(1L).eventType(eventType).aggregateType("TICKET").aggregateId(100L)
+                .payload(payload).status(OutboxEvent.Status.PENDING).attempts(0).createdAt(LocalDateTime.now()).build();
     }
 }

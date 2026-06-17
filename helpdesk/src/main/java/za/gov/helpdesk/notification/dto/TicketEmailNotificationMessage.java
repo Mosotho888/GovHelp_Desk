@@ -14,7 +14,7 @@ public class TicketEmailNotificationMessage {
 
     private AuditLog.AuditAction trigger;
 
-    private Long   ticketId;
+    private Long ticketId;
     private String ticketNumber;
     private String ticketSubject;
     private String ticketStatus;

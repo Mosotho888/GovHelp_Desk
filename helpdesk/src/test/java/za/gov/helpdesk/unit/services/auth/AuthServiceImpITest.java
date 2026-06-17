@@ -1,5 +1,14 @@
 package za.gov.helpdesk.unit.services.auth;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.times;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,13 +35,6 @@ import za.gov.helpdesk.users.dto.response.UserResponse;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 import za.gov.helpdesk.users.security.CustomUserDetails;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AuthService unit tests")
@@ -62,12 +64,9 @@ public class AuthServiceImpITest {
 
     @BeforeEach
     void setUp() {
-        testUser = User.builder()
-                .id(1L).name("Test Agent").email("agent@gov.za")
-                .passwordHash("$2a$12$xUDVJeAkGqB7hUk0je5oZe2s569JMXdQXU.bIyViyZrF2SBxWtuei")
-                .role(User.Role.AGENT).active(true).loginAttempts(0)
-                .timezone("Africa/Johannesburg")
-                .build();
+        testUser = User.builder().id(1L).name("Test Agent").email("agent@gov.za")
+                .passwordHash("$2a$12$xUDVJeAkGqB7hUk0je5oZe2s569JMXdQXU.bIyViyZrF2SBxWtuei").role(User.Role.AGENT)
+                .active(true).loginAttempts(0).timezone("Africa/Johannesburg").build();
     }
 
     @Test
@@ -91,15 +90,9 @@ public class AuthServiceImpITest {
         assertThat(response.getRefreshToken()).isEqualTo("refresh.token.here");
         assertThat(response.getTokenType()).isEqualTo("Bearer");
         // login counter must be reset to 0 before save
-        then(userRepository).should().save(
-                argThat(u -> u.getLoginAttempts() == 0));
-        then(auditPublisher).should(times(1)).publishAuthAudit(
-                eq(AuditLog.AuditAction.LOGIN_SUCCESS),
-                eq(testUser.getId()),
-                eq(testUser.getName()),
-                eq(testUser.getRole().name()),
-                any()
-        );
+        then(userRepository).should().save(argThat(u -> u.getLoginAttempts() == 0));
+        then(auditPublisher).should(times(1)).publishAuthAudit(eq(AuditLog.AuditAction.LOGIN_SUCCESS),
+                eq(testUser.getId()), eq(testUser.getName()), eq(testUser.getRole().name()), any());
     }
 
     @Test
@@ -109,8 +102,7 @@ public class AuthServiceImpITest {
 
         given(authManager.authenticate(any())).willThrow(new BadCredentialsException("Bad credentials"));
 
-        assertThatThrownBy(() -> authService.login(request))
-                .isInstanceOf(BadCredentialsException.class);
+        assertThatThrownBy(() -> authService.login(request)).isInstanceOf(BadCredentialsException.class);
 
         then(authMetrics).should(times(1)).incrementLoginFailure();
 
@@ -120,7 +112,6 @@ public class AuthServiceImpITest {
     @Test
     @DisplayName("login() does not call lockout service on successful authentication")
     void login_successfulLogin_doesNotCallLockoutService() {
-        LoginRequest request = loginRequest("agent@gov.za", "Password@123");
         CustomUserDetails principal = new CustomUserDetails(testUser);
 
         given(authManager.authenticate(any()))
@@ -129,6 +120,7 @@ public class AuthServiceImpITest {
         given(jwtService.generateRefreshToken(testUser)).willReturn("refresh.token");
         given(authResponseFactory.build(eq(testUser), any())).willReturn(authResponse());
 
+        LoginRequest request = loginRequest("agent@gov.za", "Password@123");
         authService.login(request);
 
         then(lockoutService).shouldHaveNoInteractions();
@@ -137,7 +129,6 @@ public class AuthServiceImpITest {
     @Test
     @DisplayName("login() stores refresh token via RefreshTokenService")
     void login_successful_storesRefreshToken() {
-        LoginRequest request = loginRequest("agent@gov.za", "Password@123");
         CustomUserDetails principal = new CustomUserDetails(testUser);
 
         given(authManager.authenticate(any()))
@@ -146,14 +137,13 @@ public class AuthServiceImpITest {
         given(jwtService.generateRefreshToken(testUser)).willReturn("refresh.token.here");
         given(authResponseFactory.build(eq(testUser), any())).willReturn(authResponse());
 
+        LoginRequest request = loginRequest("agent@gov.za", "Password@123");
         authService.login(request);
 
         then(authMetrics).should(times(1)).incrementLoginSuccess();
 
         then(refreshTokenService).should(times(1)).store("refresh.token.here", testUser);
     }
-
-    // ── refresh ───────────────────────────────────────────────────────────────
 
     @Test
     @DisplayName("refresh() returns new tokens for a valid, unexpired refresh token")
@@ -175,13 +165,8 @@ public class AuthServiceImpITest {
 
         assertThat(response).isNotNull();
         then(refreshTokenService).should(times(1)).store("new.refresh.token", testUser);
-        then(auditPublisher).should(times(1)).publishAuthAudit(
-                eq(AuditLog.AuditAction.TOKEN_REFRESHED),
-                eq(testUser.getId()),
-                eq(testUser.getName()),
-                eq(testUser.getRole().name()),
-                any()
-        );
+        then(auditPublisher).should(times(1)).publishAuthAudit(eq(AuditLog.AuditAction.TOKEN_REFRESHED),
+                eq(testUser.getId()), eq(testUser.getName()), eq(testUser.getRole().name()), any());
     }
 
     @Test
@@ -193,8 +178,7 @@ public class AuthServiceImpITest {
         given(jwtService.isRefreshToken("expired.token")).willReturn(true);
         given(jwtService.isTokenExpired("expired.token")).willReturn(true);
 
-        assertThatThrownBy(() -> authService.refresh(req))
-                .isInstanceOf(BadCredentialsException.class)
+        assertThatThrownBy(() -> authService.refresh(req)).isInstanceOf(BadCredentialsException.class)
                 .hasMessageContaining("expired");
     }
 
@@ -206,10 +190,8 @@ public class AuthServiceImpITest {
 
         given(jwtService.isRefreshToken("access.token")).willReturn(false);
 
-        assertThatThrownBy(() -> authService.refresh(req))
-                .isInstanceOf(BadCredentialsException.class);
+        assertThatThrownBy(() -> authService.refresh(req)).isInstanceOf(BadCredentialsException.class);
     }
-
 
     @Test
     @DisplayName("logout() revokes all tokens and publishes FORCED_LOGOUT audit")
@@ -218,13 +200,8 @@ public class AuthServiceImpITest {
 
         then(authMetrics).should(times(1)).incrementLogout();
         then(refreshTokenService).should(times(1)).revokeAll(testUser);
-        then(auditPublisher).should(times(1)).publishAuthAudit(
-                eq(AuditLog.AuditAction.FORCED_LOGOUT),
-                eq(testUser.getId()),
-                eq(testUser.getName()),
-                eq(testUser.getRole().name()),
-                any()
-        );
+        then(auditPublisher).should(times(1)).publishAuthAudit(eq(AuditLog.AuditAction.FORCED_LOGOUT),
+                eq(testUser.getId()), eq(testUser.getName()), eq(testUser.getRole().name()), any());
     }
 
     private LoginRequest loginRequest(String email, String password) {
@@ -235,18 +212,10 @@ public class AuthServiceImpITest {
     }
 
     private AuthResponse authResponse() {
-        return AuthResponse.builder()
-                .accessToken("access.token.here")
-                .refreshToken("refresh.token.here")
-                .tokenType("Bearer")
-                .expiresIn(3600L)
-                .user(UserResponse.builder()
-                        .id(testUser.getId())
-                        .name(testUser.getName())
-                        .email(testUser.getEmail())
-                        .role(testUser.getRole())
-                        .active(testUser.getActive())
-                        .build())
+        return AuthResponse
+                .builder().accessToken("access.token.here").refreshToken("refresh.token.here").tokenType("Bearer")
+                .expiresIn(3600L).user(UserResponse.builder().id(testUser.getId()).name(testUser.getName())
+                        .email(testUser.getEmail()).role(testUser.getRole()).active(testUser.getActive()).build())
                 .build();
     }
 }

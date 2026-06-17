@@ -9,8 +9,8 @@ import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auth.service.RefreshTokenService;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
-import za.gov.helpdesk.users.converter.UserMapper;
 import za.gov.helpdesk.users.dto.response.UserResponse;
+import za.gov.helpdesk.users.mapper.UserMapper;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 import za.gov.helpdesk.users.service.AccountAdminService;
@@ -33,12 +33,8 @@ public class AccountAdminServiceImpl implements AccountAdminService {
         user.setActive(false);
         userRepository.save(user);
 
-        auditPublisher.publishAudit(
-                AuditLog.EntityType.USER, user.getId(), admin,
-                AuditLog.AuditAction.USER_DEACTIVATED,
-                "active", "inactive",
-                "Deactivated by " + admin.getName()
-        );
+        auditPublisher.publishAudit(AuditLog.EntityType.USER, user.getId(), admin,
+                AuditLog.AuditAction.USER_DEACTIVATED, "active", "inactive", "Deactivated by " + admin.getName());
 
         log.info("User deactivated: user={} by admin={}", user.getEmail(), admin.getEmail());
     }
@@ -56,12 +52,9 @@ public class AccountAdminServiceImpl implements AccountAdminService {
         target.setLoginAttempts(0);
         userRepository.save(target);
 
-        auditPublisher.publishAudit(
-                AuditLog.EntityType.USER, target.getId(), admin,
-                AuditLog.AuditAction.USER_REACTIVATED,
-                "inactive", "active",
-                "Reactivated by admin: " + admin.getEmail()
-        );
+        auditPublisher.publishAudit(AuditLog.EntityType.USER, target.getId(), admin,
+                AuditLog.AuditAction.USER_REACTIVATED, "inactive", "active",
+                "Reactivated by admin: " + admin.getEmail());
 
         log.info("User reactivated: user={} by admin={}", target.getEmail(), admin.getEmail());
     }
@@ -86,21 +79,15 @@ public class AccountAdminServiceImpl implements AccountAdminService {
 
         refreshTokenService.revokeAll(target);
 
-        auditPublisher.publishAudit(
-                AuditLog.EntityType.USER, target.getId(), admin,
-                AuditLog.AuditAction.ROLE_CHANGED,
-                oldRole.name(), newRole.name(),
-                "Role changed by admin: " + admin.getEmail()
-        );
+        auditPublisher.publishAudit(AuditLog.EntityType.USER, target.getId(), admin, AuditLog.AuditAction.ROLE_CHANGED,
+                oldRole.name(), newRole.name(), "Role changed by admin: " + admin.getEmail());
 
-        log.info("Role changed: user={} {} -> {} by admin={}",
-                target.getEmail(), oldRole, newRole, admin.getEmail());
+        log.info("Role changed: user={} {} -> {} by admin={}", target.getEmail(), oldRole, newRole, admin.getEmail());
 
         return userMapper.toUserResponse(target);
     }
 
     private User findOrThrow(Long id) {
-        return userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User", id));
+        return userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User", id));
     }
 }

@@ -1,7 +1,17 @@
 package za.gov.helpdesk.sla.model;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import za.gov.helpdesk.ticket.model.Ticket;
 
 @Entity
@@ -31,5 +41,7 @@ public class SlaPolicy {
     // Warning sent this many business minutes before breach
     @Column(name = "warning_threshold_minutes", nullable = false)
     @Builder.Default
-    private int warningThresholdMinutes = 30;
+    private int warningThresholdMinutes = WARNING_THRESHOLD;
+
+    private static final int WARNING_THRESHOLD = 30;
 }

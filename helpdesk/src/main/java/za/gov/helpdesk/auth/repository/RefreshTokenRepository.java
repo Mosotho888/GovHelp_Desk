@@ -1,14 +1,14 @@
 package za.gov.helpdesk.auth.repository;
 
+import java.time.LocalDateTime;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import za.gov.helpdesk.auth.model.RefreshToken;
 import za.gov.helpdesk.users.model.User;
-
-import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Repository
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {

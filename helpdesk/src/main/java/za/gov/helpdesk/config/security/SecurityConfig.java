@@ -1,28 +1,26 @@
 package za.gov.helpdesk.config.security;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.security.authentication.ProviderManager;
-import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import za.gov.helpdesk.auth.jwt.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
-import jakarta.servlet.http.HttpServletResponse;
-
+import za.gov.helpdesk.auth.jwt.JwtAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -33,38 +31,39 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final RateLimitingFilter rateLimitingFilter;
 
+    private static final int PASSWORD_STRENGTH = 12;
+    private static final long MAX_AGE_IN_SECONDS = 31536000;
+
     @Bean
-    public SecurityFilterChain configure (HttpSecurity http) throws Exception {
-        return http
-                .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/v1/auth/**", "/v1/health").permitAll()
+    public SecurityFilterChain configure(HttpSecurity http) throws Exception {
+        return http.csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth.requestMatchers("/v1/auth/**", "/v1/health").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/prometheus").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(exceptions -> exceptions
-                        .authenticationEntryPoint((request, response, authException) -> {
+                .exceptionHandling(
+                        exceptions -> exceptions.authenticationEntryPoint((request, response, authException) -> {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                            response.getWriter().write("{\"status\":401,\"error\":\"UNAUTHORIZED\",\"message\":\"Authentication required\",\"path\":\""
-                                    + request.getRequestURI() + "\"}");
-                        })
-                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.getWriter().write("{\"status\":401,\"error\":\"UNAUTHORIZED\",\"message\":\""
+                                    + "Authentication required\",\"path\":\"" + request.getRequestURI() + "\"}");
+                        }).accessDeniedHandler((request, response, accessDeniedException) -> {
                             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                            response.getWriter().write("{\"status\":403,\"error\":\"FORBIDDEN\",\"message\":\"You do not have permission to perform this action\",\"path\":\""
-                                    + request.getRequestURI() + "\"}");
+                            response.getWriter()
+                                    .write("{\"status\":403,\"error\":\"FORBIDDEN\",\"message\":"
+                                            + "\"You do not have permission to perform this action\",\"path\":\""
+                                            + request.getRequestURI() + "\"}");
                         }))
                 .authenticationManager(authenticationManager())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
-                .headers( headers -> headers
-                        .httpStrictTransportSecurity(hsts -> hsts
-                                .includeSubDomains(true)
-                                .maxAgeInSeconds(31536000))
-                        .contentSecurityPolicy(csp -> csp
-                                .policyDirectives("default-src 'self'; frame-ancestors 'none'"))
+                .headers(headers -> headers
+                        .httpStrictTransportSecurity(
+                                hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(MAX_AGE_IN_SECONDS))
+                        .contentSecurityPolicy(
+                                csp -> csp.policyDirectives("default-src 'self'; frame-ancestors 'none'"))
                         .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
                         .xssProtection(HeadersConfigurer.XXssConfig::disable))
                 .build();
@@ -80,7 +79,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(12);
+        return new BCryptPasswordEncoder(PASSWORD_STRENGTH);
     }
 
 }

@@ -1,5 +1,7 @@
 package za.gov.helpdesk.auth.service.impl;
 
+import java.time.LocalDateTime;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,8 +14,6 @@ import za.gov.helpdesk.auth.repository.RefreshTokenRepository;
 import za.gov.helpdesk.auth.service.RefreshTokenService;
 import za.gov.helpdesk.users.model.User;
 
-import java.time.LocalDateTime;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -24,18 +24,16 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     @Value("${app.jwt.refresh-token-expiry-ms}")
     private int refreshTokenExpiryMs;
 
+    private static final long MILLISECONDS_PER_SECOND = 1000L;
+
     @Override
     @Transactional
     public void store(String rawToken, User user) {
 
         refreshTokenRepository.revokeAllByUser(user);
 
-        RefreshToken token = RefreshToken.builder()
-                .token(rawToken)
-                .user(user)
-                .expiresAt(LocalDateTime.now()
-                        .plusSeconds(refreshTokenExpiryMs / 1000))
-                .build();
+        RefreshToken token = RefreshToken.builder().token(rawToken).user(user)
+                .expiresAt(LocalDateTime.now().plusSeconds(refreshTokenExpiryMs / MILLISECONDS_PER_SECOND)).build();
 
         refreshTokenRepository.save(token);
     }

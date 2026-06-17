@@ -1,16 +1,26 @@
 package za.gov.helpdesk.outbox.model;
 
-import jakarta.persistence.*;
-import lombok.*;
+import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "outbox_events")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -53,20 +63,17 @@ public class OutboxEvent {
 
     @PrePersist
     private void onCreate() {
-        if (createdAt == null) createdAt = LocalDateTime.now();
+
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
     }
 
     public enum Status {
-        PENDING,
-        PROCESSING,
-        PROCESSED,
-        FAILED
+        PENDING, PROCESSING, PROCESSED, FAILED
     }
 
     public enum EventType {
-        AUDIT,
-        TICKET_EMAIL,
-        SLA_EMAIL,
-        PASSWORD_RESET_EMAIL
+        AUDIT, TICKET_EMAIL, SLA_EMAIL, PASSWORD_RESET_EMAIL
     }
 }

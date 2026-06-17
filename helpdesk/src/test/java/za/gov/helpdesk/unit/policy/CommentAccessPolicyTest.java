@@ -1,5 +1,10 @@
 package za.gov.helpdesk.unit.policy;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.time.LocalDateTime;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -8,11 +13,6 @@ import za.gov.helpdesk.comment.model.Comment;
 import za.gov.helpdesk.comment.policy.CommentAccessPolicy;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.users.model.User;
-
-import java.time.LocalDateTime;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("CommentAccessPolicy unit tests")
 public class CommentAccessPolicyTest {
@@ -26,12 +26,12 @@ public class CommentAccessPolicyTest {
 
     @BeforeEach
     void setUp() {
-        admin      = user(1L, "admin@gov.za",  User.Role.ADMIN);
-        agent      = user(2L, "agent@gov.za",  User.Role.AGENT);
-        otherAgent = user(3L, "other@gov.za",  User.Role.AGENT);
+        admin = user(1L, "admin@gov.za", User.Role.ADMIN);
+        agent = user(2L, "agent@gov.za", User.Role.AGENT);
+        otherAgent = user(3L, "other@gov.za", User.Role.AGENT);
 
-        ticket = Ticket.builder().id(10L).subject("Test").description("desc")
-                .status(Ticket.Status.OPEN).requester(agent).build();
+        ticket = Ticket.builder().id(10L).subject("Test").description("desc").status(Ticket.Status.OPEN)
+                .requester(agent).build();
     }
 
     @Test
@@ -67,8 +67,7 @@ public class CommentAccessPolicyTest {
     void assertCanMutate_denied_throwsAccessDenied() {
         Comment old = comment(agent, LocalDateTime.now().minusMinutes(30));
 
-        assertThatThrownBy(() -> policy.assertCanMutate(otherAgent, old))
-                .isInstanceOf(AccessDeniedException.class)
+        assertThatThrownBy(() -> policy.assertCanMutate(otherAgent, old)).isInstanceOf(AccessDeniedException.class)
                 .hasMessageContaining("15 minutes");
     }
 
@@ -85,10 +84,7 @@ public class CommentAccessPolicyTest {
     }
 
     private Comment comment(User author, LocalDateTime createdAt) {
-        return Comment.builder()
-                .id(100L).ticket(ticket).author(author)
-                .body("A comment").internal(false)
-                .type(Comment.CommentType.REPLY)
-                .createdAt(createdAt).build();
+        return Comment.builder().id(100L).ticket(ticket).author(author).body("A comment").internal(false)
+                .type(Comment.CommentType.REPLY).createdAt(createdAt).build();
     }
 }

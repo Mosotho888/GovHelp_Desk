@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="GovHelpDesk PMD Rules"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="
+           http://pmd.sourceforge.net/ruleset/2.0.0
+           https://pmd.github.io/schema/ruleset_2_0_0.xsd">
+
+    <description>
+        PMD rules for Spring Boot Helpdesk API.
+    </description>
+
+    <!-- Best Practices -->
+    <rule ref="category/java/bestpractices.xml"/>
+
+    <!-- Error Prone -->
+    <rule ref="category/java/errorprone.xml"/>
+
+    <!-- Performance -->
+    <rule ref="category/java/performance.xml"/>
+
+    <!-- Security -->
+    <rule ref="category/java/security.xml"/>
+
+    <!-- Design -->
+    <rule ref="category/java/design.xml">
+
+        <exclude name="GodClass"/>
+        <exclude name="DataClass"/>
+
+    </rule>
+
+    <!-- Complexity -->
+
+    <rule ref="category/java/design.xml/CyclomaticComplexity">
+        <properties>
+            <property name="classReportLevel" value="80"/>
+            <property name="methodReportLevel" value="15"/>
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/NPathComplexity">
+        <properties>
+            <property name="reportLevel" value="200"/>
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/ExcessiveMethodLength">
+        <properties>
+            <property name="minimum" value="50"/>
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/ExcessiveClassLength">
+        <properties>
+            <property name="minimum" value="1000"/>
+        </properties>
+    </rule>
+
+</ruleset>

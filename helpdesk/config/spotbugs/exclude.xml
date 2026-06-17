@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<FindBugsFilter>
+
+    <!-- Lombok -->
+    <Match>
+        <Class name="~.*Builder"/>
+    </Match>
+
+    <!-- DTOs -->
+    <Match>
+        <Class name="~.*Dto"/>
+    </Match>
+
+    <Match>
+        <Class name="~.*Request"/>
+    </Match>
+
+    <Match>
+        <Class name="~.*Response"/>
+    </Match>
+
+    <!-- JPA Entities -->
+    <Match>
+        <Class name="~.*Entity"/>
+    </Match>
+
+    <!-- MapStruct -->
+    <Match>
+        <Class name="~.*MapperImpl"/>
+    </Match>
+
+</FindBugsFilter>

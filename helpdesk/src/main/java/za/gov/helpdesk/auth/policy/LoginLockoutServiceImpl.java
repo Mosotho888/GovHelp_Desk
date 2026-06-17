@@ -31,11 +31,8 @@ public class LoginLockoutServiceImpl implements LoginLockoutService {
             if (attempts >= maxLoginAttempts) {
                 user.setActive(false);
 
-                auditPublisher.publishAuthAudit(
-                        AuditLog.AuditAction.ACCOUNT_LOCKED,
-                        user.getId(), user.getName(), user.getRole().name(),
-                        attempts + " consecutive failed login attempts"
-                );
+                auditPublisher.publishAuthAudit(AuditLog.AuditAction.ACCOUNT_LOCKED, user.getId(), user.getName(),
+                        user.getRole().name(), attempts + " consecutive failed login attempts");
 
                 log.warn("Account locked after {} failed attempts: email={}", attempts, email);
             }

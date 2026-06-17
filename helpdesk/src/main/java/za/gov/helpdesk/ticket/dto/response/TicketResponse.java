@@ -1,11 +1,11 @@
 package za.gov.helpdesk.ticket.dto.response;
 
+import java.time.LocalDateTime;
+
 import lombok.Builder;
 import lombok.Data;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.users.dto.response.UserResponse;
-
-import java.time.LocalDateTime;
 
 @Data
 @Builder

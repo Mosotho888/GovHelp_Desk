@@ -1,5 +1,12 @@
 package za.gov.helpdesk.unit.notification;
 
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+
+import java.util.stream.Stream;
+
 import com.rabbitmq.client.Channel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -14,13 +21,6 @@ import za.gov.helpdesk.notification.dto.TicketEmailNotificationMessage;
 import za.gov.helpdesk.notification.messaging.TicketEmailNotificationConsumer;
 import za.gov.helpdesk.notification.metrics.NotificationMetrics;
 import za.gov.helpdesk.notification.service.ticket.TicketEmailService;
-
-import java.util.stream.Stream;
-
-import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("TicketEmailNotificationConsumer unit tests")
@@ -47,13 +47,9 @@ class TicketEmailNotificationConsumerTest {
     @Test
     @DisplayName("handle() routes supported triggers and ACKs")
     void handle_routesSupportedTriggersAndAcks() throws Exception {
-        for (AuditLog.AuditAction trigger : Stream.of(
-                AuditLog.AuditAction.TICKET_CREATED,
-                AuditLog.AuditAction.ASSIGNED_TO_AGENT,
-                AuditLog.AuditAction.STATUS_CHANGED,
-                AuditLog.AuditAction.COMMENT_ADDED,
-                AuditLog.AuditAction.TICKET_CLOSED
-        ).toList()) {
+        for (AuditLog.AuditAction trigger : Stream.of(AuditLog.AuditAction.TICKET_CREATED,
+                AuditLog.AuditAction.ASSIGNED_TO_AGENT, AuditLog.AuditAction.STATUS_CHANGED,
+                AuditLog.AuditAction.COMMENT_ADDED, AuditLog.AuditAction.TICKET_CLOSED).toList()) {
             TicketEmailNotificationMessage message = message(trigger);
 
             consumer.handle(message, rawMessage, channel);
@@ -84,8 +80,7 @@ class TicketEmailNotificationConsumerTest {
     @DisplayName("handle() NACKs and requeues when email sending fails")
     void handle_emailFailure_nacksAndRequeues() throws Exception {
         TicketEmailNotificationMessage message = message(AuditLog.AuditAction.TICKET_CREATED);
-        doThrow(new RuntimeException("SMTP unavailable"))
-                .when(ticketEmailService).sendTicketCreated(message);
+        doThrow(new RuntimeException("SMTP unavailable")).when(ticketEmailService).sendTicketCreated(message);
 
         consumer.handle(message, rawMessage, channel);
 
@@ -105,9 +100,6 @@ class TicketEmailNotificationConsumerTest {
     }
 
     private TicketEmailNotificationMessage message(AuditLog.AuditAction trigger) {
-        return TicketEmailNotificationMessage.builder()
-                .trigger(trigger)
-                .ticketNumber("TKT-100")
-                .build();
+        return TicketEmailNotificationMessage.builder().trigger(trigger).ticketNumber("TKT-100").build();
     }
 }

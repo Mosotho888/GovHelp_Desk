@@ -10,11 +10,9 @@ public class TicketStatusTransitionPolicy {
     public boolean canTransition(Ticket.Status current, Ticket.Status next) {
         return switch (current) {
             case OPEN, ESCALATED -> next == Ticket.Status.IN_PROGRESS;
-            case IN_PROGRESS     -> next == Ticket.Status.RESOLVED
-                    || next == Ticket.Status.ESCALATED;
-            case RESOLVED        -> next == Ticket.Status.CLOSED
-                    || next == Ticket.Status.OPEN;
-            case CLOSED          -> false;
+            case IN_PROGRESS -> next == Ticket.Status.RESOLVED || next == Ticket.Status.ESCALATED;
+            case RESOLVED -> next == Ticket.Status.CLOSED || next == Ticket.Status.OPEN;
+            case CLOSED -> false;
         };
     }
 

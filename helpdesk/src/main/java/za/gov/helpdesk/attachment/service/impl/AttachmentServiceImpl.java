@@ -1,5 +1,9 @@
 package za.gov.helpdesk.attachment.service.impl;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
@@ -21,8 +25,6 @@ import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
 import za.gov.helpdesk.users.model.User;
 
-import java.util.*;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -36,14 +38,15 @@ public class AttachmentServiceImpl implements AttachmentService {
     private final AttachmentValidator validator;
     private final AttachmentMetrics attachmentMetrics;
 
+    public static final long KB = 1024L;
+
     @Override
     @Transactional
     public List<AttachmentResponse> uploadAttachments(Long ticketId, List<MultipartFile> files, User actor) {
 
         validator.validateBatch(files);
 
-        Ticket ticket = ticketRepository
-                .findByIdAndPrincipal(ticketId, actor.getEmail(), actor.getRole().name())
+        Ticket ticket = ticketRepository.findByIdAndPrincipal(ticketId, actor.getEmail(), actor.getRole().name())
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
 
         List<AttachmentResponse> responses = new ArrayList<>();
@@ -53,29 +56,18 @@ public class AttachmentServiceImpl implements AttachmentService {
 
             String storedPath = fileStorageService.store(ticketId, file);
 
-            Attachment attachment = Attachment.builder()
-                    .ticket(ticket)
-                    .uploader(actor)
-                    .filename(Objects.requireNonNull(file.getOriginalFilename()))
-                    .contentType(file.getContentType())
-                    .sizeBytes(file.getSize())
-                    .storagePath(storedPath)
-                    .build();
+            Attachment attachment = Attachment.builder().ticket(ticket).uploader(actor)
+                    .filename(Objects.requireNonNull(file.getOriginalFilename())).contentType(file.getContentType())
+                    .sizeBytes(file.getSize()).storagePath(storedPath).build();
 
             Attachment savedAttachment = attachmentRepository.save(attachment);
 
             attachmentMetrics.incrementUploaded();
             attachmentMetrics.recordUploadedSize(savedAttachment.getSizeBytes());
 
-            auditPublisher.publishAudit(
-                    AuditLog.EntityType.ATTACHMENT,
-                    savedAttachment.getId(),
-                    actor,
-                    AuditLog.AuditAction.ATTACHMENT_UPLOADED,
-                    null,
-                    savedAttachment.getFilename(),
-                    "Uploaded to ticket #" + ticketId + " (" + (savedAttachment.getSizeBytes() / 1024) + " KB)"
-            );
+            auditPublisher.publishAudit(AuditLog.EntityType.ATTACHMENT, savedAttachment.getId(), actor,
+                    AuditLog.AuditAction.ATTACHMENT_UPLOADED, null, savedAttachment.getFilename(),
+                    "Uploaded to ticket #" + ticketId + " (" + (savedAttachment.getSizeBytes() / KB) + " KB)");
 
             responses.add(attachmentMapper.toAttachmentResponse(savedAttachment));
         }
@@ -86,12 +78,11 @@ public class AttachmentServiceImpl implements AttachmentService {
     @Override
     @Transactional(readOnly = true)
     public List<AttachmentResponse> getAttachments(Long ticketId, User actor) {
-        ticketRepository
-                .findByIdAndPrincipal(ticketId, actor.getEmail(), actor.getRole().name())
+        ticketRepository.findByIdAndPrincipal(ticketId, actor.getEmail(), actor.getRole().name())
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
 
-        return attachmentRepository.findByTicketId(ticketId)
-                .stream().map(attachmentMapper::toAttachmentResponse).toList();
+        return attachmentRepository.findByTicketId(ticketId).stream().map(attachmentMapper::toAttachmentResponse)
+                .toList();
     }
 
     @Override
@@ -101,15 +92,9 @@ public class AttachmentServiceImpl implements AttachmentService {
 
         attachmentMetrics.incrementDownloaded();
 
-        auditPublisher.publishAudit(
-                AuditLog.EntityType.ATTACHMENT,
-                attachment.getId(),
-                actor,
-                AuditLog.AuditAction.ATTACHMENT_DOWNLOADED,
-                null,
-                attachment.getFilename(),
-                "Downloaded to ticket #" + attachment.getTicket().getId()
-        );
+        auditPublisher.publishAudit(AuditLog.EntityType.ATTACHMENT, attachment.getId(), actor,
+                AuditLog.AuditAction.ATTACHMENT_DOWNLOADED, null, attachment.getFilename(),
+                "Downloaded to ticket #" + attachment.getTicket().getId());
 
         return attachment;
     }
@@ -119,23 +104,16 @@ public class AttachmentServiceImpl implements AttachmentService {
     public void deleteAttachment(Long attachmentId, User actor) {
         Attachment attachment = findOrThrow(attachmentId, actor);
 
-        boolean isAdmin  = actor.getRole() == User.Role.ADMIN;
-        boolean isOwner  = attachment.getUploader().getId().equals(actor.getId());
+        boolean isAdmin = actor.getRole() == User.Role.ADMIN;
+        boolean isOwner = attachment.getUploader().getId().equals(actor.getId());
 
         if (!isAdmin && !isOwner) {
-            throw new AccessDeniedException(
-                    "You can only delete your own attachments");
+            throw new AccessDeniedException("You can only delete your own attachments");
         }
 
-        auditPublisher.publishAudit(
-                AuditLog.EntityType.ATTACHMENT,
-                attachment.getId(),
-                actor,
-                AuditLog.AuditAction.ATTACHMENT_DELETED,
-                attachment.getFilename(),
-                null,
-                "Deleted from ticket #" + attachment.getTicket().getId()
-        );
+        auditPublisher.publishAudit(AuditLog.EntityType.ATTACHMENT, attachment.getId(), actor,
+                AuditLog.AuditAction.ATTACHMENT_DELETED, attachment.getFilename(), null,
+                "Deleted from ticket #" + attachment.getTicket().getId());
 
         fileStorageService.delete(attachment.getStoragePath());
         attachmentRepository.delete(attachment);
@@ -144,8 +122,7 @@ public class AttachmentServiceImpl implements AttachmentService {
     }
 
     private Attachment findOrThrow(Long attachmentId, User actor) {
-        return attachmentRepository
-                .findByIdForActor(attachmentId, actor.getEmail(), actor.getRole().name())
+        return attachmentRepository.findByIdForActor(attachmentId, actor.getEmail(), actor.getRole().name())
                 .orElseThrow(() -> new ResourceNotFoundException("Attachment", attachmentId));
     }
 }

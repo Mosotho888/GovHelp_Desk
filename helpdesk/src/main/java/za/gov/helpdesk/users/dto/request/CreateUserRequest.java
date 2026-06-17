@@ -19,10 +19,7 @@ public class CreateUserRequest {
 
     @NotBlank(message = "Password is required")
     @Size(min = 8, message = "Password must be at least 8 characters")
-    @Pattern(
-            regexp = "^(?=.*[A-Z])(?=.*\\d).+$",
-            message = "Password must contain at least one uppercase letter and one number"
-    )
+    @Pattern(regexp = "^(?=.*[A-Z])(?=.*\\d).+$", message = "Password must contain at least one uppercase letter and one number")
     private String password;
 
     private User.Role role = User.Role.USER;

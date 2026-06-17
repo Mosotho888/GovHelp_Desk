@@ -1,5 +1,17 @@
 package za.gov.helpdesk.integration;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -19,26 +31,25 @@ import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.hasSize;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
 @DisplayName("Audit Log Integration Tests")
 public class AuditLogIntegrationTest extends BaseIntegrationTest {
 
-    @Autowired private MockMvc mvc;
-    @Autowired private ObjectMapper mapper;
-    @Autowired private UserRepository userRepository;
-    @Autowired private AgentRepository agentRepository;
-    @Autowired private TicketRepository ticketRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
-    @Autowired private SlaPolicyRepository slaPolicyRepository;
-    @Autowired private AuditLogRepository auditLogRepository;   // or OutboxRepository
+    @Autowired
+    private MockMvc mvc;
+    @Autowired
+    private ObjectMapper mapper;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private AgentRepository agentRepository;
+    @Autowired
+    private TicketRepository ticketRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    @Autowired
+    private SlaPolicyRepository slaPolicyRepository;
+    @Autowired
+    private AuditLogRepository auditLogRepository; // or OutboxRepository
 
     private String adminToken;
     private String agentToken;
@@ -51,7 +62,7 @@ public class AuditLogIntegrationTest extends BaseIntegrationTest {
     void setUp() throws Exception {
         // 💡 THE FIX: Clear old state records to prevent duplicate email key constraints violations across tests
         auditLogRepository.deleteAll();
-        ticketRepository.deleteAll();   // ← ADD THIS
+        ticketRepository.deleteAll(); // ← ADD THIS
         agentRepository.deleteAll();
         userRepository.deleteAll();
 
@@ -63,124 +74,99 @@ public class AuditLogIntegrationTest extends BaseIntegrationTest {
             slaPolicyRepository.save(mediumPolicy);
         }
 
-        userRepository.save(User.builder()
-                .name("System Admin").email("admin@gov.za")
-                .passwordHash(passwordEncoder.encode("AdminPass1!"))
-                .role(User.Role.ADMIN).active(true).loginAttempts(0)
+        userRepository.save(User.builder().name("System Admin").email("admin@gov.za")
+                .passwordHash(passwordEncoder.encode("AdminPass1!")).role(User.Role.ADMIN).active(true).loginAttempts(0)
                 .timezone("Africa/Johannesburg").build());
 
-        User agentUser = userRepository.save(User.builder()
-                .name("Jane Agent").email("jane@gov.za")
-                .passwordHash(passwordEncoder.encode("AgentPass1!"))
-                .role(User.Role.AGENT).active(true).loginAttempts(0)
+        User agentUser = userRepository.save(User.builder().name("Jane Agent").email("jane@gov.za")
+                .passwordHash(passwordEncoder.encode("AgentPass1!")).role(User.Role.AGENT).active(true).loginAttempts(0)
                 .timezone("Africa/Johannesburg").build());
         agentUserId = agentUser.getId();
 
-        Agent agent = agentRepository.save(Agent.builder().user(agentUser).availability(Agent.Availability.ONLINE).build());
+        Agent agent = agentRepository
+                .save(Agent.builder().user(agentUser).availability(Agent.Availability.ONLINE).build());
         agentId = agent.getId();
 
-        userRepository.save(User.builder()
-                .name("John Public").email("john@citizen.za")
-                .passwordHash(passwordEncoder.encode("UserPass1!"))
-                .role(User.Role.USER).active(true).loginAttempts(0)
+        userRepository.save(User.builder().name("John Public").email("john@citizen.za")
+                .passwordHash(passwordEncoder.encode("UserPass1!")).role(User.Role.USER).active(true).loginAttempts(0)
                 .timezone("Africa/Johannesburg").build());
 
         adminToken = login("admin@gov.za", "AdminPass1!");
-        agentToken = login("jane@gov.za",  "AgentPass1!");
-        userToken  = login("john@citizen.za", "UserPass1!");
+        agentToken = login("jane@gov.za", "AgentPass1!");
+        userToken = login("john@citizen.za", "UserPass1!");
 
         // Create a ticket so audit events exist for TICKET entity
-        String ticketBody = mvc.perform(post("/v1/tickets")
-                        .header("Authorization", "Bearer " + userToken)
+        String ticketBody = mvc
+                .perform(post("/v1/tickets").header("Authorization", "Bearer " + userToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(Map.of(
-                                "subject", "Audit test ticket",
-                                "description", "Testing audit trail"
-                        ))))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
+                        .content(mapper.writeValueAsString(
+                                Map.of("subject", "Audit test ticket", "description", "Testing audit trail"))))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         ticketId = mapper.readTree(ticketBody).get("id").asLong();
     }
 
     @Test
     @DisplayName("GET /v1/audit/tickets/{id} returns 200 for AGENT and ADMIN")
     void getTicketAuditLog_agentAndAdmin_returns200() throws Exception {
-        mvc.perform(get("/v1/audit/tickets/" + ticketId)
-                        .header("Authorization", "Bearer " + agentToken))
+        mvc.perform(get("/v1/audit/tickets/" + ticketId).header("Authorization", "Bearer " + agentToken))
                 .andExpect(status().isOk());
 
-        mvc.perform(get("/v1/audit/tickets/" + ticketId)
-                        .header("Authorization", "Bearer " + adminToken))
+        mvc.perform(get("/v1/audit/tickets/" + ticketId).header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
     }
 
     @Test
     @DisplayName("GET /v1/audit/tickets/{id} returns 403 for USER role")
     void getTicketAuditLog_userRole_returns403() throws Exception {
-        mvc.perform(get("/v1/audit/tickets/" + ticketId)
-                        .header("Authorization", "Bearer " + userToken))
+        mvc.perform(get("/v1/audit/tickets/" + ticketId).header("Authorization", "Bearer " + userToken))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     @DisplayName("GET /v1/audit/tickets/{id} returns 401 without token")
     void getTicketAuditLog_noToken_returns401() throws Exception {
-        mvc.perform(get("/v1/audit/tickets/" + ticketId))
-                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/v1/audit/tickets/" + ticketId)).andExpect(status().isUnauthorized());
     }
 
     @Test
     @DisplayName("GET /v1/audit/users/{id} returns 200 for ADMIN only")
     void getUserAuditLog_adminToken_returns200() throws Exception {
-        mvc.perform(get("/v1/audit/users/" + agentUserId)
-                        .header("Authorization", "Bearer " + adminToken))
+        mvc.perform(get("/v1/audit/users/" + agentUserId).header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
     }
 
     @Test
     @DisplayName("GET /v1/audit/users/{id} returns 403 for AGENT")
     void getUserAuditLog_agentToken_returns403() throws Exception {
-        mvc.perform(get("/v1/audit/users/" + agentUserId)
-                        .header("Authorization", "Bearer " + agentToken))
+        mvc.perform(get("/v1/audit/users/" + agentUserId).header("Authorization", "Bearer " + agentToken))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     @DisplayName("GET /v1/audit/auth returns paginated auth events for ADMIN")
     void getAuthLogs_adminToken_returnsPaginatedEvents() throws Exception {
-        await()
-                .atMost(7, TimeUnit.SECONDS)
-                .pollInterval(200, TimeUnit.MILLISECONDS)
-                .untilAsserted(() -> {
-                    mvc.perform(get("/v1/audit/auth")
-                                    .header("Authorization", "Bearer " + adminToken))
-                            .andExpect(status().isOk())
-                            .andExpect(jsonPath("$.content", hasSize(greaterThanOrEqualTo(1))))
-                            .andExpect(jsonPath("$.content[0].action").isString());
-                });
+        await().atMost(7, TimeUnit.SECONDS).pollInterval(200, TimeUnit.MILLISECONDS).untilAsserted(() -> {
+            mvc.perform(get("/v1/audit/auth").header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.content", hasSize(greaterThanOrEqualTo(1))))
+                    .andExpect(jsonPath("$.content[0].action").isString());
+        });
     }
 
     @Test
     @DisplayName("GET /v1/audit/auth returns 403 for AGENT")
     void getAuthLogs_agentToken_returns403() throws Exception {
-        mvc.perform(get("/v1/audit/auth")
-                        .header("Authorization", "Bearer " + agentToken))
+        mvc.perform(get("/v1/audit/auth").header("Authorization", "Bearer " + agentToken))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     @DisplayName("GET /v1/audit/tickets/{id} contains TICKET_CREATED entry after ticket creation")
     void getTicketAuditLog_afterCreation_containsCreatedEntry() throws Exception {
-        await()
-                .atMost(7, TimeUnit.SECONDS)
-                .pollInterval(200, TimeUnit.MILLISECONDS)
-                .untilAsserted(() -> {
-                    mvc.perform(get("/v1/audit/tickets/" + ticketId)
-                                    .header("Authorization", "Bearer " + agentToken))
-                            .andExpect(status().isOk())
-                            .andExpect(jsonPath("$[0].action").value("TICKET_CREATED"))
-                            .andExpect(jsonPath("$[0].entityId").value(ticketId));
-                });
+        await().atMost(7, TimeUnit.SECONDS).pollInterval(200, TimeUnit.MILLISECONDS).untilAsserted(() -> {
+            mvc.perform(get("/v1/audit/tickets/" + ticketId).header("Authorization", "Bearer " + agentToken))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$[0].action").value("TICKET_CREATED"))
+                    .andExpect(jsonPath("$[0].entityId").value(ticketId));
+        });
     }
 
     @Test
@@ -188,56 +174,38 @@ public class AuditLogIntegrationTest extends BaseIntegrationTest {
     void getTicketAuditLog_afterStatusChange_containsUpdatedEntry() throws Exception {
         // Step 1: Assign ticket using Admin authority layout
 
-        mvc.perform(patch("/v1/tickets/" + ticketId)
-                                .header("Authorization", "Bearer " + adminToken)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(mapper.writeValueAsString(Map.of("assigneeId", agentId))))
-                        .andExpect(status().isOk());
-
+        mvc.perform(patch("/v1/tickets/" + ticketId).header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(Map.of("assigneeId", agentId)))).andExpect(status().isOk());
 
         // Step 2: Change status using newly assigned Agent context
-        await()
-                .atMost(7, TimeUnit.SECONDS)
-                .pollInterval(200, TimeUnit.MILLISECONDS)
-                .untilAsserted(() -> {
-                    mvc.perform(patch("/v1/tickets/" + ticketId)
-                                            .header("Authorization", "Bearer " + agentToken)
-                                            .contentType(MediaType.APPLICATION_JSON)
-                                            .content(mapper.writeValueAsString(Map.of("status", "IN_PROGRESS"))))
-                                    .andExpect(status().isOk());
-                        });
+        await().atMost(7, TimeUnit.SECONDS).pollInterval(200, TimeUnit.MILLISECONDS).untilAsserted(() -> {
+            mvc.perform(patch("/v1/tickets/" + ticketId).header("Authorization", "Bearer " + agentToken)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(mapper.writeValueAsString(Map.of("status", "IN_PROGRESS")))).andExpect(status().isOk());
+        });
 
         // Step 3: Wait for async outbox thread loop to complete processing
-        await()
-                .atMost(7, TimeUnit.SECONDS)
-                .pollInterval(200, TimeUnit.MILLISECONDS)
-                .untilAsserted(() -> {
-                    mvc.perform(get("/v1/audit/tickets/" + ticketId)
-                                    .header("Authorization", "Bearer " + agentToken))
-                            .andExpect(status().isOk())
-                            .andExpect(jsonPath("$[?(@.action == 'STATUS_CHANGED')]").exists());
-                });
+        await().atMost(7, TimeUnit.SECONDS).pollInterval(200, TimeUnit.MILLISECONDS).untilAsserted(() -> {
+            mvc.perform(get("/v1/audit/tickets/" + ticketId).header("Authorization", "Bearer " + agentToken))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$[?(@.action == 'STATUS_CHANGED')]").exists());
+        });
     }
 
     @Test
     @DisplayName("GET /v1/audit/actor/{actorId} returns entries for that actor")
     void getByActor_adminToken_returnsActorEntries() throws Exception {
-        String profileBody = mvc.perform(get("/v1/users/me")
-                        .header("Authorization", "Bearer " + adminToken))
+        String profileBody = mvc.perform(get("/v1/users/me").header("Authorization", "Bearer " + adminToken))
                 .andReturn().getResponse().getContentAsString();
         long adminId = mapper.readTree(profileBody).get("id").asLong();
 
-        mvc.perform(get("/v1/audit/actor/" + adminId)
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray());
+        mvc.perform(get("/v1/audit/actor/" + adminId).header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content").isArray());
     }
 
     private String login(String email, String password) throws Exception {
-        MvcResult result = mvc.perform(post("/v1/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(Map.of("email", email, "password", password))))
-                .andReturn();
+        MvcResult result = mvc.perform(post("/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(Map.of("email", email, "password", password)))).andReturn();
         return mapper.readTree(result.getResponse().getContentAsString()).get("accessToken").asText();
     }
 }

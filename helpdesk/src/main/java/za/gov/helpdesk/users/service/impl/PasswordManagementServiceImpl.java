@@ -43,20 +43,15 @@ public class PasswordManagementServiceImpl implements PasswordManagementService 
 
         refreshTokenService.revokeAll(user);
 
-        auditPublisher.publishAudit(
-                AuditLog.EntityType.USER, user.getId(), user,
-                AuditLog.AuditAction.PASSWORD_RESET,
-                null, null, "User changed their own password"
-        );
+        auditPublisher.publishAudit(AuditLog.EntityType.USER, user.getId(), user, AuditLog.AuditAction.PASSWORD_RESET,
+                null, null, "User changed their own password");
 
         log.info("Password changed by user={}", user.getEmail());
     }
 
     @Override
     @Transactional
-    public void adminResetPassword(Long targetUserId,
-                                   AdminPasswordResetRequest request,
-                                   User admin) {
+    public void adminResetPassword(Long targetUserId, AdminPasswordResetRequest request, User admin) {
         User target = findOrThrow(targetUserId);
 
         target.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
@@ -66,18 +61,14 @@ public class PasswordManagementServiceImpl implements PasswordManagementService 
         refreshTokenService.revokeAll(target);
 
         String reason = request.getReason() != null ? " — reason: " + request.getReason() : "";
-        auditPublisher.publishAudit(
-                AuditLog.EntityType.USER, target.getId(), admin,
-                AuditLog.AuditAction.PASSWORD_RESET,
-                null, null,
-                "Password reset by admin: " + admin.getEmail() + reason
-        );
+        auditPublisher.publishAudit(AuditLog.EntityType.USER, target.getId(), admin,
+                AuditLog.AuditAction.PASSWORD_RESET, null, null,
+                "Password reset by admin: " + admin.getEmail() + reason);
 
         log.info("Password reset by admin={} for user={}", admin.getEmail(), target.getEmail());
     }
 
     private User findOrThrow(Long id) {
-        return userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User", id));
+        return userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User", id));
     }
 }

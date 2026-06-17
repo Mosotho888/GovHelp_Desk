@@ -1,5 +1,7 @@
 package za.gov.helpdesk.notification.messaging;
 
+import java.io.IOException;
+
 import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,9 +11,6 @@ import org.springframework.stereotype.Component;
 import za.gov.helpdesk.config.messaging.RabbitMQConstants;
 import za.gov.helpdesk.notification.dto.PasswordResetEmailNotificationMessage;
 import za.gov.helpdesk.notification.service.auth.AuthEmailService;
-import za.gov.helpdesk.notification.service.ticket.TicketEmailService;
-
-import java.io.IOException;
 
 @Component
 @RequiredArgsConstructor
@@ -21,9 +20,8 @@ public class PasswordResetEmailNotificationConsumer {
     private final AuthEmailService authEmailService;
 
     @RabbitListener(queues = RabbitMQConstants.PASSWORD_RESET_EMAIL_QUEUE)
-    public void handle(PasswordResetEmailNotificationMessage message,
-                       Message rawMessage,
-                       Channel channel) throws IOException {
+    public void handle(PasswordResetEmailNotificationMessage message, Message rawMessage, Channel channel)
+            throws IOException {
 
         long tag = rawMessage.getMessageProperties().getDeliveryTag();
 
@@ -35,8 +33,7 @@ public class PasswordResetEmailNotificationConsumer {
             log.info("Password reset email ACKed: email={}", message.getEmail());
 
         } catch (Exception e) {
-            log.warn("Password reset email failed, re-queuing: email={} error={}",
-                    message.getEmail(), e.getMessage());
+            log.warn("Password reset email failed, re-queuing: email={} error={}", message.getEmail(), e.getMessage());
             channel.basicNack(tag, false, true);
         }
     }

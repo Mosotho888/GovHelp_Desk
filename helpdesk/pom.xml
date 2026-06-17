@@ -31,6 +31,12 @@
 		<bucket4j.version>8.10.1</bucket4j.version>
 		<jacoco.version>0.8.11</jacoco.version>
 		<maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
+
+		<!-- ── Static analysis tool versions ───────────────────── -->
+		<spotbugs.version>4.8.3.1</spotbugs.version>
+		<pmd.version>3.21.2</pmd.version>
+		<spotless.version>2.43.0</spotless.version>
+		<maven-enforcer.version>3.4.1</maven-enforcer.version>
 	</properties>
 
 	<dependencies>
@@ -175,11 +181,6 @@
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 
-		<dependency>
-			<groupId>io.micrometer</groupId>
-			<artifactId>micrometer-registry-prometheus</artifactId>
-		</dependency>
-
 		<!-- ── Problem Details ─────────────────────────────────── -->
 		<dependency>
 			<groupId>org.zalando</groupId>
@@ -261,11 +262,11 @@
 		</dependency>
 
 		<!--		<dependency>-->
-<!--			<groupId>org.testcontainers</groupId>-->
-<!--			<artifactId>testcontainers-spock</artifactId>-->
-<!--			<version>2.0.5</version>-->
-<!--			<scope>test</scope>-->
-<!--		</dependency>-->
+		<!--			<groupId>org.testcontainers</groupId>-->
+		<!--			<artifactId>testcontainers-spock</artifactId>-->
+		<!--			<version>2.0.5</version>-->
+		<!--			<scope>test</scope>-->
+		<!--		</dependency>-->
 
 		<dependency>
 			<groupId>org.testcontainers</groupId>
@@ -390,6 +391,316 @@
 						</configuration>
 					</execution>
 
+				</executions>
+			</plugin>
+
+			<!-- ── Checkstyle ──────────────────────────────────── -->
+			<!--
+			  Source-level style enforcement: naming, formatting,
+			  import order, brace placement, magic numbers.
+
+			  ./mvnw checkstyle:check       — fail on violations
+			  ./mvnw checkstyle:checkstyle  — HTML report at target/site/checkstyle.html
+			-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+				<version>3.6.0</version>
+
+				<dependencies>
+					<dependency>
+						<groupId>com.puppycrawl.tools</groupId>
+						<artifactId>checkstyle</artifactId>
+						<version>13.5.0</version>
+					</dependency>
+
+					<dependency>
+						<groupId>com.google.guava</groupId>
+						<artifactId>guava</artifactId>
+						<version>33.0.0-jre</version>
+					</dependency>
+				</dependencies>
+
+				<configuration>
+					<configLocation>config/checkstyle/checkstyle.xml</configLocation>
+					<failsOnError>true</failsOnError>
+					<failOnViolation>true</failOnViolation>
+					<consoleOutput>true</consoleOutput>
+					<includeTestSourceDirectory>true</includeTestSourceDirectory>
+					<excludes>**/generated/**,**/generated-sources/**</excludes>
+				</configuration>
+
+				<executions>
+					<execution>
+						<id>checkstyle-verify</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- ── SpotBugs ─────────────────────────────────────── -->
+			<!--
+			  Bytecode-level bug detection: null dereferences, resource
+			  leaks, incorrect synchronisation, dangerous API usage.
+
+			  ./mvnw spotbugs:check  — fail on findings
+			  ./mvnw spotbugs:gui    — open GUI browser for full report
+			-->
+			<plugin>
+				<groupId>com.github.spotbugs</groupId>
+				<artifactId>spotbugs-maven-plugin</artifactId>
+				<version>${spotbugs.version}</version>
+
+				<configuration>
+					<!-- Max effort = most thorough analysis -->
+					<effort>Max</effort>
+					<!--
+					  High threshold: only report bugs SpotBugs is confident about.
+					  Reducing to Medium drastically increases false positive noise
+					  from Spring/Lombok generated code.
+					-->
+					<threshold>High</threshold>
+					<!-- Suppression filter for Lombok/MapStruct/Spring false positives -->
+					<excludeFilterFile>config/spotbugs/exclude.xml</excludeFilterFile>
+					<failOnError>true</failOnError>
+					<!-- Write XML for CI artifact upload -->
+					<xmlOutput>true</xmlOutput>
+					<xmlOutputDirectory>${project.build.directory}</xmlOutputDirectory>
+				</configuration>
+
+				<executions>
+					<execution>
+						<id>spotbugs-verify</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- ── PMD ──────────────────────────────────────────── -->
+			<!--
+			  Source-level code quality: complexity, dead code,
+			  bad patterns, and copy-paste detection (CPD).
+
+			  PMD fills the gap between Checkstyle (formatting) and
+			  SpotBugs (runtime bugs) — it catches design-level problems.
+
+			  ./mvnw pmd:check      — fail on PMD violations
+			  ./mvnw pmd:cpd-check  — fail on copy-paste violations
+			  ./mvnw pmd:pmd        — HTML report at target/site/pmd.html
+			  ./mvnw pmd:cpd        — CPD report at target/site/cpd.html
+			-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-pmd-plugin</artifactId>
+				<version>${pmd.version}</version>
+
+				<configuration>
+					<rulesets>
+						<ruleset>config/pmd/pmd-ruleset.xml</ruleset>
+					</rulesets>
+
+					<!-- Fail build on any PMD violation -->
+					<failOnViolation>true</failOnViolation>
+					<printFailingErrors>true</printFailingErrors>
+
+					<!-- Target Java 17 for correct language feature analysis -->
+					<targetJdk>${java.version}</targetJdk>
+
+					<!-- Include test sources — copy-paste detection is especially
+					     valuable in test code -->
+					<includeTests>true</includeTests>
+
+					<!--
+					  CPD (Copy-Paste Detector) settings.
+					  Minimum token threshold: 100 tokens ≈ ~5 lines of code.
+					  Below this, false positives increase (e.g. similar DTO constructors).
+					-->
+					<minimumTokens>100</minimumTokens>
+
+					<!--
+					  Exclude generated sources.
+					  MapStruct *MapperImpl and Lombok-generated classes produce
+					  copy-paste CPD violations because the generator templates
+					  are identical.
+					-->
+					<excludes>
+						<exclude>**/*MapperImpl.java</exclude>
+						<exclude>**/src/test/java/**</exclude>
+					</excludes>
+					<excludeRoots>
+						<excludeRoot>target/generated-sources</excludeRoot>
+					</excludeRoots>
+				</configuration>
+
+				<executions>
+					<execution>
+						<id>pmd-verify</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+							<goal>cpd-check</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- ── Spotless ─────────────────────────────────────── -->
+			<!--
+			  Auto-formatter. Enforces that code is formatted
+			  consistently — same output on every machine, every time.
+
+			  Unlike the other three tools, Spotless can FIX problems:
+
+			  ./mvnw spotless:check  — fail if formatting differs (used in CI)
+			  ./mvnw spotless:apply  — auto-format all files (run locally before push)
+
+			  WORKFLOW:
+			  1. CI runs `spotless:check` → fails if any file is unformatted
+			  2. Developer runs `./mvnw spotless:apply` locally
+			  3. Commits the formatted files
+			  4. CI passes
+
+			  DO NOT run `spotless:apply` in CI — it would modify files in
+			  the runner without committing them back, which silently passes
+			  the check but leaves the repo unformatted.
+			-->
+			<plugin>
+				<groupId>com.diffplug.spotless</groupId>
+				<artifactId>spotless-maven-plugin</artifactId>
+				<version>${spotless.version}</version>
+
+				<configuration>
+					<java>
+						<!--
+						  Eclipse formatter using our profile.
+						  This is the formatter engine, not the IDE. It works
+						  identically in IntelliJ, VS Code, and Eclipse.
+						-->
+						<eclipse>
+							<file>config/spotless/eclipse-formatter.xml</file>
+						</eclipse>
+
+						<!--
+						  Import order:
+						  1. Static imports (Mockito.when, Assertions.assertThat)
+						  2. java.* and javax.*
+						  3. All other imports (org.*, com.*, za.*)
+						  Blank lines between each group.
+						  This matches IntelliJ's default "Optimize Imports" order.
+						-->
+						<importOrder>
+							<order>\#,java|javax,</order>
+						</importOrder>
+
+						<!--
+						  Remove unused imports automatically.
+						  This pairs with the AvoidStarImport Checkstyle rule:
+						  Spotless removes unused imports, Checkstyle prevents
+						  new wildcard imports from being introduced.
+						-->
+						<removeUnusedImports/>
+
+						<!--
+						  Trim trailing whitespace from every line.
+						  Pairs with the Checkstyle trailing-whitespace rule.
+						-->
+						<trimTrailingWhitespace/>
+
+						<!--
+						  Ensure every file ends with exactly one newline.
+						  Prevents spurious Git diffs on the last line.
+						-->
+						<endWithNewline/>
+
+						<!--
+						  Exclude generated sources from formatting.
+						  Spotless should not touch MapStruct-generated *MapperImpl
+						  classes — reformatting them causes unnecessary diffs
+						  after every clean build.
+						-->
+						<excludes>
+							<exclude>**/generated/**/*.java</exclude>
+							<exclude>**/generated-sources/**/*.java</exclude>
+						</excludes>
+					</java>
+				</configuration>
+
+				<executions>
+					<execution>
+						<id>spotless-verify</id>
+						<!--
+						  Bind to verify phase so `./mvnw verify` runs the
+						  check. Bind to validate phase if you want it to
+						  run BEFORE compilation (catches formatting before
+						  wasting compile time).
+						-->
+						<phase>verify</phase>
+						<goals>
+							<!-- check = fail if not formatted; apply = auto-format -->
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- ── Maven Enforcer ───────────────────────────────── -->
+			<!--
+			  Enforces environment constraints: minimum Maven and JDK
+			  versions. Prevents "works on my machine" build failures
+			  caused by developers using different toolchain versions.
+
+			  Runs at the validate phase — the very first thing Maven
+			  does — so the error message is immediate and clear.
+			-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<version>${maven-enforcer.version}</version>
+
+				<executions>
+					<execution>
+						<id>enforce-toolchain</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+
+						<configuration>
+							<rules>
+								<requireMavenVersion>
+									<version>[3.9,)</version>
+									<message>
+										Maven 3.9+ required. Spring Boot 3.5 uses
+										features not available in older Maven versions.
+									</message>
+								</requireMavenVersion>
+
+								<requireJavaVersion>
+									<version>[17,)</version>
+									<message>
+										JDK 17+ required. The project uses sealed
+										classes, records, and text blocks.
+									</message>
+								</requireJavaVersion>
+
+								<!--
+								  Fail fast on dependency convergence issues.
+								  Multiple transitive dependency versions of the
+								  same artifact causes ClassNotFoundException at
+								  runtime. The Spring Boot BOM manages most of
+								  this but custom dependencies can still conflict.
+								-->
+								<dependencyConvergence/>
+							</rules>
+							<fail>true</fail>
+						</configuration>
+					</execution>
 				</executions>
 			</plugin>
 

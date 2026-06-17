@@ -10,12 +10,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import za.gov.helpdesk.exception.ResourceNotFoundException;
 import za.gov.helpdesk.sla.dto.TicketSlaResponse;
-import za.gov.helpdesk.sla.repository.TicketSlaRepository;
 import za.gov.helpdesk.sla.service.SlaService;
-
-import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/v1/tickets/{ticketId}/sla")

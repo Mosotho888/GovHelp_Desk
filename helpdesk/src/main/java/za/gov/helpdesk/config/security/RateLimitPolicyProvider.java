@@ -1,6 +1,5 @@
 package za.gov.helpdesk.config.security;
 
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
@@ -21,8 +20,7 @@ public class RateLimitPolicyProvider {
     private long adminCapacity;
 
     public long capacityFor(Authentication auth) {
-        if (auth == null || !auth.isAuthenticated()
-                || "anonymousUser".equals(auth.getPrincipal())) {
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
             return unauthenticatedCapacity;
         }
 
@@ -37,7 +35,6 @@ public class RateLimitPolicyProvider {
     }
 
     private boolean hasRole(Authentication auth, String role) {
-        return auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals(role));
+        return auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals(role));
     }
 }

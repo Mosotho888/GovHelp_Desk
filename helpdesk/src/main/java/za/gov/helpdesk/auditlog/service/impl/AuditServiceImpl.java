@@ -1,5 +1,7 @@
 package za.gov.helpdesk.auditlog.service.impl;
 
+import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -13,8 +15,6 @@ import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auditlog.repository.AuditLogRepository;
 import za.gov.helpdesk.auditlog.service.AuditService;
 
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -25,47 +25,35 @@ public class AuditServiceImpl implements AuditService {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void log(AuditLog.EntityType entityType, Long entityId, Long actorId, String actorName, String actorRole, String ipAddress, AuditLog.AuditAction action, String description) {
-        log(entityType, entityId, actorId, actorName, actorRole, ipAddress, action, null,null, description);
+    public void log(AuditLog.EntityType entityType, Long entityId, Long actorId, String actorName, String actorRole,
+            String ipAddress, AuditLog.AuditAction action, String description) {
+        log(entityType, entityId, actorId, actorName, actorRole, ipAddress, action, null, null, description);
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void log(AuditLog.EntityType entityType, Long entityId, Long actorId, String actorName, String actorRole, String ipAddress, AuditLog.AuditAction action, String oldValue, String newValue, String description) {
+    public void log(AuditLog.EntityType entityType, Long entityId, Long actorId, String actorName, String actorRole,
+            String ipAddress, AuditLog.AuditAction action, String oldValue, String newValue, String description) {
         try {
-            AuditLog entry = AuditLog.builder()
-                    .entityType(entityType)
-                    .entityId(entityId)
-                    .actorId(actorId)
-                    .actorName(actorName)
-                    .actorRole(actorRole)
-                    .ipAddress(ipAddress)
-                    .action(action)
-                    .oldValue(oldValue)
-                    .newValue(newValue)
-                    .description(description)
-                    .build();
+            AuditLog entry = AuditLog.builder().entityType(entityType).entityId(entityId).actorId(actorId)
+                    .actorName(actorName).actorRole(actorRole).ipAddress(ipAddress).action(action).oldValue(oldValue)
+                    .newValue(newValue).description(description).build();
 
             auditLogRepository.save(entry);
         } catch (Exception e) {
-            log.error("Failed to write audit log: entity={}/{} action={} error={}", entityType, entityId, action, e.getMessage());
+            log.error("Failed to write audit log: entity={}/{} action={} error={}", entityType, entityId, action,
+                    e.getMessage());
         }
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void logAuth(AuditLog.AuditAction action, Long actorId, String actorName, String actorRole, String ipAddress, String description) {
+    public void logAuth(AuditLog.AuditAction action, Long actorId, String actorName, String actorRole, String ipAddress,
+            String description) {
         try {
-            AuditLog entry = AuditLog.builder()
-                    .entityType(AuditLog.EntityType.AUTH)
-                    .entityId(actorId)
-                    .actorId(actorId)
-                    .actorName(actorName)
-                    .actorRole(actorRole)
-                    .ipAddress(ipAddress)
-                    .action(action)
-                    .description(description)
-                    .build();
+            AuditLog entry = AuditLog.builder().entityType(AuditLog.EntityType.AUTH).entityId(actorId).actorId(actorId)
+                    .actorName(actorName).actorRole(actorRole).ipAddress(ipAddress).action(action)
+                    .description(description).build();
 
             auditLogRepository.save(entry);
         } catch (Exception e) {
@@ -77,8 +65,8 @@ public class AuditServiceImpl implements AuditService {
     @Transactional(readOnly = true)
     public List<AuditLogResponse> getLogsForEntity(AuditLog.EntityType entityType, Long entityId) {
 
-        return auditLogRepository.findByEntityTypeAndEntityIdOrderByCreatedAtDesc(entityType, entityId)
-                .stream().map(auditLogMapper::toAuditLogResponse).toList();
+        return auditLogRepository.findByEntityTypeAndEntityIdOrderByCreatedAtDesc(entityType, entityId).stream()
+                .map(auditLogMapper::toAuditLogResponse).toList();
     }
 
     @Override

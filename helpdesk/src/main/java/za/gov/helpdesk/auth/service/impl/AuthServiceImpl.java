@@ -1,30 +1,29 @@
 package za.gov.helpdesk.auth.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
-import za.gov.helpdesk.auth.dto.response.AuthResponse;
-import za.gov.helpdesk.auth.dto.request.RefreshTokenRequest;
-import za.gov.helpdesk.auth.jwt.JwtService;
 import za.gov.helpdesk.auth.dto.request.LoginRequest;
+import za.gov.helpdesk.auth.dto.request.RefreshTokenRequest;
+import za.gov.helpdesk.auth.dto.response.AuthResponse;
+import za.gov.helpdesk.auth.jwt.JwtService;
 import za.gov.helpdesk.auth.metrics.AuthMetrics;
 import za.gov.helpdesk.auth.model.RefreshToken;
 import za.gov.helpdesk.auth.policy.LoginLockoutService;
 import za.gov.helpdesk.auth.service.AuthResponseFactory;
 import za.gov.helpdesk.auth.service.AuthService;
 import za.gov.helpdesk.auth.service.RefreshTokenService;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.stereotype.Service;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 import za.gov.helpdesk.users.security.CustomUserDetails;
-
 
 @Service
 @Slf4j
@@ -46,8 +45,7 @@ public class AuthServiceImpl implements AuthService {
 
         try {
             Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
-            );
+                    new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
 
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
             User user = userDetails.getUser();
@@ -59,11 +57,8 @@ public class AuthServiceImpl implements AuthService {
             String refreshToken = jwtService.generateRefreshToken(user);
             refreshTokenService.store(refreshToken, user);
 
-            auditPublisher.publishAuthAudit(
-                    AuditLog.AuditAction.LOGIN_SUCCESS,
-                    user.getId(), user.getName(), user.getRole().name(),
-                    "Login successful"
-            );
+            auditPublisher.publishAuthAudit(AuditLog.AuditAction.LOGIN_SUCCESS, user.getId(), user.getName(),
+                    user.getRole().name(), "Login successful");
 
             authMetrics.incrementLoginSuccess();
 
@@ -93,11 +88,8 @@ public class AuthServiceImpl implements AuthService {
         String newRefreshToken = jwtService.generateRefreshToken(user);
         refreshTokenService.store(newRefreshToken, user);
 
-        auditPublisher.publishAuthAudit(
-                AuditLog.AuditAction.TOKEN_REFRESHED,
-                user.getId(), user.getName(), user.getRole().name(),
-                "Access token refreshed"
-        );
+        auditPublisher.publishAuthAudit(AuditLog.AuditAction.TOKEN_REFRESHED, user.getId(), user.getName(),
+                user.getRole().name(), "Access token refreshed");
 
         authMetrics.incrementTokenRefreshed();
 
@@ -109,10 +101,8 @@ public class AuthServiceImpl implements AuthService {
     public void logout(String rawRefreshToken, User actor) {
         refreshTokenService.revokeAll(actor);
 
-        auditPublisher.publishAuthAudit(
-                AuditLog.AuditAction.FORCED_LOGOUT,
-                actor.getId(), actor.getName(), actor.getRole().name(),
-                "User logged out");
+        auditPublisher.publishAuthAudit(AuditLog.AuditAction.FORCED_LOGOUT, actor.getId(), actor.getName(),
+                actor.getRole().name(), "User logged out");
 
         authMetrics.incrementLogout();
     }
