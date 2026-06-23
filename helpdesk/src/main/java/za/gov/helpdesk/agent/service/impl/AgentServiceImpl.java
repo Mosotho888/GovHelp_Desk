@@ -2,12 +2,12 @@ package za.gov.helpdesk.agent.service.impl;
 
 import java.util.Map;
 
-import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import za.gov.helpdesk.agent.dto.request.CreateAgentRequest;
 import za.gov.helpdesk.agent.dto.request.UpdateAgentRequest;
 import za.gov.helpdesk.agent.dto.response.AgentResponse;
@@ -17,20 +17,25 @@ import za.gov.helpdesk.agent.metrics.AgentMetrics;
 import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.agent.repository.jdbc.ReportJdbcRepository;
 import za.gov.helpdesk.agent.repository.jpa.AgentRepository;
+import za.gov.helpdesk.agent.service.AgentQueryHelper;
 import za.gov.helpdesk.agent.service.AgentService;
 import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.exception.DuplicateResourceException;
-import za.gov.helpdesk.exception.ResourceNotFoundException;
 import za.gov.helpdesk.users.model.User;
-import za.gov.helpdesk.users.repository.UserRepository;
+import za.gov.helpdesk.users.service.UserQueryHelper;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AgentServiceImpl implements AgentService {
 
     private final AgentRepository agentRepository;
-    private final UserRepository userRepository;
+    private final UserQueryHelper userQuery;
+    private final AgentQueryHelper agentQuery;
     private final AgentMapper agentMapper;
     private final ReportJdbcRepository reportJdbcRepository;
     private final AuditEventPublisher auditPublisher;
@@ -38,112 +43,110 @@ public class AgentServiceImpl implements AgentService {
 
     @Override
     @Transactional
-    public AgentResponse createAgent(CreateAgentRequest request, User actor) {
+    public AgentResponse createAgent(final CreateAgentRequest request, final User actor) {
 
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("User", request.getUserId()));
+        final User user = userQuery.findAndPromoteToAgentOrThrow(request.getUserId());
 
         if (agentRepository.existsByUserId(request.getUserId())) {
-            throw new DuplicateResourceException("User " + request.getUserId() + " is already registered as an agent");
+            throw new DuplicateResourceException(
+                    "User " + request.getUserId() + " is already registered as an agent");
         }
 
-        // Promote user role to AGENT if not already ADMIN
-        if (user.getRole() == User.Role.USER) {
-            user.setRole(User.Role.AGENT);
-            userRepository.save(user);
+        final Agent agent =
+                Agent.builder()
+                        .user(user)
+                        .department(request.getDepartment())
+                        .availability(
+                                request.getAvailability() != null
+                                        ? request.getAvailability()
+                                        : Agent.Availability.OFFLINE)
+                        .build();
+
+        final Agent savedAgent;
+
+        try {
+            savedAgent = agentRepository.save(agent);
+        } catch (final DataIntegrityViolationException ex) {
+            log.error(
+                    "Conflict: User {} simultaneously assigned as agent", request.getUserId(), ex);
+            throw new DuplicateResourceException(
+                    "User " + request.getUserId() + " is already registered as an agent", ex);
         }
-
-        Agent agent = Agent.builder().user(user).department(request.getDepartment())
-                .availability(
-                        request.getAvailability() != null ? request.getAvailability() : Agent.Availability.OFFLINE)
-                .build();
-
-        Agent savedAgent = agentRepository.save(agent);
         agentMetrics.incrementRegistered();
 
-        auditPublisher.publishAudit(AuditLog.EntityType.AGENT, savedAgent.getId(), actor,
-                AuditLog.AuditAction.AGENT_REGISTERED, null, user.getName(), "Registered as agent in department: "
-                        + (savedAgent.getDepartment() != null ? savedAgent.getDepartment() : "N/A"));
+        auditPublisher.publishAudit(
+                AuditLog.EntityType.AGENT,
+                savedAgent.getId(),
+                actor,
+                AuditLog.AuditAction.AGENT_REGISTERED,
+                null,
+                user.getName(),
+                "Registered as agent in department: "
+                        + (savedAgent.getDepartment() != null
+                                ? savedAgent.getDepartment()
+                                : "N/A"));
 
         return agentMapper.toAgentResponse(savedAgent);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public AgentResponse getAgentById(Long id) {
+    public AgentResponse getAgentById(final Long id) {
 
-        return agentMapper.toAgentResponse(findOrThrow(id));
+        return agentMapper.toAgentResponse(agentQuery.findOrThrow(id));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<AgentResponse> getAllAgents(Pageable pageable) {
+    public Page<AgentResponse> getAllAgents(final Pageable pageable) {
 
         return agentRepository.findAll(pageable).map(agentMapper::toAgentResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public AgentStatsResponse getAgentStats(Long id) {
-        Agent agent = findOrThrow(id);
-        Map<String, Object> raw = reportJdbcRepository.getAgentsStats(id);
+    public AgentStatsResponse getAgentStats(final Long id) {
+        final Agent agent = agentQuery.findOrThrow(id);
+        final Map<String, Object> raw = reportJdbcRepository.getAgentsStats(id);
 
-        return AgentStatsResponse.builder().agentId(id).agentName(agent.getUser().getName())
-                .totalAssigned(toLong(raw.get("total_assigned"))).openCount(toLong(raw.get("open_count")))
-                .inProgressCount(toLong(raw.get("in_progress_count"))).resolvedCount(toLong(raw.get("resolved_count")))
-                .closedCount(toLong(raw.get("closed_count"))).escalatedCount(toLong(raw.get("escalated_count")))
-                .avgResolutionHours(toDouble(raw.get("avg_resolution_hours"))).build();
+        return agentMapper.toAgentStatsResponse(id, agent.getUser().getName(), raw);
     }
 
     @Override
     @Transactional
-    public AgentResponse updateAgent(Long id, UpdateAgentRequest request, User actor) {
-        Agent agent;
+    public AgentResponse updateAgent(
+            final Long id, final UpdateAgentRequest request, final User actor) {
+        final Agent agent = agentQuery.findAndValidateAccess(id, actor);
 
-        if (actor.getRole() == User.Role.ADMIN) {
+        if (request.getAvailability() != null
+                && request.getAvailability() != agent.getAvailability()) {
 
-            agent = findOrThrow(id);
-        } else {
-
-            agent = agentRepository.findByIdAndUserId(id, actor.getId())
-                    .orElseThrow(() -> new AccessDeniedException("You hdo not have permission to update this agent"));
-        }
-
-        if (request.getAvailability() != null && !request.getAvailability().equals(agent.getAvailability())) {
-
-            auditPublisher.publishAudit(AuditLog.EntityType.AGENT, agent.getId(), actor,
-                    AuditLog.AuditAction.AVAILABILITY_CHANGED, agent.getAvailability().name(),
-                    request.getAvailability().name(), null);
+            auditPublisher.publishAudit(
+                    AuditLog.EntityType.AGENT,
+                    agent.getId(),
+                    actor,
+                    AuditLog.AuditAction.AVAILABILITY_CHANGED,
+                    agent.getAvailability().name(),
+                    request.getAvailability().name(),
+                    null);
             agent.setAvailability(request.getAvailability());
             agentMetrics.incrementAvailabilityChanged();
         }
 
-        if (request.getDepartment() != null && !request.getDepartment().equals(agent.getDepartment())) {
+        if (request.getDepartment() != null
+                && !request.getDepartment().equals(agent.getDepartment())) {
 
-            auditPublisher.publishAudit(AuditLog.EntityType.AGENT, agent.getId(), actor,
-                    AuditLog.AuditAction.DEPARTMENT_CHANGED, agent.getDepartment(), request.getDepartment(), null);
+            auditPublisher.publishAudit(
+                    AuditLog.EntityType.AGENT,
+                    agent.getId(),
+                    actor,
+                    AuditLog.AuditAction.DEPARTMENT_CHANGED,
+                    agent.getDepartment(),
+                    request.getDepartment(),
+                    null);
             agent.setDepartment(request.getDepartment());
             agentMetrics.incrementDepartmentChanged();
         }
         return agentMapper.toAgentResponse(agentRepository.save(agent));
-    }
-
-    private Agent findOrThrow(Long id) {
-        return agentRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Agent", id));
-    }
-
-    private long toLong(Object value) {
-        if (value == null) {
-            return 0L;
-        }
-
-        return ((Number) value).longValue();
-    }
-
-    private Double toDouble(Object value) {
-        if (value == null) {
-            return null;
-        }
-        return ((Number) value).doubleValue();
     }
 }
