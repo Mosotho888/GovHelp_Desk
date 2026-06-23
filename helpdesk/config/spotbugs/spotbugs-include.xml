@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ============================================================
+  GovHelpDesk — SpotBugs Include Filter
+  ============================================================
+  Patterns listed here are ALWAYS reported, regardless of the
+  confidence threshold passed on the command line (-low/-medium/-high).
+  This ensures critical security and correctness bugs are never
+  silently downgraded.
+
+  Usage in Maven plugin:
+    <includeFilterFile>config/spotbugs/spotbugs-spotbugs-include.xml</includeFilterFile>
+  ============================================================
+-->
+<FindBugsFilter>
+
+    <!-- ── SQL Injection (find-sec-bugs) ────────────────────────── -->
+    <Match>
+        <Bug pattern="SQL_INJECTION_HIBERNATE,
+                      SQL_INJECTION_JPA,
+                      SQL_INJECTION_JDBC,
+                      SQL_INJECTION_SPRING_JDBC,
+                      SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE"/>
+        <Priority value="1"/>
+    </Match>
+
+    <!-- ── Path Traversal ────────────────────────────────────────── -->
+    <Match>
+        <Bug pattern="PATH_TRAVERSAL_IN,PATH_TRAVERSAL_OUT"/>
+        <Priority value="1"/>
+    </Match>
+
+    <!-- ── XSS / SSRF ────────────────────────────────────────────── -->
+    <Match>
+        <Bug pattern="XSS_REQUEST_PARAMETER_TO_SEND_ERROR,
+                      XSS_REQUEST_PARAMETER_TO_SERVLET_WRITER,
+                      XSS_JSP_PRINT,
+                      SSRF"/>
+        <Priority value="1"/>
+    </Match>
+
+    <!-- ── Insecure Randomness ────────────────────────────────────── -->
+    <Match>
+        <Bug pattern="PREDICTABLE_RANDOM,WEAK_FILENAMEUTILS"/>
+        <!-- Only flag in non-test sources -->
+        <Class name="~za\.gov\.helpdesk\.(?!.*[Tt]est).*"/>
+        <Priority value="1"/>
+    </Match>
+
+    <!-- ── Hardcoded Credentials ─────────────────────────────────── -->
+    <Match>
+        <Bug pattern="HARD_CODE_PASSWORD,HARD_CODE_KEY"/>
+        <Class name="~za\.gov\.helpdesk\.(?!.*[Tt]est).*"/>
+        <Priority value="1"/>
+    </Match>
+
+    <!-- ── Crypto / Cipher weakness ─────────────────────────────── -->
+    <Match>
+        <Bug pattern="CIPHER_INTEGRITY,
+                      ECB_MODE,
+                      PADDING_ORACLE,
+                      WEAK_MESSAGE_DIGEST_MD5,
+                      WEAK_MESSAGE_DIGEST_SHA1,
+                      DES_USAGE,
+                      RSA_NO_PADDING,
+                      BLOWFISH_KEY_SIZE,
+                      DEFAULT_HTTP_CLIENT"/>
+        <Priority value="1"/>
+    </Match>
+
+    <!-- ── JWT / Auth ─────────────────────────────────────────────── -->
+    <Match>
+        <Bug pattern="JWT_DECODE_WITHOUT_VERIFY"/>
+        <Priority value="1"/>
+    </Match>
+
+    <!-- ── Null Pointer Dereference (correctness) ────────────────── -->
+    <Match>
+        <Bug pattern="NP_NULL_ON_SOME_PATH,
+                      NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE,
+                      NP_ALWAYS_NULL,
+                      NP_LOAD_OF_KNOWN_NULL_VALUE"/>
+        <Priority value="1"/>
+    </Match>
+
+    <!-- ── Resource Leaks ─────────────────────────────────────────── -->
+    <Match>
+        <Bug pattern="OBL_UNSATISFIED_OBLIGATION,
+                      ODR_OPEN_DATABASE_RESOURCE,
+                      OS_OPEN_STREAM"/>
+        <Priority value="1"/>
+    </Match>
+
+    <!-- ── Infinite Loops ─────────────────────────────────────────── -->
+    <Match>
+        <Bug pattern="IL_INFINITE_LOOP,IL_INFINITE_RECURSIVE_LOOP"/>
+        <Priority value="1"/>
+    </Match>
+
+    <!-- ── Race Conditions / Thread Safety ───────────────────────── -->
+    <Match>
+        <Bug pattern="IS2_INCONSISTENT_SYNC,
+                      DC_DOUBLECHECK,
+                      RV_RETURN_VALUE_IGNORED_BAD_PRACTICE"/>
+        <Priority value="1"/>
+    </Match>
+
+</FindBugsFilter>
