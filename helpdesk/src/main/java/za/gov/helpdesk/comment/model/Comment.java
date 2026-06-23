@@ -14,12 +14,14 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+
+import za.gov.helpdesk.ticket.model.Ticket;
+import za.gov.helpdesk.users.model.User;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import za.gov.helpdesk.ticket.model.Ticket;
-import za.gov.helpdesk.users.model.User;
 
 @Data
 @Entity
@@ -49,8 +51,7 @@ public class Comment {
     private String body;
 
     @Column(nullable = false)
-    @Builder.Default
-    private boolean internal = false;
+    private boolean internal;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -66,6 +67,8 @@ public class Comment {
     }
 
     public enum CommentType {
-        REPLY, NOTE, RESOLUTION
+        REPLY,
+        NOTE,
+        RESOLUTION
     }
 }

@@ -1,105 +1,102 @@
 package za.gov.helpdesk.ticket.service.impl;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import za.gov.helpdesk.agent.model.Agent;
-import za.gov.helpdesk.agent.repository.jpa.AgentRepository;
-import za.gov.helpdesk.auditlog.model.AuditLog;
-import za.gov.helpdesk.exception.ResourceNotFoundException;
-import za.gov.helpdesk.sla.service.SlaService;
+import za.gov.helpdesk.agent.service.AgentQueryHelper;
 import za.gov.helpdesk.ticket.dto.request.CreateTicketRequest;
 import za.gov.helpdesk.ticket.dto.request.UpdateTicketRequest;
 import za.gov.helpdesk.ticket.dto.response.TicketResponse;
 import za.gov.helpdesk.ticket.event.TicketEventDispatcher;
 import za.gov.helpdesk.ticket.mapper.TicketMapper;
-import za.gov.helpdesk.ticket.metrics.TicketMetrics;
 import za.gov.helpdesk.ticket.model.Ticket;
-import za.gov.helpdesk.ticket.policy.TicketStatusTransitionPolicy;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
+import za.gov.helpdesk.ticket.service.TicketQueryHelper;
 import za.gov.helpdesk.ticket.service.TicketService;
 import za.gov.helpdesk.users.model.User;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class TicketServiceImpl implements TicketService {
 
     private final TicketRepository ticketRepository;
+    private final TicketQueryHelper ticketQuery;
+    private final AgentQueryHelper agentQuery;
     private final TicketMapper ticketMapper;
-    private final AgentRepository agentRepository;
     private final TicketEventDispatcher eventDispatcher;
-    private final TicketStatusTransitionPolicy transitionPolicy;
-    private final SlaService slaService;
-    private final TicketMetrics ticketMetrics;
+    private final TicketUpdateCoordinator updateCoordinator;
 
     @Override
     @Transactional
-    public TicketResponse createTicket(CreateTicketRequest request, User actor) {
+    public TicketResponse createTicket(final CreateTicketRequest request, final User actor) {
 
-        Ticket.TicketBuilder builder = Ticket.builder().subject(request.getSubject())
-                .description(request.getDescription())
-                .priority(request.getPriority() != null ? request.getPriority() : Ticket.Priority.MEDIUM)
-                .category(request.getCategory()).requester(actor).status(Ticket.Status.OPEN);
+        final Ticket.TicketBuilder builder =
+                Ticket.builder()
+                        .subject(request.getSubject())
+                        .description(request.getDescription())
+                        .priority(
+                                request.getPriority() != null
+                                        ? request.getPriority()
+                                        : Ticket.Priority.MEDIUM)
+                        .category(request.getCategory())
+                        .requester(actor)
+                        .status(Ticket.Status.OPEN);
 
         if (request.getAssigneeId() != null) {
-            Agent agent = agentRepository.findById(request.getAssigneeId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Agent", request.getAssigneeId()));
+            final Agent agent = agentQuery.findOrThrow(request.getAssigneeId());
             builder.assignee(agent);
         }
 
-        Ticket savedTicket = ticketRepository.save(builder.build());
-        slaService.initializeSla(savedTicket);
-
-        ticketMetrics.incrementCreated();
-
-        eventDispatcher.publish(savedTicket, actor, AuditLog.AuditAction.TICKET_CREATED, null,
-                Ticket.Status.OPEN.name(), "Ticket created: " + savedTicket.getSubject(), null);
-
-        if (savedTicket.getAssignee() != null) {
-            eventDispatcher.publish(savedTicket, actor, AuditLog.AuditAction.ASSIGNED_TO_AGENT, null,
-                    savedTicket.getAssignee().getUser().getName(), null, null);
-        }
+        final Ticket savedTicket = ticketRepository.save(builder.build());
+        updateCoordinator.handlePostCreation(savedTicket, actor);
 
         return ticketMapper.toTicketResponse(savedTicket);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public TicketResponse getTicketById(Long ticketId, User actor) {
-        return ticketMapper.toTicketResponse(findOrThrow(ticketId, actor));
+    public TicketResponse getTicketById(final Long ticketId, final User actor) {
+        return ticketMapper.toTicketResponse(ticketQuery.findOrThrow(ticketId, actor));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<TicketResponse> getTickets(Ticket.Status status, Ticket.Priority priority, Long assigneeId,
-            Pageable pageable, User actor) {
+    public Page<TicketResponse> getTickets(
+            final Ticket.Status status,
+            final Ticket.Priority priority,
+            final Long assigneeId,
+            final Pageable pageable,
+            final User actor) {
 
-        // End users can only see their own tickets
-        if (actor.getRole() == User.Role.USER) {
-            return ticketRepository.findByRequester(actor, pageable).map(ticketMapper::toTicketResponse);
-        }
-        return ticketRepository.findWithFilters(status, priority, assigneeId, pageable)
+        return ticketQuery
+                .findWithFiltersAndSecurity(status, priority, assigneeId, pageable, actor)
                 .map(ticketMapper::toTicketResponse);
     }
 
     @Override
     @Transactional
-    public TicketResponse updateTicket(Long ticketId, UpdateTicketRequest request, User actor) {
+    public TicketResponse updateTicket(
+            final Long ticketId, final UpdateTicketRequest request, final User actor) {
 
-        Ticket ticket = findOrThrow(ticketId, actor);
+        final Ticket ticket = ticketQuery.findOrThrow(ticketId, actor);
 
         if (request.getStatus() != null && !ticket.getStatus().equals(request.getStatus())) {
-            applyStatusChange(ticket, request.getStatus(), actor);
+            updateCoordinator.applyStatusChange(ticket, request.getStatus(), actor);
         }
 
-        if (request.getAssigneeId() != null) {
-            applyAssignmentChange(ticket, request.getAssigneeId(), actor);
+        if (request.getAssigneeId() != null &&
+                (ticket.getAssignee() == null || !ticket.getAssignee().getId().equals(request.getAssigneeId()))) {
+            updateCoordinator.applyAssignmentChange(ticket, request.getAssigneeId(), actor);
         }
 
         if (request.getPriority() != null && !ticket.getPriority().equals(request.getPriority())) {
-            applyPriorityChange(ticket, request.getPriority(), actor);
+            updateCoordinator.applyPriorityChange(ticket, request.getPriority(), actor);
         }
 
         if (request.getCategory() != null) {
@@ -107,7 +104,7 @@ public class TicketServiceImpl implements TicketService {
         }
 
         if (Boolean.TRUE.equals(request.getEscalated()) && !ticket.isEscalated()) {
-            applyEscalation(ticket, request.getEscalationReason(), actor);
+            updateCoordinator.applyEscalation(ticket, request.getEscalationReason(), actor);
         }
 
         return ticketMapper.toTicketResponse(ticketRepository.save(ticket));
@@ -115,112 +112,14 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional
-    public void deleteTicket(Long ticketId, User actor) {
+    public void deleteTicket(final Long ticketId, final User actor) {
 
-        Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
-
-        eventDispatcher.publish(ticket, actor, AuditLog.AuditAction.TICKET_DELETED, ticket.getStatus().name(),
-                "DELETED", "Ticket deleted by " + actor.getName(), null);
-
-        ticketRepository.delete(ticket);
-    }
-
-    private Ticket findOrThrow(Long ticketId, User actor) {
-
-        Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
-
-        return switch (actor.getRole()) {
-            case ADMIN -> ticket;
-            case AGENT -> {
-                // Agent can see unassigned tickets or tickets assigned to them
-                if (ticket.getAssignee() == null
-                        || ticket.getAssignee().getUser().getEmail().equals(actor.getEmail())) {
-                    yield ticket;
-                }
-                throw new ResourceNotFoundException("Ticket", ticketId);
-            }
-            case USER -> {
-                if (ticket.getRequester().getEmail().equals(actor.getEmail())) {
-                    yield ticket;
-                }
-                throw new ResourceNotFoundException("Ticket", ticketId);
-            }
-        };
-    }
-
-    private void applyStatusChange(Ticket ticket, Ticket.Status newStatus, User actor) {
-        Ticket.Status oldStatus = ticket.getStatus();
-
-        transitionPolicy.assertCanTransition(oldStatus, newStatus);
-
-        ticket.setStatus(newStatus);
-
-        if (newStatus == Ticket.Status.IN_PROGRESS) {
-            slaService.recordFirstResponse(ticket.getId());
+        if (actor.getRole() != User.Role.ADMIN) {
+            throw new AccessDeniedException(
+                    "Administrative privileges are required to purge system tickets");
         }
+        final Ticket ticket = ticketQuery.findOrThrow(ticketId, actor);
 
-        if (newStatus == Ticket.Status.RESOLVED) {
-            slaService.recordResolution(ticket.getId());
-            ticketMetrics.incrementResolved();
-
-            if (ticket.getCreatedAt() != null) {
-                ticketMetrics.recordResolutionTime(ticket.getCreatedAt());
-            }
-        }
-
-        if (newStatus == Ticket.Status.CLOSED) {
-            ticketMetrics.incrementClosed();
-        }
-
-        if (newStatus == Ticket.Status.ESCALATED) {
-            ticket.setEscalated(true);
-            ticketMetrics.incrementEscalated();
-        }
-
-        AuditLog.AuditAction action = newStatus == Ticket.Status.CLOSED
-                ? AuditLog.AuditAction.TICKET_CLOSED
-                : AuditLog.AuditAction.STATUS_CHANGED;
-
-        eventDispatcher.publish(ticket, actor, action, oldStatus.name(), newStatus.name(), null, null);
-
-    }
-
-    private void applyAssignmentChange(Ticket ticket, Long assigneeId, User actor) {
-        Agent newAgent = agentRepository.findById(assigneeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Agent", assigneeId));
-
-        if (ticket.getAssignee() != null && ticket.getAssignee().getId().equals(newAgent.getId())) {
-            return;
-        }
-
-        String oldAssignee = ticket.getAssignee() != null ? ticket.getAssignee().getUser().getName() : "Unassigned";
-
-        ticket.setAssignee(newAgent);
-
-        eventDispatcher.publish(ticket, actor, AuditLog.AuditAction.ASSIGNED_TO_AGENT, oldAssignee,
-                newAgent.getUser().getName(), null, null);
-    }
-
-    private void applyPriorityChange(Ticket ticket, Ticket.Priority newPriority, User actor) {
-        Ticket.Priority oldPriority = ticket.getPriority();
-        ticket.setPriority(newPriority);
-
-        eventDispatcher.publish(ticket, actor, AuditLog.AuditAction.PRIORITY_CHANGED, oldPriority.name(),
-                newPriority.name(), null, null);
-    }
-
-    private void applyEscalation(Ticket ticket, String reason, User actor) {
-        ticket.setEscalated(true);
-
-        if (ticket.getStatus() == Ticket.Status.IN_PROGRESS) {
-            ticket.setStatus(Ticket.Status.ESCALATED);
-        }
-
-        ticketMetrics.incrementEscalated();
-
-        eventDispatcher.publish(ticket, actor, AuditLog.AuditAction.ESCALATED, "false", "true", reason, reason);
-
+        updateCoordinator.handleDeletion(ticket, actor);
     }
 }

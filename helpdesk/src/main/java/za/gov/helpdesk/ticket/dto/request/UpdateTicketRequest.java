@@ -1,7 +1,8 @@
 package za.gov.helpdesk.ticket.dto.request;
 
-import lombok.Data;
 import za.gov.helpdesk.ticket.model.Ticket;
+
+import lombok.Data;
 
 @Data
 public class UpdateTicketRequest {

@@ -8,11 +8,13 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
+import za.gov.helpdesk.ticket.model.Ticket;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import za.gov.helpdesk.ticket.model.Ticket;
 
 @Entity
 @Table(name = "sla_policies")
@@ -21,6 +23,8 @@ import za.gov.helpdesk.ticket.model.Ticket;
 @AllArgsConstructor
 @Builder
 public class SlaPolicy {
+
+    private static final int WARNING_THRESHOLD = 30;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -42,6 +46,4 @@ public class SlaPolicy {
     @Column(name = "warning_threshold_minutes", nullable = false)
     @Builder.Default
     private int warningThresholdMinutes = WARNING_THRESHOLD;
-
-    private static final int WARNING_THRESHOLD = 30;
 }

@@ -1,9 +1,10 @@
 package za.gov.helpdesk.agent.dto.response;
 
-import lombok.Builder;
-import lombok.Data;
 import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.users.dto.response.UserResponse;
+
+import lombok.Builder;
+import lombok.Data;
 
 @Data
 @Builder

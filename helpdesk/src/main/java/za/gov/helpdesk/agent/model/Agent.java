@@ -11,11 +11,13 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+
+import za.gov.helpdesk.users.model.User;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import za.gov.helpdesk.users.model.User;
 
 @Entity
 @Table(name = "AGENTS")
@@ -42,6 +44,9 @@ public class Agent {
     private Availability availability = Availability.OFFLINE;
 
     public enum Availability {
-        ONLINE, BUSY, AWAY, OFFLINE
+        ONLINE,
+        BUSY,
+        AWAY,
+        OFFLINE
     }
 }

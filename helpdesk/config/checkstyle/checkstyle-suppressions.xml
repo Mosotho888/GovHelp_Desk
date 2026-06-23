@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suppressions PUBLIC
+        "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+        "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+
+<!--
+  ============================================================
+  GovHelpDesk — Checkstyle Suppressions
+  ============================================================
+  Add targeted suppressions here rather than widening rules
+  globally. Format:
+    files   — regex matching file path
+    checks  — regex matching check class name (no package prefix needed)
+    lines   — line range (optional)
+    columns — column range (optional)
+  ============================================================
+-->
+<suppressions>
+
+    <!-- ── Test classes ─────────────────────────────────────────────── -->
+    <!-- Relax Javadoc requirements in tests; test names document intent -->
+    <suppress files=".*Test\.java$"             checks="MissingJavadocMethod"/>
+    <suppress files=".*Test\.java$"             checks="MissingJavadocType"/>
+    <suppress files=".*IT\.java$"               checks="MissingJavadocMethod"/>
+    <suppress files=".*IT\.java$"               checks="MissingJavadocType"/>
+    <suppress files=".*IntegrationTest\.java$"  checks="MissingJavadocMethod"/>
+
+    <!-- Tests are allowed longer methods and higher complexity -->
+    <suppress files=".*Test\.java$"  checks="MethodLength"/>
+    <suppress files=".*IT\.java$"    checks="MethodLength"/>
+    <suppress files=".*Test\.java$"  checks="CyclomaticComplexity"/>
+
+    <!-- Magic numbers are common in test assertions -->
+    <suppress files=".*Test\.java$"  checks="MagicNumber"/>
+    <suppress files=".*IT\.java$"    checks="MagicNumber"/>
+
+    <suppress checks="MethodName" files=".*Test\.java" />
+    <suppress checks="ClassFanOutComplexity" files="src[\\/]test[\\/]"/>
+    <suppress checks="AvoidStaticImport" files="src[\\/]test[\\/]"/>
+    <suppress checks="ImportOrder" files="src[\\/]test[\\/]"/>
+
+    <!-- ── Generated / boilerplate classes ──────────────────────────── -->
+    <!-- Flyway migration scripts: only the Java-based ones -->
+    <suppress files=".*db/migration/.*\.java$"  checks=".*"/>
+
+    <!-- Swagger/OpenAPI config classes often have many parameters -->
+    <suppress files=".*SwaggerConfig\.java$"    checks="ParameterNumber"/>
+    <suppress files=".*OpenApiConfig\.java$"    checks="ParameterNumber"/>
+
+    <!-- ── Spring Boot application entry point ──────────────────────── -->
+    <suppress files=".*Application\.java$"      checks="HideUtilityClassConstructor"/>
+
+    <!-- ── DTOs and Request/Response objects ────────────────────────── -->
+    <!-- Records and DTOs do not need Javadoc on every accessor -->
+    <suppress files=".*Dto\.java$"              checks="MissingJavadocMethod"/>
+    <suppress files=".*Request\.java$"          checks="MissingJavadocMethod"/>
+    <suppress files=".*Response\.java$"         checks="MissingJavadocMethod"/>
+    <suppress files=".*Record\.java$"           checks="MissingJavadocMethod"/>
+
+    <!-- ── Exception classes ────────────────────────────────────────── -->
+    <!-- Exception constructors are self-documenting -->
+    <suppress files=".*Exception\.java$"        checks="MissingJavadocMethod"/>
+
+    <!-- ── Enums ────────────────────────────────────────────────────── -->
+    <suppress files=".*\.java$"  checks="MissingJavadocMethod"
+              message=".*enum constant.*"/>
+
+    <!-- ── Outbox / event infrastructure ────────────────────────────── -->
+    <!-- OutboxRelay TYPE_MAP has intentional magic strings -->
+    <suppress files=".*OutboxRelay\.java$"      checks="MagicNumber"/>
+
+    <!-- ── Config / Properties binding classes ──────────────────────── -->
+    <suppress files=".*Properties\.java$"       checks="VisibilityModifier"/>
+    <suppress files=".*Properties\.java$"       checks="MissingJavadocMethod"/>
+
+</suppressions>

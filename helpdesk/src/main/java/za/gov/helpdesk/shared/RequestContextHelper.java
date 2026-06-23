@@ -1,21 +1,26 @@
 package za.gov.helpdesk.shared;
 
 import jakarta.servlet.http.HttpServletRequest;
+
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Component
+@Slf4j
 public class RequestContextHelper {
 
     private static final int INDEX = 0;
 
     public String getClientIp() {
         try {
-            ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
+            final ServletRequestAttributes attrs =
+                    (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
 
-            HttpServletRequest request = attrs.getRequest();
-            String forwarded = request.getHeader("X-Forwarded-For");
+            final HttpServletRequest request = attrs.getRequest();
+            final String forwarded = request.getHeader("X-Forwarded-For");
 
             if (forwarded != null && !forwarded.isBlank()) {
                 return forwarded.split(",")[INDEX].trim();
@@ -23,10 +28,12 @@ public class RequestContextHelper {
 
             return request.getRemoteAddr();
 
-        } catch (IllegalStateException e) {
+        } catch (final IllegalStateException e) {
             // No request context - called from a scheduled task or async thread
+            log.debug("No request context available, returning 'system' as client IP", e);
             return "system";
-        } catch (Exception e) {
+        } catch (final RuntimeException e) {
+            log.warn("Unexpected error extracting client IP, returning 'unknown'", e);
             return "unknown";
         }
     }

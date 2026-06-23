@@ -7,7 +7,7 @@ on:
   push:
     branches: [ "**" ]
   pull_request:
-    branches: [ main, developer ]
+    branches: [ main, develop ]
 
 # --- Global env -------------------------------------------------
 env:

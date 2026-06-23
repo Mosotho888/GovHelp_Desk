@@ -12,11 +12,13 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+
+import za.gov.helpdesk.users.model.User;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import za.gov.helpdesk.users.model.User;
 
 @Entity
 @Table(name = "refresh_tokens")
@@ -41,8 +43,7 @@ public class RefreshToken {
     private LocalDateTime expiresAt;
 
     @Column(name = "revoked", nullable = false)
-    @Builder.Default
-    private boolean revoked = false;
+    private boolean revoked;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

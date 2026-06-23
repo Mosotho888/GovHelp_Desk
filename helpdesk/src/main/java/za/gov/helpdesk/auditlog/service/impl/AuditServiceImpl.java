@@ -2,18 +2,22 @@ package za.gov.helpdesk.auditlog.service.impl;
 
 import java.util.List;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import za.gov.helpdesk.auditlog.dto.request.AuditContext;
+import za.gov.helpdesk.auditlog.dto.request.AuthAuditContext;
 import za.gov.helpdesk.auditlog.dto.response.AuditLogResponse;
 import za.gov.helpdesk.auditlog.mapper.AuditLogMapper;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auditlog.repository.AuditLogRepository;
 import za.gov.helpdesk.auditlog.service.AuditService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -25,69 +29,90 @@ public class AuditServiceImpl implements AuditService {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void log(AuditLog.EntityType entityType, Long entityId, Long actorId, String actorName, String actorRole,
-            String ipAddress, AuditLog.AuditAction action, String description) {
-        log(entityType, entityId, actorId, actorName, actorRole, ipAddress, action, null, null, description);
-    }
-
-    @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void log(AuditLog.EntityType entityType, Long entityId, Long actorId, String actorName, String actorRole,
-            String ipAddress, AuditLog.AuditAction action, String oldValue, String newValue, String description) {
+    public void log(final AuditContext context) {
         try {
-            AuditLog entry = AuditLog.builder().entityType(entityType).entityId(entityId).actorId(actorId)
-                    .actorName(actorName).actorRole(actorRole).ipAddress(ipAddress).action(action).oldValue(oldValue)
-                    .newValue(newValue).description(description).build();
+            final AuditLog entry =
+                    AuditLog.builder()
+                            .entityType(context.getEntityType())
+                            .entityId(context.getEntityId())
+                            .actorId(context.getActorId())
+                            .actorName(context.getActorName())
+                            .actorRole(context.getActorRole())
+                            .ipAddress(context.getIpAddress())
+                            .action(context.getAction())
+                            .oldValue(context.getOldValue())
+                            .newValue(context.getNewValue())
+                            .description(context.getDescription())
+                            .build();
 
             auditLogRepository.save(entry);
-        } catch (Exception e) {
-            log.error("Failed to write audit log: entity={}/{} action={} error={}", entityType, entityId, action,
-                    e.getMessage());
+        } catch (final Exception e) {
+            log.error(
+                    "Failed to write audit log: entity={}/{} action={}",
+                    context.getEntityType(),
+                    context.getEntityId(),
+                    context.getAction(),
+                    e);
         }
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void logAuth(AuditLog.AuditAction action, Long actorId, String actorName, String actorRole, String ipAddress,
-            String description) {
+    public void logAuth(AuthAuditContext context) {
         try {
-            AuditLog entry = AuditLog.builder().entityType(AuditLog.EntityType.AUTH).entityId(actorId).actorId(actorId)
-                    .actorName(actorName).actorRole(actorRole).ipAddress(ipAddress).action(action)
-                    .description(description).build();
+            final AuditLog entry =
+                    AuditLog.builder()
+                            .entityType(AuditLog.EntityType.AUTH)
+                            .entityId(context.getActorId())
+                            .actorId(context.getActorId())
+                            .actorName(context.getActorName())
+                            .actorRole(context.getActorRole())
+                            .ipAddress(context.getIpAddress())
+                            .action(context.getAction())
+                            .description(context.getDescription())
+                            .build();
 
             auditLogRepository.save(entry);
-        } catch (Exception e) {
-            log.error("Failed to write auth audit log: action={} error={}", action, e.getMessage());
+        } catch (final Exception e) {
+            log.error("Failed to write auth audit log: action={}", context.getAction(), e);
         }
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<AuditLogResponse> getLogsForEntity(AuditLog.EntityType entityType, Long entityId) {
+    public List<AuditLogResponse> getLogsForEntity(
+            final AuditLog.EntityType entityType, final Long entityId) {
 
-        return auditLogRepository.findByEntityTypeAndEntityIdOrderByCreatedAtDesc(entityType, entityId).stream()
-                .map(auditLogMapper::toAuditLogResponse).toList();
+        return auditLogRepository
+                .findByEntityTypeAndEntityIdOrderByCreatedAtDesc(entityType, entityId)
+                .stream()
+                .map(auditLogMapper::toAuditLogResponse)
+                .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<AuditLogResponse> getLogsByActor(Long actorId, Pageable pageable) {
+    public Page<AuditLogResponse> getLogsByActor(final Long actorId, final Pageable pageable) {
 
-        return auditLogRepository.findByActorIdOrderByCreatedAtDesc(actorId, pageable)
+        return auditLogRepository
+                .findByActorIdOrderByCreatedAtDesc(actorId, pageable)
                 .map(auditLogMapper::toAuditLogResponse);
     }
 
     @Override
-    public Page<AuditLogResponse> getAuthLogs(Pageable pageable) {
+    public Page<AuditLogResponse> getAuthLogs(final Pageable pageable) {
 
-        return auditLogRepository.findByEntityTypeOrderByCreatedAtDesc(AuditLog.EntityType.AUTH, pageable)
+        return auditLogRepository
+                .findByEntityTypeOrderByCreatedAtDesc(AuditLog.EntityType.AUTH, pageable)
                 .map(auditLogMapper::toAuditLogResponse);
     }
 
     @Override
-    public Page<AuditLogResponse> getLogsByAction(AuditLog.AuditAction action, Pageable pageable) {
+    public Page<AuditLogResponse> getLogsByAction(
+            final AuditLog.AuditAction action, final Pageable pageable) {
 
-        return auditLogRepository.findByActionOrderByCreatedAtDesc(action, pageable)
+        return auditLogRepository
+                .findByActionOrderByCreatedAtDesc(action, pageable)
                 .map(auditLogMapper::toAuditLogResponse);
     }
 }

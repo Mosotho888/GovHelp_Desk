@@ -3,11 +3,12 @@ package za.gov.helpdesk.ticket.metrics;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
+import org.springframework.stereotype.Component;
+
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import lombok.Getter;
-import org.springframework.stereotype.Component;
 
 @Component
 @Getter
@@ -20,23 +21,34 @@ public class TicketMetrics {
 
     private final Timer resolutionTime;
 
-    public TicketMetrics(MeterRegistry registry) {
+    public TicketMetrics(final MeterRegistry registry) {
 
-        this.created = Counter.builder("helpdesk.ticket.created").description("Total support tickets created")
-                .register(registry);
+        this.created =
+                Counter.builder("helpdesk.ticket.created")
+                        .description("Total support tickets created")
+                        .register(registry);
 
-        this.resolved = Counter.builder("helpdesk.ticket.resolved")
-                .description("Total support tickets transitioned to RESOLVED").register(registry);
+        this.resolved =
+                Counter.builder("helpdesk.ticket.resolved")
+                        .description("Total support tickets transitioned to RESOLVED")
+                        .register(registry);
 
-        this.closed = Counter.builder("helpdesk.ticket.closed")
-                .description("Total support tickets transitioned to CLOSED").register(registry);
+        this.closed =
+                Counter.builder("helpdesk.ticket.closed")
+                        .description("Total support tickets transitioned to CLOSED")
+                        .register(registry);
 
-        this.escalated = Counter.builder("helpdesk.ticket.escalated").description("Total support tickets escalated")
-                .register(registry);
+        this.escalated =
+                Counter.builder("helpdesk.ticket.escalated")
+                        .description("Total support tickets escalated")
+                        .register(registry);
 
-        this.resolutionTime = Timer.builder("helpdesk.ticket.resolution.time")
-                .description("Elapsed time from ticket creation to first RESOLVED transition")
-                .publishPercentileHistogram().register(registry);
+        this.resolutionTime =
+                Timer.builder("helpdesk.ticket.resolution.time")
+                        .description(
+                                "Elapsed time from ticket creation to first RESOLVED transition")
+                        .publishPercentileHistogram()
+                        .register(registry);
     }
 
     public void incrementCreated() {
@@ -55,7 +67,7 @@ public class TicketMetrics {
         this.escalated.increment();
     }
 
-    public void recordResolutionTime(LocalDateTime ticketCreatedAt) {
+    public void recordResolutionTime(final LocalDateTime ticketCreatedAt) {
         this.resolutionTime.record(Duration.between(ticketCreatedAt, LocalDateTime.now()));
     }
 }

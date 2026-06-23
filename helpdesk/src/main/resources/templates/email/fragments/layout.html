@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <body>
 
 <th:block th:fragment="emailLayout(heading, reference, content)">
@@ -162,7 +162,8 @@
                 <th:block th:replace="${content}"></th:block>
             </div>
 
-            <div class="footer" style="background:#f7f7f7;padding:16px 28px;font-size:12px;color:#999999;border-top:1px solid #e0e0e0;">
+            <div class="footer"
+                 style="background:#f7f7f7;padding:16px 28px;font-size:12px;color:#999999;border-top:1px solid #e0e0e0;">
                 This is an automated message from the Government Helpdesk System.
                 Please do not reply directly to this email.
             </div>
@@ -174,22 +175,31 @@
 <th:block th:fragment="detailsTable(msg)">
     <table class="details" style="width:100%;border-collapse:collapse;margin-top:16px;">
         <tr>
-            <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;background:#f7f7f7;font-weight:bold;width:38%;">Ticket Number</td>
-            <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;" th:text="${msg.ticketNumber}">TKT-000</td>
+            <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;background:#f7f7f7;font-weight:bold;width:38%;">
+                Ticket Number
+            </td>
+            <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;" th:text="${msg.ticketNumber}">
+                TKT-000
+            </td>
         </tr>
 
         <tr>
-            <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;background:#f7f7f7;font-weight:bold;width:38%;">Subject</td>
-            <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;" th:text="${msg.ticketSubject}">Subject</td>
+            <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;background:#f7f7f7;font-weight:bold;width:38%;">
+                Subject
+            </td>
+            <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;" th:text="${msg.ticketSubject}">
+                Subject
+            </td>
         </tr>
 
         <tr>
-            <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;background:#f7f7f7;font-weight:bold;width:38%;">Status</td>
+            <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;background:#f7f7f7;font-weight:bold;width:38%;">
+                Status
+            </td>
             <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;">
                 <span
                         class="badge"
                         style="padding:2px 10px;border-radius:12px;font-size:13px;font-weight:bold;"
-                        th:with="s=${msg.ticketStatus}"
                         th:classappend="${s == 'OPEN' ? 'badge-open' :
                                     s == 'IN_PROGRESS' ? 'badge-progress' :
                                     s == 'RESOLVED' ? 'badge-resolved' :
@@ -201,14 +211,17 @@
                                     s == 'ESCALATED' ? 'background:#fee2e2;color:#991b1b;' :
                                     'background:#f3f4f6;color:#374151;'}"
                         th:text="${s == 'IN_PROGRESS' ? 'In Progress' :
-                             s != null ? #strings.capitalize(#strings.toLowerCase(s)) : '-'}">
+                             s != null ? #strings.capitalize(#strings.toLowerCase(s)) : '-'}"
+                        th:with="s=${msg.ticketStatus}">
                     Open
                 </span>
             </td>
         </tr>
 
         <tr>
-            <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;background:#f7f7f7;font-weight:bold;width:38%;">Priority</td>
+            <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;background:#f7f7f7;font-weight:bold;width:38%;">
+                Priority
+            </td>
             <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;" th:text="${msg.ticketPriority != null ?
                     #strings.capitalize(#strings.toLowerCase(msg.ticketPriority)) : '-'}">
                 Medium

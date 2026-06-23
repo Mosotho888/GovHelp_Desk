@@ -2,9 +2,10 @@ package za.gov.helpdesk.attachment.dto.response;
 
 import java.time.LocalDateTime;
 
+import za.gov.helpdesk.users.dto.response.UserResponse;
+
 import lombok.Builder;
 import lombok.Data;
-import za.gov.helpdesk.users.dto.response.UserResponse;
 
 @Data
 @Builder

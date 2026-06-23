@@ -1,27 +1,29 @@
 package za.gov.helpdesk.integration;
 
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.web.servlet.MockMvc;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.web.servlet.MockMvc;
-
 @DisplayName("Security headers integration tests")
 public class SecurityHeadersIntegrationTest extends BaseIntegrationTest {
-    @Autowired
-    private MockMvc mvc;
+    @Autowired private MockMvc mvc;
 
     @Test
     @DisplayName("Response includes Strict-Transport-Security header")
     void response_includesHstsHeader() throws Exception {
-        mvc.perform(get("/v1/auth/login").secure(true)).andExpect(header().exists("Strict-Transport-Security"))
+        mvc.perform(get("/v1/auth/login").secure(true))
+                .andExpect(header().exists("Strict-Transport-Security"))
                 .andExpect(
-                        header().string("Strict-Transport-Security", org.hamcrest.Matchers.containsString("max-age=")));
+                        header().string(
+                                        "Strict-Transport-Security",
+                                        org.hamcrest.Matchers.containsString("max-age=")));
     }
 
     @Test
@@ -33,8 +35,13 @@ public class SecurityHeadersIntegrationTest extends BaseIntegrationTest {
     @Test
     @DisplayName("Response includes Content-Security-Policy header")
     void response_includesCspHeader() throws Exception {
-        mvc.perform(get("/v1/auth/login")).andExpect(header().exists("Content-Security-Policy")).andExpect(
-                header().string("Content-Security-Policy", org.hamcrest.Matchers.containsString("default-src 'self'")));
+        mvc.perform(get("/v1/auth/login"))
+                .andExpect(header().exists("Content-Security-Policy"))
+                .andExpect(
+                        header().string(
+                                        "Content-Security-Policy",
+                                        org.hamcrest.Matchers.containsString(
+                                                "default-src 'self'")));
     }
 
     @Test
@@ -47,7 +54,13 @@ public class SecurityHeadersIntegrationTest extends BaseIntegrationTest {
     @DisplayName("Error response never exposes stack trace")
     void errorResponse_doesNotExposeStackTrace() throws Exception {
         mvc.perform(get("/v1/tickets/999999").header("Authorization", "Bearer invalid.token.here"))
-                .andExpect(status().isUnauthorized()).andExpect(jsonPath("$.error").exists()).andExpect(content()
-                        .string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("at za.gov.helpdesk"))));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").exists())
+                .andExpect(
+                        content()
+                                .string(
+                                        org.hamcrest.Matchers.not(
+                                                org.hamcrest.Matchers.containsString(
+                                                        "at za.gov.helpdesk"))));
     }
 }

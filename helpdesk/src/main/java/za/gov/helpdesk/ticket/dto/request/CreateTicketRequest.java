@@ -4,8 +4,10 @@ import java.util.List;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
+
 import za.gov.helpdesk.ticket.model.Ticket;
+
+import lombok.Data;
 
 @Data
 public class CreateTicketRequest {

@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,6 +22,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class PasswordResetToken {
+
+    public static final int MAX_ATTEMPTS = 5;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,17 +39,13 @@ public class PasswordResetToken {
     private LocalDateTime expiresAt;
 
     @Column(nullable = false)
-    @Builder.Default
-    private boolean used = false;
+    private boolean used;
 
     @Column(name = "attempts", nullable = false)
-    @Builder.Default
-    private int attempts = 0;
+    private int attempts;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    public static final int MAX_ATTEMPTS = 5;
 
     @PrePersist
     protected void onCreate() {

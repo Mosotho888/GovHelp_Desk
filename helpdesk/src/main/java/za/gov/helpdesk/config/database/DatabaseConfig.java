@@ -1,4 +1,3 @@
 package za.gov.helpdesk.config.database;
 
-public class DatabaseConfig {
-}
+public class DatabaseConfig {}

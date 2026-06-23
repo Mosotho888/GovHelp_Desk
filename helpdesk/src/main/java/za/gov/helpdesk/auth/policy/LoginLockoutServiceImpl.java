@@ -1,13 +1,16 @@
 package za.gov.helpdesk.auth.policy;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
+import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -22,22 +25,41 @@ public class LoginLockoutServiceImpl implements LoginLockoutService {
 
     @Override
     @Transactional
-    public void recordFailedAttempt(String email) {
+    public void recordFailedAttempt(final String email) {
 
-        userRepository.findByEmail(email).ifPresent(user -> {
-            int attempts = user.getLoginAttempts() + 1;
-            user.setLoginAttempts(attempts);
+        userRepository
+                .findByEmail(email)
+                .ifPresent(
+                        user -> {
+                            final int attempts = user.getLoginAttempts() + 1;
+                            user.setLoginAttempts(attempts);
 
-            if (attempts >= maxLoginAttempts) {
-                user.setActive(false);
+                            if (attempts >= maxLoginAttempts) {
+                                user.setActive(false);
 
-                auditPublisher.publishAuthAudit(AuditLog.AuditAction.ACCOUNT_LOCKED, user.getId(), user.getName(),
-                        user.getRole().name(), attempts + " consecutive failed login attempts");
+                                auditPublisher.publishAuthAudit(
+                                        AuditLog.AuditAction.ACCOUNT_LOCKED,
+                                        user.getId(),
+                                        user.getName(),
+                                        user.getRole().name(),
+                                        attempts + " consecutive failed login attempts");
 
-                log.warn("Account locked after {} failed attempts: email={}", attempts, email);
-            }
+                                log.warn(
+                                        "Account locked after {} failed attempts: email={}",
+                                        attempts,
+                                        email);
+                            }
 
+                            userRepository.save(user);
+                        });
+    }
+
+    @Override
+    @Transactional
+    public void resetFailedAttempts(final User user) {
+        if (user.getLoginAttempts() > 0) {
+            user.setLoginAttempts(0);
             userRepository.save(user);
-        });
+        }
     }
 }

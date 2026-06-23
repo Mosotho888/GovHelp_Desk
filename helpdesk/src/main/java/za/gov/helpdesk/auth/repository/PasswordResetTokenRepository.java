@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+
 import za.gov.helpdesk.auth.model.PasswordResetToken;
 
 @Repository
@@ -17,7 +18,9 @@ public interface PasswordResetTokenRepository extends JpaRepository<PasswordRese
 
     // Invalidate all previous tokens for this email before issuing a new one
     @Modifying
-    @Query("UPDATE PasswordResetToken t SET t.used = true WHERE t.email = :email AND t.used = false")
+    @Query(
+            "UPDATE PasswordResetToken t SET t.used = true WHERE t.email = :email AND t.used ="
+                    + " false")
     void invalidateAllByEmail(String email);
 
     // Cleanup

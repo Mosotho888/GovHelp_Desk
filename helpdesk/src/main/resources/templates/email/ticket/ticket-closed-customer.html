@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <body>
 <div th:replace="~{email/fragments/layout :: emailLayout(
     heading   = 'Ticket Closed',
@@ -19,7 +19,8 @@
             <p><strong>Resolution note:</strong></p>
             <div class="comment-box"
                  style="background:#f0f4ff;border-left:4px solid #1a56db;padding:14px 18px;margin:16px 0;border-radius:0 6px 6px 0;font-size:14px;line-height:1.6;white-space:pre-wrap;"
-                 th:text="${msg.comment}">Resolution note here.</div>
+                 th:text="${msg.comment}">Resolution note here.
+            </div>
         </th:block>
 
         <th:block th:replace="~{email/fragments/layout :: detailsTable(${msg})}"></th:block>

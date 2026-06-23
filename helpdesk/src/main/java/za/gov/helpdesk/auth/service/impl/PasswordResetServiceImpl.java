@@ -2,12 +2,11 @@ package za.gov.helpdesk.auth.service.impl;
 
 import java.time.LocalDateTime;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auth.dto.request.PasswordResetConfirmRequest;
@@ -22,10 +21,17 @@ import za.gov.helpdesk.notification.messaging.PasswordResetEmailNotificationPubl
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class PasswordResetServiceImpl implements PasswordResetService {
+
+    private static final long OTP_EXPIRY_MIN = 15;
+    private static final int INCREMENT_BY_ONE = 1;
+    private static final int HOURS = 1;
 
     private final PasswordResetTokenRepository tokenRepository;
     private final UserRepository userRepository;
@@ -36,38 +42,44 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private final PasswordResetEmailNotificationPublisher emailPublisher;
     private final AuthMetrics authMetrics;
 
-    private static final long OTP_EXPIRY_MIN = 15;
-    private static final int INCREMENT_BY_ONE = 1;
-    private static final int HOURS = 1;
-
     @Override
     @Transactional
-    public void requestReset(PasswordResetRequest request) {
+    public void requestReset(final PasswordResetRequest request) {
 
-        userRepository.findByEmail(request.getEmail()).ifPresent(user -> {
+        userRepository
+                .findByEmail(request.getEmail())
+                .ifPresent(
+                        user -> {
+                            tokenRepository.invalidateAllByEmail(user.getEmail());
 
-            tokenRepository.invalidateAllByEmail(user.getEmail());
+                            final String rawOtp = otpGeneratorService.generate();
+                            final String hashedOtp = passwordEncoder.encode(rawOtp);
 
-            String rawOtp = otpGeneratorService.generate();
-            String hashedOtp = passwordEncoder.encode(rawOtp);
+                            tokenRepository.save(
+                                    PasswordResetToken.builder()
+                                            .email(user.getEmail())
+                                            .otpHash(hashedOtp)
+                                            .expiresAt(
+                                                    LocalDateTime.now().plusMinutes(OTP_EXPIRY_MIN))
+                                            .build());
 
-            tokenRepository.save(PasswordResetToken.builder().email(user.getEmail()).otpHash(hashedOtp)
-                    .expiresAt(LocalDateTime.now().plusMinutes(OTP_EXPIRY_MIN)).build());
+                            emailPublisher.publish(
+                                    user.getEmail(), user.getName(), rawOtp, OTP_EXPIRY_MIN);
 
-            emailPublisher.publish(user.getEmail(), user.getName(), rawOtp, OTP_EXPIRY_MIN);
+                            authMetrics.incrementPasswordResetRequested();
 
-            authMetrics.incrementPasswordResetRequested();
-
-            log.info("Password reset OTP issued for: {}", user.getEmail());
-        });
+                            log.info("Password reset OTP issued for: {}", user.getEmail());
+                        });
     }
 
     @Override
     @Transactional
-    public void confirmReset(PasswordResetConfirmRequest request) {
+    public void confirmReset(final PasswordResetConfirmRequest request) {
 
-        PasswordResetToken token = tokenRepository.findTopByEmailAndUsedFalseOrderByCreatedAtDesc(request.getEmail())
-                .orElseThrow(() -> new BadCredentialsException("Invalid or expired OTP"));
+        final PasswordResetToken token =
+                tokenRepository
+                        .findTopByEmailAndUsedFalseOrderByCreatedAtDesc(request.getEmail())
+                        .orElseThrow(() -> new BadCredentialsException("Invalid or expired OTP"));
 
         token.setAttempts(token.getAttempts() + INCREMENT_BY_ONE);
         tokenRepository.save(token);
@@ -80,8 +92,10 @@ public class PasswordResetServiceImpl implements PasswordResetService {
             throw new BadCredentialsException("Invalid or expired OTP");
         }
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new BadCredentialsException("Invalid or expired OTP"));
+        final User user =
+                userRepository
+                        .findByEmail(request.getEmail())
+                        .orElseThrow(() -> new BadCredentialsException("Invalid or expired OTP"));
 
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
@@ -91,8 +105,12 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
         refreshTokenService.revokeAll(user);
 
-        auditPublisher.publishAuthAudit(AuditLog.AuditAction.PASSWORD_RESET, user.getId(), user.getName(),
-                user.getRole().name(), "Password reset via OTP");
+        auditPublisher.publishAuthAudit(
+                AuditLog.AuditAction.PASSWORD_RESET,
+                user.getId(),
+                user.getName(),
+                user.getRole().name(),
+                "Password reset via OTP");
 
         authMetrics.incrementPasswordResetConfirmed();
 

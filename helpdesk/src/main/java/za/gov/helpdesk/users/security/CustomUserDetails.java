@@ -3,12 +3,14 @@ package za.gov.helpdesk.users.security;
 import java.util.Collection;
 import java.util.List;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
 import za.gov.helpdesk.users.model.User;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
@@ -48,5 +50,4 @@ public class CustomUserDetails implements UserDetails {
     public User.Role getRole() {
         return user.getRole();
     }
-
 }

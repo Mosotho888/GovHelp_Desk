@@ -2,6 +2,7 @@ package za.gov.helpdesk.ticket.service;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
 import za.gov.helpdesk.ticket.dto.request.CreateTicketRequest;
 import za.gov.helpdesk.ticket.dto.request.UpdateTicketRequest;
 import za.gov.helpdesk.ticket.dto.response.TicketResponse;
@@ -14,7 +15,11 @@ public interface TicketService {
 
     TicketResponse getTicketById(Long ticketId, User user);
 
-    Page<TicketResponse> getTickets(Ticket.Status status, Ticket.Priority priority, Long assigneeId, Pageable pageable,
+    Page<TicketResponse> getTickets(
+            Ticket.Status status,
+            Ticket.Priority priority,
+            Long assigneeId,
+            Pageable pageable,
             User user);
 
     TicketResponse updateTicket(Long ticketId, UpdateTicketRequest request, User user);

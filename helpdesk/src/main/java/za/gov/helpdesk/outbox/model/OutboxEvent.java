@@ -11,12 +11,14 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "outbox_events")
@@ -49,8 +51,7 @@ public class OutboxEvent {
     private Status status = Status.PENDING;
 
     @Column(nullable = false)
-    @Builder.Default
-    private int attempts = 0;
+    private int attempts;
 
     @Column(name = "last_error", columnDefinition = "TEXT")
     private String lastError;
@@ -70,10 +71,16 @@ public class OutboxEvent {
     }
 
     public enum Status {
-        PENDING, PROCESSING, PROCESSED, FAILED
+        PENDING,
+        PROCESSING,
+        PROCESSED,
+        FAILED
     }
 
     public enum EventType {
-        AUDIT, TICKET_EMAIL, SLA_EMAIL, PASSWORD_RESET_EMAIL
+        AUDIT,
+        TICKET_EMAIL,
+        SLA_EMAIL,
+        PASSWORD_RESET_EMAIL
     }
 }

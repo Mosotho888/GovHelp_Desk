@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <body>
 <div th:replace="~{email/fragments/layout :: emailLayout(
     heading   = 'SLA Breached',
@@ -16,16 +16,26 @@
 
         <table class="details" style="width:100%;border-collapse:collapse;margin-top:16px;">
             <tr>
-                <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;background:#f7f7f7;font-weight:bold;width:38%;">Ticket Number</td>
-                <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;" th:text="${ticketNumber}">TKT-000</td>
+                <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;background:#f7f7f7;font-weight:bold;width:38%;">
+                    Ticket Number
+                </td>
+                <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;" th:text="${ticketNumber}">
+                    TKT-000
+                </td>
             </tr>
             <tr>
-                <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;background:#f7f7f7;font-weight:bold;width:38%;">Subject</td>
+                <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;background:#f7f7f7;font-weight:bold;width:38%;">
+                    Subject
+                </td>
                 <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;" th:text="${subject}">Subject</td>
             </tr>
             <tr>
-                <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;background:#f7f7f7;font-weight:bold;width:38%;">Deadline Type</td>
-                <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;" th:text="${deadlineType}">First Response</td>
+                <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;background:#f7f7f7;font-weight:bold;width:38%;">
+                    Deadline Type
+                </td>
+                <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;" th:text="${deadlineType}">First
+                    Response
+                </td>
             </tr>
         </table>
     </section>

@@ -15,12 +15,14 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+
+import za.gov.helpdesk.agent.model.Agent;
+import za.gov.helpdesk.users.model.User;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import za.gov.helpdesk.agent.model.Agent;
-import za.gov.helpdesk.users.model.User;
 
 @Data
 @Entity
@@ -62,8 +64,7 @@ public class Ticket {
     private Agent assignee;
 
     @Column(nullable = false)
-    @Builder.Default
-    private boolean escalated = false;
+    private boolean escalated;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -83,10 +84,17 @@ public class Ticket {
     }
 
     public enum Status {
-        OPEN, IN_PROGRESS, ESCALATED, RESOLVED, CLOSED
+        OPEN,
+        IN_PROGRESS,
+        ESCALATED,
+        RESOLVED,
+        CLOSED
     }
 
     public enum Priority {
-        LOW, MEDIUM, HIGH, URGENT
+        LOW,
+        MEDIUM,
+        HIGH,
+        URGENT
     }
 }

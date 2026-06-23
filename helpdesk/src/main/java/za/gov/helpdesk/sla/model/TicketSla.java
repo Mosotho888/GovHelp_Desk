@@ -12,11 +12,13 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+
+import za.gov.helpdesk.ticket.model.Ticket;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import za.gov.helpdesk.ticket.model.Ticket;
 
 @Entity
 @Table(name = "ticket_sla")
@@ -47,20 +49,16 @@ public class TicketSla {
     private LocalDateTime resolvedAt;
 
     @Column(name = "response_breached", nullable = false)
-    @Builder.Default
-    private boolean responseBreached = false;
+    private boolean responseBreached;
 
     @Column(name = "resolution_breached", nullable = false)
-    @Builder.Default
-    private boolean resolutionBreached = false;
+    private boolean resolutionBreached;
 
     @Column(name = "response_warning_sent", nullable = false)
-    @Builder.Default
-    private boolean responseWarningSent = false;
+    private boolean responseWarningSent;
 
     @Column(name = "resolution_warning_sent", nullable = false)
-    @Builder.Default
-    private boolean resolutionWarningSent = false;
+    private boolean resolutionWarningSent;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -71,10 +69,12 @@ public class TicketSla {
     }
 
     public boolean isResponseBreached() {
-        return responseBreached || (firstResponseAt == null && LocalDateTime.now().isAfter(responseDueAt));
+        return responseBreached
+                || (firstResponseAt == null && LocalDateTime.now().isAfter(responseDueAt));
     }
 
     public boolean isResolutionBreached() {
-        return resolutionBreached || (resolvedAt == null && LocalDateTime.now().isAfter(resolutionDueAt));
+        return resolutionBreached
+                || (resolvedAt == null && LocalDateTime.now().isAfter(resolutionDueAt));
     }
 }

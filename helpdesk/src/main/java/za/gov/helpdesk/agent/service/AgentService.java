@@ -2,6 +2,7 @@ package za.gov.helpdesk.agent.service;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
 import za.gov.helpdesk.agent.dto.request.CreateAgentRequest;
 import za.gov.helpdesk.agent.dto.request.UpdateAgentRequest;
 import za.gov.helpdesk.agent.dto.response.AgentResponse;
@@ -19,5 +20,4 @@ public interface AgentService {
     AgentStatsResponse getAgentStats(Long id);
 
     AgentResponse updateAgent(Long id, UpdateAgentRequest request, User actor);
-
 }

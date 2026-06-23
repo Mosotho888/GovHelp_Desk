@@ -1,7 +1,8 @@
 package za.gov.helpdesk.agent.dto.request;
 
-import lombok.Data;
 import za.gov.helpdesk.agent.model.Agent;
+
+import lombok.Data;
 
 @Data
 public class UpdateAgentRequest {

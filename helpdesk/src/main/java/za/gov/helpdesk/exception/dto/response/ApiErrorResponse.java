@@ -14,8 +14,7 @@ public class ApiErrorResponse {
     private String error;
     private String message;
     private String path;
-    @Builder.Default
-    private List<FieldError> details = List.of();
+    @Builder.Default private List<FieldError> details = List.of();
 
     @Data
     @Builder

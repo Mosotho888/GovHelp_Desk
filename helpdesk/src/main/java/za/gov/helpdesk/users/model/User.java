@@ -13,6 +13,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -57,8 +58,7 @@ public class User {
     private Boolean active = true;
 
     @Column(name = "login_attempts", nullable = false)
-    @Builder.Default
-    private int loginAttempts = 0;
+    private int loginAttempts;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -78,6 +78,8 @@ public class User {
     }
 
     public enum Role {
-        USER, AGENT, ADMIN
+        USER,
+        AGENT,
+        ADMIN
     }
 }

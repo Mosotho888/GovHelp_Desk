@@ -3,6 +3,7 @@ package za.gov.helpdesk.auth.service.impl;
 import java.security.SecureRandom;
 
 import org.springframework.stereotype.Service;
+
 import za.gov.helpdesk.auth.service.OtpGeneratorService;
 
 @Service
@@ -14,7 +15,7 @@ public class OtpGeneratorServiceImpl implements OtpGeneratorService {
 
     @Override
     public String generate() {
-        int otp = SIX_DIGIT_CODE_MIN + RANDOM.nextInt(SIX_DIGIT_CODE_MAX);
+        final int otp = SIX_DIGIT_CODE_MIN + RANDOM.nextInt(SIX_DIGIT_CODE_MAX);
         return String.valueOf(otp);
     }
 }

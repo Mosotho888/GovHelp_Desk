@@ -12,16 +12,22 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "AUDIT_LOG", indexes = {
-        @Index(name = "idx_audit_entity", columnList = "entity_type, entity_id, created_at DESC"),
-        @Index(name = "idx_audit_actor", columnList = "actor_id, created_at DESC"),
-        @Index(name = "idx_audit_action", columnList = "action, created_at DESC"),})
+@Table(
+        name = "AUDIT_LOG",
+        indexes = {
+            @Index(
+                    name = "idx_audit_entity",
+                    columnList = "entity_type, entity_id, created_at DESC"),
+            @Index(name = "idx_audit_actor", columnList = "actor_id, created_at DESC"),
+            @Index(name = "idx_audit_action", columnList = "action, created_at DESC"),
+        })
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -73,11 +79,43 @@ public class AuditLog {
     }
 
     public enum EntityType {
-        TICKET, USER, AGENT, COMMENT, ATTACHMENT, AUTH
+        TICKET,
+        USER,
+        AGENT,
+        COMMENT,
+        ATTACHMENT,
+        AUTH
     }
 
+    @SuppressWarnings("PMD.ExcessivePublicCount")
     public enum AuditAction {
-        TICKET_CREATED, STATUS_CHANGED, ASSIGNED_TO_AGENT, ESCALATED, PRIORITY_CHANGED, TICKET_DELETED, TICKET_CLOSED, USER_CREATED, USER_UPDATED, USER_DEACTIVATED, USER_REACTIVATED, ROLE_CHANGED, PASSWORD_RESET, AGENT_REGISTERED, AVAILABILITY_CHANGED, DEPARTMENT_CHANGED, COMMENT_ADDED, COMMENT_EDITED, COMMENT_DELETED, INTERNAL_NOTE_ADDED, ATTACHMENT_UPLOADED, ATTACHMENT_DELETED, ATTACHMENT_DOWNLOADED, LOGIN_SUCCESS, LOGIN_FAILED, ACCOUNT_LOCKED, TOKEN_REFRESHED, FORCED_LOGOUT
+        TICKET_CREATED,
+        STATUS_CHANGED,
+        ASSIGNED_TO_AGENT,
+        ESCALATED,
+        PRIORITY_CHANGED,
+        TICKET_DELETED,
+        TICKET_CLOSED,
+        USER_CREATED,
+        USER_UPDATED,
+        USER_DEACTIVATED,
+        USER_REACTIVATED,
+        ROLE_CHANGED,
+        PASSWORD_RESET,
+        AGENT_REGISTERED,
+        AVAILABILITY_CHANGED,
+        DEPARTMENT_CHANGED,
+        COMMENT_ADDED,
+        COMMENT_EDITED,
+        COMMENT_DELETED,
+        INTERNAL_NOTE_ADDED,
+        ATTACHMENT_UPLOADED,
+        ATTACHMENT_DELETED,
+        ATTACHMENT_DOWNLOADED,
+        LOGIN_SUCCESS,
+        LOGIN_FAILED,
+        ACCOUNT_LOCKED,
+        TOKEN_REFRESHED,
+        FORCED_LOGOUT
     }
-
 }
