@@ -107,7 +107,6 @@ public class AuditEventPublisher {
      *
      * @param message the structured audit log payload data record to publish
      */
-    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private void publish(final AuditLogMessage message) {
         try {
             outboxWriter.write(

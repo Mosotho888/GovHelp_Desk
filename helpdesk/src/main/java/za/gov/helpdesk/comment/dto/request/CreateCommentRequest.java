@@ -11,7 +11,7 @@ import lombok.Data;
 public class CreateCommentRequest {
 
     @NotBlank(message = "Comment body is required")
-    @Size(max = 10000, message = "Comment must not exceed 10,000 characters")
+    @Size(max = 10_000, message = "Comment must not exceed 10,000 characters")
     private String body;
 
     private boolean internal;

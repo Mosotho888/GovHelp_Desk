@@ -29,7 +29,6 @@ import za.gov.helpdesk.users.service.UserQueryHelper;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
@@ -145,7 +144,9 @@ public class AgentServiceImplTest {
 
         then(agentRepository).should(never()).save(any(Agent.class));
         then(agentMetrics).should(never()).incrementRegistered();
-        then(auditPublisher).should(never()).publishAudit(any(), any(), any(), any(), any(), any(), any());
+        then(auditPublisher)
+                .should(never())
+                .publishAudit(any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test

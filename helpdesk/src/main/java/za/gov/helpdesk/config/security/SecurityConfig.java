@@ -42,6 +42,7 @@ public class SecurityConfig {
     private final UserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final RateLimitingFilter rateLimitingFilter;
+
     @Qualifier("handlerExceptionResolver")
     private final HandlerExceptionResolver resolver;
 

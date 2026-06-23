@@ -58,7 +58,7 @@ public class AuditServiceImpl implements AuditService {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void logAuth(AuthAuditContext context) {
+    public void logAuth(final AuthAuditContext context) {
         try {
             final AuditLog entry =
                     AuditLog.builder()

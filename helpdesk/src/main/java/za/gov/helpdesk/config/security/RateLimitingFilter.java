@@ -41,6 +41,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     private final RateLimitPolicyProvider policyProvider;
     private final AuthMetrics authMetrics;
     private final Environment environment;
+
     @Qualifier("handlerExceptionResolver")
     private final HandlerExceptionResolver resolver;
 

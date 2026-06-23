@@ -56,46 +56,51 @@ class TicketServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        agentUser = User.builder()
-                .id(1L)
-                .name("Jane Agent")
-                .email("jane@gov.za")
-                .role(User.Role.AGENT)
-                .active(true)
-                .build();
+        agentUser =
+                User.builder()
+                        .id(1L)
+                        .name("Jane Agent")
+                        .email("jane@gov.za")
+                        .role(User.Role.AGENT)
+                        .active(true)
+                        .build();
 
-        endUser = User.builder()
-                .id(2L)
-                .name("John Public")
-                .email("john@citizen.za")
-                .role(User.Role.USER)
-                .active(true)
-                .build();
+        endUser =
+                User.builder()
+                        .id(2L)
+                        .name("John Public")
+                        .email("john@citizen.za")
+                        .role(User.Role.USER)
+                        .active(true)
+                        .build();
 
-        adminUser = User.builder()
-                .id(3L)
-                .name("T Mofo")
-                .email("tmofo@citizen.za")
-                .role(User.Role.ADMIN)
-                .active(true)
-                .build();
+        adminUser =
+                User.builder()
+                        .id(3L)
+                        .name("T Mofo")
+                        .email("tmofo@citizen.za")
+                        .role(User.Role.ADMIN)
+                        .active(true)
+                        .build();
 
-        agent = Agent.builder()
-                .id(1L)
-                .user(agentUser)
-                .availability(Agent.Availability.ONLINE)
-                .build();
+        agent =
+                Agent.builder()
+                        .id(1L)
+                        .user(agentUser)
+                        .availability(Agent.Availability.ONLINE)
+                        .build();
 
-        openTicket = Ticket.builder()
-                .id(100L)
-                .subject("Login broken")
-                .description("Cannot access dashboard")
-                .status(Ticket.Status.OPEN)
-                .priority(Ticket.Priority.HIGH)
-                .requester(endUser)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
+        openTicket =
+                Ticket.builder()
+                        .id(100L)
+                        .subject("Login broken")
+                        .description("Cannot access dashboard")
+                        .status(Ticket.Status.OPEN)
+                        .priority(Ticket.Priority.HIGH)
+                        .requester(endUser)
+                        .createdAt(LocalDateTime.now())
+                        .updatedAt(LocalDateTime.now())
+                        .build();
     }
 
     @Test
@@ -125,14 +130,15 @@ class TicketServiceImplTest {
         req.setSubject("Test");
         req.setDescription("Test desc");
 
-        final Ticket mediumTicket = Ticket.builder()
-                .id(101L)
-                .subject("Test")
-                .description("Test desc")
-                .status(Ticket.Status.OPEN)
-                .priority(Ticket.Priority.MEDIUM)
-                .requester(endUser)
-                .build();
+        final Ticket mediumTicket =
+                Ticket.builder()
+                        .id(101L)
+                        .subject("Test")
+                        .description("Test desc")
+                        .status(Ticket.Status.OPEN)
+                        .priority(Ticket.Priority.MEDIUM)
+                        .requester(endUser)
+                        .build();
 
         given(ticketRepository.save(any(Ticket.class))).willReturn(mediumTicket);
         given(ticketMapper.toTicketResponse(mediumTicket)).willReturn(responseFor(mediumTicket));
@@ -143,26 +149,29 @@ class TicketServiceImplTest {
     }
 
     @Test
-    @DisplayName("createTicket() with assigneeId looks up agent and passes execution to coordinator")
+    @DisplayName(
+            "createTicket() with assigneeId looks up agent and passes execution to coordinator")
     void createTicket_withAssigneeId_loadsAgentAndPublishesAssignedEvent() {
         final CreateTicketRequest req = new CreateTicketRequest();
         req.setSubject("Assigned ticket");
         req.setDescription("desc");
         req.setAssigneeId(1L);
 
-        final Ticket ticketWithAssignee = Ticket.builder()
-                .id(102L)
-                .subject("Assigned ticket")
-                .description("desc")
-                .status(Ticket.Status.OPEN)
-                .priority(Ticket.Priority.MEDIUM)
-                .requester(endUser)
-                .assignee(agent)
-                .build();
+        final Ticket ticketWithAssignee =
+                Ticket.builder()
+                        .id(102L)
+                        .subject("Assigned ticket")
+                        .description("desc")
+                        .status(Ticket.Status.OPEN)
+                        .priority(Ticket.Priority.MEDIUM)
+                        .requester(endUser)
+                        .assignee(agent)
+                        .build();
 
         given(agentQuery.findOrThrow(1L)).willReturn(agent);
         given(ticketRepository.save(any(Ticket.class))).willReturn(ticketWithAssignee);
-        given(ticketMapper.toTicketResponse(ticketWithAssignee)).willReturn(responseFor(ticketWithAssignee));
+        given(ticketMapper.toTicketResponse(ticketWithAssignee))
+                .willReturn(responseFor(ticketWithAssignee));
 
         ticketService.createTicket(req, endUser);
 
@@ -199,7 +208,8 @@ class TicketServiceImplTest {
     @Test
     @DisplayName("getTicketById() throws ResourceNotFoundException for unknown ID")
     void getTicketById_unknownId_throwsNotFound() {
-        given(ticketQuery.findOrThrow(999L, endUser)).willThrow(new ResourceNotFoundException("Ticket", 999L));
+        given(ticketQuery.findOrThrow(999L, endUser))
+                .willThrow(new ResourceNotFoundException("Ticket", 999L));
 
         assertThatThrownBy(() -> ticketService.getTicketById(999L, endUser))
                 .isInstanceOf(ResourceNotFoundException.class)
@@ -215,20 +225,26 @@ class TicketServiceImplTest {
         givenAuthorizedTicket(100L, openTicket, agentUser);
 
         // 1. Simulate the coordinator modifying the state of the ticket object
-        doAnswer(invocation -> {
-            Ticket t = invocation.getArgument(0);
-            t.setStatus(Ticket.Status.IN_PROGRESS);
-            return null;
-        }).when(updateCoordinator).applyStatusChange(openTicket, Ticket.Status.IN_PROGRESS, agentUser);
+        doAnswer(
+                        invocation -> {
+                            Ticket t = invocation.getArgument(0);
+                            t.setStatus(Ticket.Status.IN_PROGRESS);
+                            return null;
+                        })
+                .when(updateCoordinator)
+                .applyStatusChange(openTicket, Ticket.Status.IN_PROGRESS, agentUser);
 
         given(ticketRepository.save(any(Ticket.class))).willAnswer(i -> i.getArgument(0));
-        given(ticketMapper.toTicketResponse(any(Ticket.class))).willAnswer(i -> responseFor(i.getArgument(0)));
+        given(ticketMapper.toTicketResponse(any(Ticket.class)))
+                .willAnswer(i -> responseFor(i.getArgument(0)));
 
         final TicketResponse response = ticketService.updateTicket(100L, req, agentUser);
 
         // 2. Verified status matches mutated state and the coordinator was called
         assertThat(response.getStatus()).isEqualTo(Ticket.Status.IN_PROGRESS);
-        then(updateCoordinator).should(times(1)).applyStatusChange(openTicket, Ticket.Status.IN_PROGRESS, agentUser);
+        then(updateCoordinator)
+                .should(times(1))
+                .applyStatusChange(openTicket, Ticket.Status.IN_PROGRESS, agentUser);
     }
 
     @Test
@@ -239,7 +255,8 @@ class TicketServiceImplTest {
 
         givenAuthorizedTicket(100L, openTicket, agentUser);
         given(ticketRepository.save(any(Ticket.class))).willAnswer(i -> i.getArgument(0));
-        given(ticketMapper.toTicketResponse(any(Ticket.class))).willAnswer(i -> responseFor(i.getArgument(0)));
+        given(ticketMapper.toTicketResponse(any(Ticket.class)))
+                .willAnswer(i -> responseFor(i.getArgument(0)));
 
         ticketService.updateTicket(100L, req, agentUser);
 
@@ -249,21 +266,23 @@ class TicketServiceImplTest {
     @Test
     @DisplayName("updateTicket() skips assignment logic entirely when agent is unchanged")
     void updateTicket_sameAssignee_noEventDispatched() {
-        final Ticket assigned = Ticket.builder()
-                .id(100L)
-                .subject("Login broken")
-                .description("desc")
-                .status(Ticket.Status.OPEN)
-                .priority(Ticket.Priority.HIGH)
-                .requester(endUser)
-                .assignee(agent)
-                .build();
+        final Ticket assigned =
+                Ticket.builder()
+                        .id(100L)
+                        .subject("Login broken")
+                        .description("desc")
+                        .status(Ticket.Status.OPEN)
+                        .priority(Ticket.Priority.HIGH)
+                        .requester(endUser)
+                        .assignee(agent)
+                        .build();
         final UpdateTicketRequest req = new UpdateTicketRequest();
         req.setAssigneeId(1L);
 
         givenAuthorizedTicket(100L, assigned, agentUser);
         given(ticketRepository.save(any(Ticket.class))).willAnswer(i -> i.getArgument(0));
-        given(ticketMapper.toTicketResponse(any(Ticket.class))).willAnswer(i -> responseFor(i.getArgument(0)));
+        given(ticketMapper.toTicketResponse(any(Ticket.class)))
+                .willAnswer(i -> responseFor(i.getArgument(0)));
 
         ticketService.updateTicket(100L, req, agentUser);
 
@@ -279,20 +298,26 @@ class TicketServiceImplTest {
         givenAuthorizedTicket(100L, openTicket, agentUser);
 
         // 1. Simulate the coordinator modifying the priority state of the ticket object
-        doAnswer(invocation -> {
-            Ticket t = invocation.getArgument(0);
-            t.setPriority(Ticket.Priority.URGENT);
-            return null;
-        }).when(updateCoordinator).applyPriorityChange(openTicket, Ticket.Priority.URGENT, agentUser);
+        doAnswer(
+                        invocation -> {
+                            Ticket t = invocation.getArgument(0);
+                            t.setPriority(Ticket.Priority.URGENT);
+                            return null;
+                        })
+                .when(updateCoordinator)
+                .applyPriorityChange(openTicket, Ticket.Priority.URGENT, agentUser);
 
         given(ticketRepository.save(any(Ticket.class))).willAnswer(i -> i.getArgument(0));
-        given(ticketMapper.toTicketResponse(any(Ticket.class))).willAnswer(i -> responseFor(i.getArgument(0)));
+        given(ticketMapper.toTicketResponse(any(Ticket.class)))
+                .willAnswer(i -> responseFor(i.getArgument(0)));
 
         final TicketResponse response = ticketService.updateTicket(100L, req, agentUser);
 
         // 2. Verified priority matches mutated state and the coordinator was called
         assertThat(response.getPriority()).isEqualTo(Ticket.Priority.URGENT);
-        then(updateCoordinator).should(times(1)).applyPriorityChange(openTicket, Ticket.Priority.URGENT, agentUser);
+        then(updateCoordinator)
+                .should(times(1))
+                .applyPriorityChange(openTicket, Ticket.Priority.URGENT, agentUser);
     }
 
     @Test
@@ -303,7 +328,8 @@ class TicketServiceImplTest {
 
         givenAuthorizedTicket(100L, openTicket, agentUser);
         given(ticketRepository.save(any(Ticket.class))).willAnswer(i -> i.getArgument(0));
-        given(ticketMapper.toTicketResponse(any(Ticket.class))).willAnswer(i -> responseFor(i.getArgument(0)));
+        given(ticketMapper.toTicketResponse(any(Ticket.class)))
+                .willAnswer(i -> responseFor(i.getArgument(0)));
 
         ticketService.updateTicket(100L, req, agentUser);
 
@@ -319,7 +345,8 @@ class TicketServiceImplTest {
 
         givenAuthorizedTicket(100L, openTicket, agentUser);
         given(ticketRepository.save(any(Ticket.class))).willAnswer(i -> i.getArgument(0));
-        given(ticketMapper.toTicketResponse(any(Ticket.class))).willAnswer(i -> responseFor(i.getArgument(0)));
+        given(ticketMapper.toTicketResponse(any(Ticket.class)))
+                .willAnswer(i -> responseFor(i.getArgument(0)));
 
         ticketService.updateTicket(100L, req, agentUser);
 
@@ -327,24 +354,28 @@ class TicketServiceImplTest {
     }
 
     @Test
-    @DisplayName("updateTicket() escalation on an already-escalated ticket bypasses coordinator escalation blocks")
+    @DisplayName(
+            "updateTicket() escalation on an already-escalated ticket bypasses coordinator"
+                    + " escalation blocks")
     void updateTicket_alreadyEscalated_noEventDispatched() {
-        final Ticket alreadyEscalated = Ticket.builder()
-                .id(100L)
-                .subject("Login broken")
-                .description("desc")
-                .status(Ticket.Status.ESCALATED)
-                .priority(Ticket.Priority.HIGH)
-                .requester(endUser)
-                .escalated(true)
-                .build();
+        final Ticket alreadyEscalated =
+                Ticket.builder()
+                        .id(100L)
+                        .subject("Login broken")
+                        .description("desc")
+                        .status(Ticket.Status.ESCALATED)
+                        .priority(Ticket.Priority.HIGH)
+                        .requester(endUser)
+                        .escalated(true)
+                        .build();
         final UpdateTicketRequest req = new UpdateTicketRequest();
         req.setEscalated(true);
         req.setEscalationReason("Again?");
 
         givenAuthorizedTicket(100L, alreadyEscalated, agentUser);
         given(ticketRepository.save(any(Ticket.class))).willAnswer(i -> i.getArgument(0));
-        given(ticketMapper.toTicketResponse(any(Ticket.class))).willAnswer(i -> responseFor(i.getArgument(0)));
+        given(ticketMapper.toTicketResponse(any(Ticket.class)))
+                .willAnswer(i -> responseFor(i.getArgument(0)));
 
         ticketService.updateTicket(100L, req, agentUser);
 

@@ -86,26 +86,11 @@ public class TicketServiceImpl implements TicketService {
 
         final Ticket ticket = ticketQuery.findOrThrow(ticketId, actor);
 
-        if (request.getStatus() != null && !ticket.getStatus().equals(request.getStatus())) {
-            updateCoordinator.applyStatusChange(ticket, request.getStatus(), actor);
-        }
-
-        if (request.getAssigneeId() != null &&
-                (ticket.getAssignee() == null || !ticket.getAssignee().getId().equals(request.getAssigneeId()))) {
-            updateCoordinator.applyAssignmentChange(ticket, request.getAssigneeId(), actor);
-        }
-
-        if (request.getPriority() != null && !ticket.getPriority().equals(request.getPriority())) {
-            updateCoordinator.applyPriorityChange(ticket, request.getPriority(), actor);
-        }
-
-        if (request.getCategory() != null) {
-            ticket.setCategory(request.getCategory());
-        }
-
-        if (Boolean.TRUE.equals(request.getEscalated()) && !ticket.isEscalated()) {
-            updateCoordinator.applyEscalation(ticket, request.getEscalationReason(), actor);
-        }
+        processStatusUpdate(ticket, request, actor);
+        processAssigneeUpdate(ticket, request, actor);
+        processPriorityUpdate(ticket, request, actor);
+        processCategoryUpdate(ticket, request);
+        processEscalationUpdate(ticket, request, actor);
 
         return ticketMapper.toTicketResponse(ticketRepository.save(ticket));
     }
@@ -121,5 +106,41 @@ public class TicketServiceImpl implements TicketService {
         final Ticket ticket = ticketQuery.findOrThrow(ticketId, actor);
 
         updateCoordinator.handleDeletion(ticket, actor);
+    }
+
+    private void processStatusUpdate(
+            final Ticket ticket, final UpdateTicketRequest request, final User actor) {
+        if (request.getStatus() != null && !ticket.getStatus().equals(request.getStatus())) {
+            updateCoordinator.applyStatusChange(ticket, request.getStatus(), actor);
+        }
+    }
+
+    private void processAssigneeUpdate(
+            final Ticket ticket, final UpdateTicketRequest request, final User actor) {
+        if (request.getAssigneeId() != null
+                && (ticket.getAssignee() == null
+                        || !ticket.getAssignee().getId().equals(request.getAssigneeId()))) {
+            updateCoordinator.applyAssignmentChange(ticket, request.getAssigneeId(), actor);
+        }
+    }
+
+    private void processPriorityUpdate(
+            final Ticket ticket, final UpdateTicketRequest request, final User actor) {
+        if (request.getPriority() != null && !ticket.getPriority().equals(request.getPriority())) {
+            updateCoordinator.applyPriorityChange(ticket, request.getPriority(), actor);
+        }
+    }
+
+    private void processCategoryUpdate(final Ticket ticket, final UpdateTicketRequest request) {
+        if (request.getCategory() != null) {
+            ticket.setCategory(request.getCategory());
+        }
+    }
+
+    private void processEscalationUpdate(
+            final Ticket ticket, final UpdateTicketRequest request, final User actor) {
+        if (Boolean.TRUE.equals(request.getEscalated()) && !ticket.isEscalated()) {
+            updateCoordinator.applyEscalation(ticket, request.getEscalationReason(), actor);
+        }
     }
 }

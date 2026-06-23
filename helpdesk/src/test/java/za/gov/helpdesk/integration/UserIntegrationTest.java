@@ -241,7 +241,9 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                         .getContentAsString();
         final long userId = mapper.readTree(body).get("id").asLong();
 
-        mvc.perform(delete("/v1/admin/users/" + userId).header("Authorization", "Bearer " + adminToken))
+        mvc.perform(
+                        delete("/v1/admin/users/" + userId)
+                                .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isNoContent());
 
         // Deactivated users cannot log in
@@ -281,7 +283,9 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                         .getContentAsString();
         final long userId = mapper.readTree(body).get("id").asLong();
 
-        mvc.perform(delete("/v1/admin/users/" + userId).header("Authorization", "Bearer " + adminToken))
+        mvc.perform(
+                        delete("/v1/admin/users/" + userId)
+                                .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isNoContent());
 
         // Reactivate

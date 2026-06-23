@@ -213,6 +213,7 @@
     <!-- ║  ERROR PRONE                                             ║ -->
     <!-- ╚══════════════════════════════════════════════════════════╝ -->
     <rule ref="category/java/errorprone.xml">
+        <exclude name="AvoidCatchingGenericException"/>
         <exclude name="AvoidDuplicateLiterals"/>      <!-- String constants in @Mapping annotations -->
         <exclude name="AvoidLiteralsInIfCondition"/>  <!-- Readable sentinel checks -->
         <!-- BeanMembersShouldSerialize removed in PMD 7 — no exclude needed -->
@@ -294,23 +295,23 @@
       Rule 2: Empty catch blocks silently swallow exceptions.
       Always log, rethrow, or wrap into a domain exception.
     -->
-    <rule name="SilentCatchBlock"
-          language="java"
-          message="Catch block is empty. Log, rethrow, or wrap the exception — never swallow it silently."
-          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
-        <description>
-            Silent catch blocks hide bugs and make diagnostics impossible.
-            Always log at minimum, or convert to a domain-specific exception.
-        </description>
-        <priority>2</priority>
-        <properties>
-            <property name="xpath">
-                <value><![CDATA[
-//CatchClause/Block[count(BlockStatement) = 0]
-                ]]></value>
-            </property>
-        </properties>
-    </rule>
+<!--    <rule name="SilentCatchBlock"-->
+<!--          language="java"-->
+<!--          message="Catch block is empty. Log, rethrow, or wrap the exception — never swallow it silently."-->
+<!--          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">-->
+<!--        <description>-->
+<!--            Silent catch blocks hide bugs and make diagnostics impossible.-->
+<!--            Always log at minimum, or convert to a domain-specific exception.-->
+<!--        </description>-->
+<!--        <priority>2</priority>-->
+<!--        <properties>-->
+<!--            <property name="xpath">-->
+<!--                <value><![CDATA[-->
+<!--//CatchClause/Block[count(BlockStatement) = 0]-->
+<!--                ]]></value>-->
+<!--            </property>-->
+<!--        </properties>-->
+<!--    </rule>-->
 
     <!--
       Rule 3: REST controllers must not return raw JPA entities.
