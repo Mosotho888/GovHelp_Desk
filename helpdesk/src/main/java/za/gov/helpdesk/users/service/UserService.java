@@ -2,7 +2,7 @@ package za.gov.helpdesk.users.service;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import za.gov.helpdesk.users.dto.request.AdminPasswordResetRequest;
+
 import za.gov.helpdesk.users.dto.request.ChangePasswordRequest;
 import za.gov.helpdesk.users.dto.request.CreateUserRequest;
 import za.gov.helpdesk.users.dto.request.UpdateUserRequest;
@@ -21,13 +21,7 @@ public interface UserService {
 
     UserResponse updateUser(Long id, UpdateUserRequest request, User actor);
 
-    void deactivateUser(Long id, User actor);
-
-    void adminResetPassword(Long targetUserId, AdminPasswordResetRequest request, User admin);
+    User saveUser(User user);
 
     void changeOwnPassword(ChangePasswordRequest request, User actor);
-
-    void reactivateUser(Long id, User admin);
-
-    UserResponse changeUserRole(Long id, User.Role newRole, User admin);
 }
