@@ -430,7 +430,7 @@
                     <sourceDirectories>
                         <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
                     </sourceDirectories>
-                    
+
                     <excludes>**/generated-sources/**,**/generated-test-sources/**</excludes>
                     <linkXRef>false</linkXRef>
                     <logViolationsToConsole>true</logViolationsToConsole>
