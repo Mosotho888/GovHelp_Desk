@@ -24,7 +24,7 @@ public class FileStorageServiceImpl implements FileStorageService {
 
     @Value("${app.upload.storage-path}")
     private String uploadRoot;
-    
+
     @Override
     public String store(final Long ticketId, final MultipartFile file) {
         try {
