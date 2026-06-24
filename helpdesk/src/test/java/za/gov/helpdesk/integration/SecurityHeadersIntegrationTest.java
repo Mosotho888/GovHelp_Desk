@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -18,7 +19,7 @@ public class SecurityHeadersIntegrationTest extends BaseIntegrationTest {
     @Test
     @DisplayName("Response includes Strict-Transport-Security header")
     void response_includesHstsHeader() throws Exception {
-        mvc.perform(get("/v1/auth/login").secure(true))
+        mvc.perform(post("/v1/auth/login").secure(true))
                 .andExpect(header().exists("Strict-Transport-Security"))
                 .andExpect(
                         header().string(
@@ -29,13 +30,13 @@ public class SecurityHeadersIntegrationTest extends BaseIntegrationTest {
     @Test
     @DisplayName("Response includes X-Frame-Options: DENY header")
     void response_includesXFrameOptionsHeader() throws Exception {
-        mvc.perform(get("/v1/auth/login")).andExpect(header().string("X-Frame-Options", "DENY"));
+        mvc.perform(post("/v1/auth/login")).andExpect(header().string("X-Frame-Options", "DENY"));
     }
 
     @Test
     @DisplayName("Response includes Content-Security-Policy header")
     void response_includesCspHeader() throws Exception {
-        mvc.perform(get("/v1/auth/login"))
+        mvc.perform(post("/v1/auth/login"))
                 .andExpect(header().exists("Content-Security-Policy"))
                 .andExpect(
                         header().string(
