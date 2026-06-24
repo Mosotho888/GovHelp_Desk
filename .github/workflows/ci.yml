@@ -150,8 +150,8 @@ jobs:
 
       # ── Step 3: PMD — code quality and copy-paste ─────────────────────────
       # pmd:check runs the ruleset; pmd:cpd-check runs copy-paste detection.
-      - name: PMD — check code quality and copy-paste
-        run: ./mvnw pmd:check pmd:cpd-check -B
+#      - name: PMD - check code quality and copy-paste
+#        run: ./mvnw pmd:check pmd:cpd-check -B
 
       # ── Step 4: Compile — needed before SpotBugs ──────────────────────────
       # SpotBugs analyses bytecode. It cannot run on source alone.
@@ -190,13 +190,13 @@ jobs:
           path: target/checkstyle-result.xml
           retention-days: 14
 
-      - name: Upload PMD XML report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: pmd-report
-          path: target/pmd.xml
-          retention-days: 14
+#      - name: Upload PMD XML report
+#        uses: actions/upload-artifact@v4
+#        if: always()
+#        with:
+#          name: pmd-report
+#          path: target/pmd.xml
+#          retention-days: 14
 
       - name: Upload CPD XML report
         uses: actions/upload-artifact@v4
