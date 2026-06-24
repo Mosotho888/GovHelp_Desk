@@ -173,15 +173,6 @@ jobs:
       - name: SpotBugs — check compiled bytecode
         run: ./mvnw spotbugs:check -B
 
-      # Upload SpotBugs HTML report whether the job passed or failed.
-      - name: Upload SpotBugs report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: spotbugs-report
-          path: helpdesk/target/spotbugsXml.xml
-          retention-days: 14
-
       # ── Upload all reports as artifacts ───────────────────────────────────
       - name: Upload SpotBugs XML report
         uses: actions/upload-artifact@v4
