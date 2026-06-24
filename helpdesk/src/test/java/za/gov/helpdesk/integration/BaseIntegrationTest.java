@@ -53,10 +53,8 @@ public abstract class BaseIntegrationTest {
     @BeforeEach
     void cleanDatabase() {
         jdbcTemplate.execute(
-                """
-                TRUNCATE TABLE outbox_events, audit_log, attachments, comments, ticket_sla,
-                refresh_tokens, password_reset_tokens, tickets, agents, users
-                RESTART IDENTITY CASCADE
-                """);
+                "TRUNCATE TABLE outbox_events, audit_log, attachments, comments, ticket_sla,"
+                        + " refresh_tokens, password_reset_tokens, tickets, agents, users RESTART"
+                        + " IDENTITY CASCADE;");
     }
 }
