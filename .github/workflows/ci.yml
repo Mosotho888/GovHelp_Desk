@@ -30,6 +30,10 @@ jobs:
     name: Build & Test
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: helpdesk
+
     # Testcontainers pulls postgres:18-alpine and rabbitmq:3.13-management-alpine
     # from Docker Hub at runtime. The ubuntu-latest runner has Docker pre-installed
     # so Testcontainers works without any extra service container declarations here.
@@ -52,6 +56,7 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: temurin
           cache: maven
+          cache-dependency-path: helpdesk/pom.xml
 
       # 3. Make mvnw executable. The repo was developed on Windows so the
       #    wrapper may not have the execute bit set in Git.
@@ -85,7 +90,7 @@ jobs:
         if: always()
         with:
           name: jacoco-report
-          path: target/site/jacoco/
+          path: helpdesk/target/site/jacoco/
           retention-days: 14
 
       # 6. Upload Surefire test results as an artifact so failures are visible
@@ -95,7 +100,7 @@ jobs:
         if: always()
         with:
           name: surefire-results
-          path: target/surefire-reports/
+          path: helpdesk/target/surefire-reports/
           retention-days: 7
 
   # ── JOB 2: Static analysis ────────────────────────────────────────────────
@@ -119,6 +124,9 @@ jobs:
   static-analysis:
     name: Static Analysis
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: helpdesk
     # Run in parallel with build-and-test — no dependency between them.
     # If either fails the overall CI status is red.
 
@@ -133,6 +141,7 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: temurin
           cache: maven
+          cache-dependency-path: helpdesk/pom.xml
 
       - name: Make Maven wrapper executable
         run: chmod +x mvnw
@@ -170,7 +179,7 @@ jobs:
         if: always()
         with:
           name: spotbugs-report
-          path: target/spotbugsXml.xml
+          path: helpdesk/target/spotbugsXml.xml
           retention-days: 14
 
       # ── Upload all reports as artifacts ───────────────────────────────────
@@ -179,7 +188,7 @@ jobs:
         if: always()
         with:
           name: spotbugs-report
-          path: target/spotbugsXml.xml
+          path: helpdesk/target/spotbugsXml.xml
           retention-days: 14
 
       - name: Upload Checkstyle XML report
@@ -187,7 +196,7 @@ jobs:
         if: always()
         with:
           name: checkstyle-report
-          path: target/checkstyle-result.xml
+          path: helpdesk/target/checkstyle-result.xml
           retention-days: 14
 
 #      - name: Upload PMD XML report
@@ -203,7 +212,7 @@ jobs:
         if: always()
         with:
           name: cpd-report
-          path: target/cpd.xml
+          path: helpdesk/target/cpd.xml
           retention-days: 14
 
   # --------- JOB 3: Docker build & push --------
@@ -260,7 +269,7 @@ jobs:
         id: build
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./helpdesk
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
