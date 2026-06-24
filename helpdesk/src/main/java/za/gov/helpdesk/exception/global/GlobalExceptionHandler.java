@@ -132,7 +132,10 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleBadCredentials(
             final BadCredentialsException ex, final HttpServletRequest req) {
 
-        log.warn("Failed login attempt on path: {} [Reason: {}]", req.getRequestURI(), ex.getMessage());
+        log.warn(
+                "Failed login attempt on path: {} [Reason: {}]",
+                req.getRequestURI(),
+                ex.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(
                         error(
