@@ -377,7 +377,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
     @Test
     @DisplayName("PATCH /users/me/password returns 400 when current password is wrong")
-    void changeOwnPassword_wrongCurrentPassword_returns400() throws Exception {
+    void changeOwnPassword_wrongCurrentPassword_returns401() throws Exception {
         mvc.perform(
                         patch("/v1/users/me/password")
                                 .header("Authorization", "Bearer " + userToken)
