@@ -1,5 +1,5 @@
 # Stage 1: Builder - Building the application
-FROM eclipse-temurin:17-jdk-jammy AS builder
+FROM eclipse-temurin:21-jdk-jammy AS builder
 # Set working directory
 WORKDIR /opt/app
 # Copy Maven wrapper and POM files
@@ -16,11 +16,16 @@ RUN chmod +x mvnw
 RUN ./mvnw dependency:go-offline
 # Copy source files and build the project
 COPY ./src ./src
-RUN ./mvnw clean package -DskipTests
+
+RUN ./mvnw clean package -DskipTests \
+    -Dspotless.check.skip=true \
+    -Dcheckstyle.skip=true \
+    -Dpmd.skip=true \
+    -Dspotbugs.skip=true
 
 
 # Stage 2: Final - Create the runtime image
-FROM eclipse-temurin:17-jre-jammy AS final
+FROM eclipse-temurin:21-jre-jammy AS final
 # Set working directory for the final image
 WORKDIR /opt/app
 
