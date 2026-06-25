@@ -46,12 +46,12 @@ public abstract class BaseIntegrationTest {
         RABBIT_MQ_CONTAINER.start();
     }
 
-    @Autowired private JdbcTemplate jdbcTemplate;
     @Autowired protected MockMvc mvc;
     @Autowired protected ObjectMapper mapper;
     @Autowired protected UserRepository userRepository;
     @Autowired protected PasswordEncoder passwordEncoder;
     @Autowired protected SlaPolicyRepository slaPolicyRepository;
+    @Autowired private JdbcTemplate jdbcTemplate;
 
     @DynamicPropertySource
     static void configureProperties(final DynamicPropertyRegistry registry) {
@@ -121,7 +121,7 @@ public abstract class BaseIntegrationTest {
                         .build());
     }
 
-    protected User createAgentUser(String name, String email, String password) {
+    protected User createAgentUser(final String name, final String email, final String password) {
         return userRepository.save(
                 User.builder()
                         .name(name)
