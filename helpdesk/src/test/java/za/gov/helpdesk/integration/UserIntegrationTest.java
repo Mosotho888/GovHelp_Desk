@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -390,23 +389,5 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                                                         "newPassword",
                                                         "NewUserPass1!"))))
                 .andExpect(status().isUnauthorized());
-    }
-
-    private String login(final String email, final String password) throws Exception {
-        final MvcResult result =
-                mvc.perform(
-                                post("/v1/auth/login")
-                                        .contentType(MediaType.APPLICATION_JSON)
-                                        .content(
-                                                mapper.writeValueAsString(
-                                                        Map.of(
-                                                                "email",
-                                                                email,
-                                                                "password",
-                                                                password))))
-                        .andReturn();
-        return mapper.readTree(result.getResponse().getContentAsString())
-                .get("accessToken")
-                .asText();
     }
 }

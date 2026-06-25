@@ -8,17 +8,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.agent.repository.jpa.AgentRepository;
-import za.gov.helpdesk.sla.model.SlaPolicy;
-import za.gov.helpdesk.sla.repository.SlaPolicyRepository;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
 import za.gov.helpdesk.users.model.User;
@@ -39,12 +32,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("Comment integration tests")
 public class CommentIntegrationTest extends BaseIntegrationTest {
 
-    @Autowired private MockMvc mvc;
-    @Autowired private ObjectMapper mapper;
     @Autowired private UserRepository userRepository;
     @Autowired private AgentRepository agentRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
-    @Autowired private SlaPolicyRepository slaPolicyRepository;
     @Autowired private TicketRepository ticketRepository;
 
     @MockitoBean private JavaMailSender mailSender;
@@ -60,35 +49,9 @@ public class CommentIntegrationTest extends BaseIntegrationTest {
         agentRepository.deleteAll();
         slaPolicyRepository.deleteAll();
         userRepository.deleteAll();
-        slaPolicyRepository.save(
-                SlaPolicy.builder()
-                        .priority(Ticket.Priority.MEDIUM)
-                        .resolutionMinutes(480) // Example threshold metric
-                        .responseMinutes(480)
-                        .build());
-        final User citizen =
-                userRepository.save(
-                        User.builder()
-                                .name("John Public")
-                                .email("john@citizen.za")
-                                .passwordHash(passwordEncoder.encode("UserPass1!"))
-                                .role(User.Role.USER)
-                                .active(true)
-                                .loginAttempts(0)
-                                .timezone("Africa/Johannesburg")
-                                .build());
 
-        final User agentUser =
-                userRepository.save(
-                        User.builder()
-                                .name("Jane Agent")
-                                .email("jane@gov.za")
-                                .passwordHash(passwordEncoder.encode("AgentPass1!"))
-                                .role(User.Role.AGENT)
-                                .active(true)
-                                .loginAttempts(0)
-                                .timezone("Africa/Johannesburg")
-                                .build());
+        seedCoreUsersAndSla();
+        final User agentUser = saveAgentUser();
 
         agent =
                 agentRepository.save(
@@ -395,24 +358,6 @@ public class CommentIntegrationTest extends BaseIntegrationTest {
                                 .header("Authorization", "Bearer " + userToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(0)));
-    }
-
-    private String login(final String email, final String password) throws Exception {
-        final MvcResult result =
-                mvc.perform(
-                                post("/v1/auth/login")
-                                        .contentType(MediaType.APPLICATION_JSON)
-                                        .content(
-                                                mapper.writeValueAsString(
-                                                        Map.of(
-                                                                "email",
-                                                                email,
-                                                                "password",
-                                                                password))))
-                        .andReturn();
-        return mapper.readTree(result.getResponse().getContentAsString())
-                .get("accessToken")
-                .asText();
     }
 
     private long createTicket(final String token, final String subject, final String description)

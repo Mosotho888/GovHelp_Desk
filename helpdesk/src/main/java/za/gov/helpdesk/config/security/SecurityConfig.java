@@ -22,8 +22,6 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import za.gov.helpdesk.auth.jwt.JwtAuthenticationFilter;
 
-import lombok.RequiredArgsConstructor;
-
 /**
  * Core security configuration component defining the application's network security perimeter
  * layer. Configures the primary web filter chains, HTTP firewall rule sets, request routing
@@ -33,7 +31,6 @@ import lombok.RequiredArgsConstructor;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@RequiredArgsConstructor
 public class SecurityConfig {
 
     private static final int PASSWORD_STRENGTH = 12;
@@ -43,8 +40,18 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final RateLimitingFilter rateLimitingFilter;
 
-    @Qualifier("handlerExceptionResolver")
     private final HandlerExceptionResolver resolver;
+
+    public SecurityConfig(
+            UserDetailsService userDetailsService,
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            RateLimitingFilter rateLimitingFilter,
+            @Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver) {
+        this.userDetailsService = userDetailsService;
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.rateLimitingFilter = rateLimitingFilter;
+        this.resolver = resolver;
+    }
 
     /**
      * Constructs and wires the primary {@link SecurityFilterChain} defining request-matching rules

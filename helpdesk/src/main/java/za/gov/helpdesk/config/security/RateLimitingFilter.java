@@ -26,10 +26,8 @@ import za.gov.helpdesk.exception.RateLimitExceededException;
 
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
-import lombok.RequiredArgsConstructor;
 
 @Component
-@RequiredArgsConstructor
 public class RateLimitingFilter extends OncePerRequestFilter {
 
     private static final int EXPIRE_DURATION = 2;
@@ -42,7 +40,6 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     private final AuthMetrics authMetrics;
     private final Environment environment;
 
-    @Qualifier("handlerExceptionResolver")
     private final HandlerExceptionResolver resolver;
 
     private final Cache<String, Bucket> buckets =
@@ -50,6 +47,17 @@ public class RateLimitingFilter extends OncePerRequestFilter {
                     .expireAfterAccess(Duration.ofHours(EXPIRE_DURATION))
                     .maximumSize(MAX_SIZE)
                     .build();
+
+    public RateLimitingFilter(
+            RateLimitPolicyProvider policyProvider,
+            AuthMetrics authMetrics,
+            Environment environment,
+            @Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver) {
+        this.policyProvider = policyProvider;
+        this.authMetrics = authMetrics;
+        this.environment = environment;
+        this.resolver = resolver;
+    }
 
     @Override
     protected void doFilterInternal(

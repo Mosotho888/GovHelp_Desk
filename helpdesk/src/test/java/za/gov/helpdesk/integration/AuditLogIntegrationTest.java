@@ -8,11 +8,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.agent.repository.jpa.AgentRepository;
@@ -22,7 +17,6 @@ import za.gov.helpdesk.sla.repository.SlaPolicyRepository;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
 import za.gov.helpdesk.users.model.User;
-import za.gov.helpdesk.users.repository.UserRepository;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -36,12 +30,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("Audit Log Integration Tests")
 public class AuditLogIntegrationTest extends BaseIntegrationTest {
 
-    @Autowired private MockMvc mvc;
-    @Autowired private ObjectMapper mapper;
-    @Autowired private UserRepository userRepository;
     @Autowired private AgentRepository agentRepository;
     @Autowired private TicketRepository ticketRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private SlaPolicyRepository slaPolicyRepository;
     @Autowired private AuditLogRepository auditLogRepository; // or OutboxRepository
 
@@ -54,10 +44,8 @@ public class AuditLogIntegrationTest extends BaseIntegrationTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        // 💡 THE FIX: Clear old state records to prevent duplicate email key constraints violations
-        // across tests
         auditLogRepository.deleteAll();
-        ticketRepository.deleteAll(); // ← ADD THIS
+        ticketRepository.deleteAll();
         agentRepository.deleteAll();
         userRepository.deleteAll();
 
@@ -69,28 +57,8 @@ public class AuditLogIntegrationTest extends BaseIntegrationTest {
             slaPolicyRepository.save(mediumPolicy);
         }
 
-        userRepository.save(
-                User.builder()
-                        .name("System Admin")
-                        .email("admin@gov.za")
-                        .passwordHash(passwordEncoder.encode("AdminPass1!"))
-                        .role(User.Role.ADMIN)
-                        .active(true)
-                        .loginAttempts(0)
-                        .timezone("Africa/Johannesburg")
-                        .build());
-
-        final User agentUser =
-                userRepository.save(
-                        User.builder()
-                                .name("Jane Agent")
-                                .email("jane@gov.za")
-                                .passwordHash(passwordEncoder.encode("AgentPass1!"))
-                                .role(User.Role.AGENT)
-                                .active(true)
-                                .loginAttempts(0)
-                                .timezone("Africa/Johannesburg")
-                                .build());
+        seedTestUsers();
+        final User agentUser = createAgentUser("Jane Agent", "jane@gov.za", "AgentPass1!");
         agentUserId = agentUser.getId();
 
         final Agent agent =
@@ -100,17 +68,6 @@ public class AuditLogIntegrationTest extends BaseIntegrationTest {
                                 .availability(Agent.Availability.ONLINE)
                                 .build());
         agentId = agent.getId();
-
-        userRepository.save(
-                User.builder()
-                        .name("John Public")
-                        .email("john@citizen.za")
-                        .passwordHash(passwordEncoder.encode("UserPass1!"))
-                        .role(User.Role.USER)
-                        .active(true)
-                        .loginAttempts(0)
-                        .timezone("Africa/Johannesburg")
-                        .build());
 
         adminToken = login("admin@gov.za", "AdminPass1!");
         agentToken = login("jane@gov.za", "AgentPass1!");
@@ -288,23 +245,5 @@ public class AuditLogIntegrationTest extends BaseIntegrationTest {
                                 .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray());
-    }
-
-    private String login(final String email, final String password) throws Exception {
-        final MvcResult result =
-                mvc.perform(
-                                post("/v1/auth/login")
-                                        .contentType(MediaType.APPLICATION_JSON)
-                                        .content(
-                                                mapper.writeValueAsString(
-                                                        Map.of(
-                                                                "email",
-                                                                email,
-                                                                "password",
-                                                                password))))
-                        .andReturn();
-        return mapper.readTree(result.getResponse().getContentAsString())
-                .get("accessToken")
-                .asText();
     }
 }

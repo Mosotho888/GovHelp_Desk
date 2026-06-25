@@ -5,16 +5,9 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import za.gov.helpdesk.users.model.User;
-import za.gov.helpdesk.users.repository.UserRepository;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -26,11 +19,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("Agent integration tests")
 public class AgentIntegrationTest extends BaseIntegrationTest {
 
-    @Autowired private MockMvc mvc;
-    @Autowired private ObjectMapper mapper;
-    @Autowired private UserRepository userRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
-
     private String adminToken;
     private String agentToken;
     private String userToken;
@@ -39,40 +27,11 @@ public class AgentIntegrationTest extends BaseIntegrationTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        userRepository.save(
-                User.builder()
-                        .name("System Admin")
-                        .email("admin@gov.za")
-                        .passwordHash(passwordEncoder.encode("AdminPass1!"))
-                        .role(User.Role.ADMIN)
-                        .active(true)
-                        .loginAttempts(0)
-                        .timezone("Africa/Johannesburg")
-                        .build());
+        userRepository.deleteAll();
 
-        final User agentUser =
-                userRepository.save(
-                        User.builder()
-                                .name("Jane Agent")
-                                .email("jane@gov.za")
-                                .passwordHash(passwordEncoder.encode("AgentPass1!"))
-                                .role(User.Role.AGENT)
-                                .active(true)
-                                .loginAttempts(0)
-                                .timezone("Africa/Johannesburg")
-                                .build());
+        seedTestUsers();
+        final User agentUser = createAgentUser("Jane Agent", "jane@gov.za", "AgentPass1!");
         agentUserId = agentUser.getId();
-
-        userRepository.save(
-                User.builder()
-                        .name("John Public")
-                        .email("john@citizen.za")
-                        .passwordHash(passwordEncoder.encode("UserPass1!"))
-                        .role(User.Role.USER)
-                        .active(true)
-                        .loginAttempts(0)
-                        .timezone("Africa/Johannesburg")
-                        .build());
 
         adminToken = login("admin@gov.za", "AdminPass1!");
         userToken = login("john@citizen.za", "UserPass1!");
@@ -243,23 +202,5 @@ public class AgentIntegrationTest extends BaseIntegrationTest {
                         get("/v1/agents/" + agentId + "/stats")
                                 .header("Authorization", "Bearer " + agentToken))
                 .andExpect(status().isForbidden());
-    }
-
-    private String login(final String email, final String password) throws Exception {
-        final MvcResult result =
-                mvc.perform(
-                                post("/v1/auth/login")
-                                        .contentType(MediaType.APPLICATION_JSON)
-                                        .content(
-                                                mapper.writeValueAsString(
-                                                        Map.of(
-                                                                "email",
-                                                                email,
-                                                                "password",
-                                                                password))))
-                        .andReturn();
-        return mapper.readTree(result.getResponse().getContentAsString())
-                .get("accessToken")
-                .asText();
     }
 }

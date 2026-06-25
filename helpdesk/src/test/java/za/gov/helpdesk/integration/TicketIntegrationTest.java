@@ -8,21 +8,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.agent.repository.jpa.AgentRepository;
 import za.gov.helpdesk.sla.model.SlaPolicy;
-import za.gov.helpdesk.sla.repository.SlaPolicyRepository;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
 import za.gov.helpdesk.users.model.User;
-import za.gov.helpdesk.users.repository.UserRepository;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -33,12 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("Ticket integration tests")
 public class TicketIntegrationTest extends BaseIntegrationTest {
 
-    @Autowired private MockMvc mvc;
-    @Autowired private ObjectMapper mapper;
-    @Autowired private UserRepository userRepository;
     @Autowired private AgentRepository agentRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
-    @Autowired private SlaPolicyRepository slaPolicyRepository;
     @Autowired private TicketRepository ticketRepository;
 
     @MockitoBean private JavaMailSender mailSender;
@@ -55,48 +43,23 @@ public class TicketIntegrationTest extends BaseIntegrationTest {
         agentRepository.deleteAll();
         userRepository.deleteAll();
 
-        slaPolicyRepository.save(
-                SlaPolicy.builder()
-                        .priority(Ticket.Priority.MEDIUM)
-                        .resolutionMinutes(480)
-                        .responseMinutes(480)
-                        .build());
+        seedCoreUsersAndSla();
 
+        // Extra policies unique to Ticket testing
         slaPolicyRepository.save(
                 SlaPolicy.builder()
                         .priority(Ticket.Priority.HIGH)
                         .resolutionMinutes(120)
                         .responseMinutes(120)
                         .build());
-
         slaPolicyRepository.save(
                 SlaPolicy.builder()
                         .priority(Ticket.Priority.URGENT)
                         .resolutionMinutes(60)
                         .responseMinutes(60)
                         .build());
-        userRepository.save(
-                User.builder()
-                        .name("John Public")
-                        .email("john@citizen.za")
-                        .passwordHash(passwordEncoder.encode("UserPass1!"))
-                        .role(User.Role.USER)
-                        .active(true)
-                        .loginAttempts(0)
-                        .timezone("Africa/Johannesburg")
-                        .build());
 
-        final User agentUser =
-                userRepository.save(
-                        User.builder()
-                                .name("Jane Agent")
-                                .email("jane@gov.za")
-                                .passwordHash(passwordEncoder.encode("AgentPass1!"))
-                                .role(User.Role.AGENT)
-                                .active(true)
-                                .loginAttempts(0)
-                                .timezone("Africa/Johannesburg")
-                                .build());
+        final User agentUser = saveAgentUser();
         agentId =
                 agentRepository
                         .save(
@@ -436,23 +399,5 @@ public class TicketIntegrationTest extends BaseIntegrationTest {
                                 .content(
                                         mapper.writeValueAsString(Map.of("status", "IN_PROGRESS"))))
                 .andExpect(status().isNotFound());
-    }
-
-    private String login(final String email, final String password) throws Exception {
-        final MvcResult result =
-                mvc.perform(
-                                post("/v1/auth/login")
-                                        .contentType(MediaType.APPLICATION_JSON)
-                                        .content(
-                                                mapper.writeValueAsString(
-                                                        Map.of(
-                                                                "email",
-                                                                email,
-                                                                "password",
-                                                                password))))
-                        .andReturn();
-        return mapper.readTree(result.getResponse().getContentAsString())
-                .get("accessToken")
-                .asText();
     }
 }
