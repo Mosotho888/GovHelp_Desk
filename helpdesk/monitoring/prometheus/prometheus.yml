@@ -1,0 +1,20 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+
+  - job_name: 'helpdesk-api'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: [ 'spring-boot-app:8080' ]
+    # Attach a human-readable label so Grafana queries can filter by app
+    relabel_configs:
+      - source_labels: [ __address__ ]
+        target_label: instance
+        replacement: 'helpdesk-api'
+
+  # Scrape Prometheus itself so you can alert on scrape health
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: [ 'localhost:9090' ]

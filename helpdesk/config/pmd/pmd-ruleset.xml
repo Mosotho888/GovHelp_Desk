@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         name="GovHelpDesk PMD Ruleset"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0
+                             https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <!--
+      ============================================================
+      GovHelpDesk — PMD Ruleset
+      Version   : 2.0.0  (PMD 7.x compatible)
+      Toolchain : PMD 7.25.0 / maven-pmd-plugin 3.23.0
+      Standard  : Enterprise Spring Boot 3.5 / Java 17
+      ============================================================
+      CHANGES FROM v1.0.0 (all driven by PMD 7.x breaking changes):
+
+      REMOVED excludes (rules no longer exist in PMD 7):
+        bestpractices : JUnitAssertionsShouldIncludeMessage
+                        JUnitTestContainsTooManyAsserts
+                        JUnitTestsShouldIncludeAssert
+        codestyle     : DefaultPackage
+        errorprone    : BeanMembersShouldSerialize
+                        DataflowAnomalyAnalysis
+        performance   : AvoidInstantiatingObjectsJustToGetClass
+
+      FIXED FieldNamingConventions properties (PMD 7 renamed them):
+        staticPattern       → REMOVED (no longer a property)
+        finalFieldPattern   → REMOVED (no longer a property)
+        defaultPattern      → REMOVED (no longer a property)
+        PMD 7 properties    : enumConstantPattern, constantPattern,
+                              publicConstantPattern (kept)
+
+      FIXED duplicate rule references (PMD 7 warns on these):
+        design.xml/NPathComplexity        → override only, no full-set ref
+        design.xml/TooManyFields          → override only
+        design.xml/CouplingBetweenObjects → override only
+
+      REMOVED rules not in PMD 7 design.xml:
+        ExcessiveClassLength  → replaced by NcssCount
+        ExcessiveMethodLength → replaced by NcssCount
+      ============================================================
+    -->
+
+    <description>
+        PMD 7.x-compatible rule configuration for the GovHelpDesk Spring Boot 3.5 API.
+        Covers security, best practices, error-prone patterns,
+        design quality, and performance.
+    </description>
+
+    <!-- ╔══════════════════════════════════════════════════════════╗ -->
+    <!-- ║  BEST PRACTICES                                          ║ -->
+    <!-- ╚══════════════════════════════════════════════════════════╝ -->
+    <rule ref="category/java/bestpractices.xml">
+        <!--
+          PMD 7 removed all JUnit3/4-era assertion rules.
+          JUnit 5 / AssertJ / MockMvc patterns make them obsolete.
+          Only exclude rules that still EXIST in PMD 7.
+        -->
+        <exclude name="GuardLogStatement"/>                   <!-- SLF4J lazy eval handles this -->
+        <exclude name="UseVarargs"/>                          <!-- Prefer explicit array params in REST APIs -->
+        <!-- Excluded so it can be re-referenced once below with a custom priority -->
+        <exclude name="AbstractClassWithoutAbstractMethod"/>
+    </rule>
+
+    <!-- Abstract classes without abstract methods are common in Spring
+         (base controllers, base services). Lower to informational. -->
+    <rule ref="category/java/bestpractices.xml/AbstractClassWithoutAbstractMethod">
+        <priority>4</priority>
+    </rule>
+
+    <!-- ╔══════════════════════════════════════════════════════════╗ -->
+    <!-- ║  CODE STYLE                                              ║ -->
+    <!-- ╚══════════════════════════════════════════════════════════╝ -->
+    <rule ref="category/java/codestyle.xml">
+        <exclude name="AtLeastOneConstructor"/>          <!-- Spring beans use field/constructor injection -->
+        <exclude name="CallSuperInConstructor"/>         <!-- Often irrelevant -->
+        <exclude name="CommentDefaultAccessModifier"/>   <!-- Noisy in Spring service classes -->
+        <exclude name="ConfusingTernary"/>               <!-- Modern Java uses ternary freely -->
+        <!-- DefaultPackage removed in PMD 7 — no exclude needed -->
+        <exclude name="LongVariable"/>                   <!-- Descriptive names are encouraged -->
+        <exclude name="OnlyOneReturn"/>                  <!-- Early returns improve readability -->
+        <exclude name="ShortClassName"/>                 <!-- e.g. Id, Ok, Dto are valid names -->
+        <exclude name="ShortMethodName"/>                <!-- e.g. of(), id(), ok() factory methods -->
+        <exclude name="ShortVariable"/>                  <!-- i, id are conventional loop/field names -->
+        <exclude name="TooManyStaticImports"/>           <!-- Test classes use many static imports -->
+        <exclude name="UnnecessaryAnnotationValueElement"/> <!-- Spring annotations are verbose -->
+        <exclude name="UselessParentheses"/>             <!-- Parens can aid clarity -->
+        <exclude name="UseExplicitTypes"/>               <!-- var is idiomatic in Java 21 -->
+        <!-- Excluded so it can be re-referenced once below with custom patterns -->
+        <exclude name="FieldNamingConventions"/>
+        <!-- Excluded so test methods can use underscore naming (method_state_expected) -->
+        <exclude name="MethodNamingConventions"/>
+    </rule>
+
+    <!--
+      FieldNamingConventions — PMD 7 valid properties only.
+      PMD 7 removed: staticPattern, finalFieldPattern, defaultPattern.
+      Kept properties: enumConstantPattern, constantPattern, publicConstantPattern.
+      See: https://docs.pmd-code.org/pmd-doc-7.0.0/pmd_rules_java_codestyle.html#fieldnamingconventions
+    -->
+    <rule ref="category/java/codestyle.xml/FieldNamingConventions">
+        <properties>
+            <property name="enumConstantPattern"    value="[A-Z][A-Z_0-9]*"/>
+            <property name="constantPattern"        value="[A-Z][A-Z_0-9]*"/>
+            <property name="publicConstantPattern"  value="[A-Z][A-Z_0-9]*"/>
+        </properties>
+    </rule>
+
+    <!--
+      MethodNamingConventions — allow underscore-separated test method names.
+      Production methods  : camelCase           e.g. createTicket()
+      JUnit 5 test methods: snake_case segments e.g. createTicket_validRequest_returns201()
+
+      PMD 7 exposes per-context patterns for this rule:
+        methodPattern      — non-test methods
+        junit5TestPattern  — methods annotated with any @Test / @ParameterizedTest etc.
+    -->
+    <rule ref="category/java/codestyle.xml/MethodNamingConventions">
+        <properties>
+            <!-- Standard camelCase for all production methods -->
+            <property name="methodPattern"     value="[a-z][a-zA-Z0-9]*"/>
+            <!-- method_condition_expectedOutcome pattern for JUnit 5 tests -->
+            <property name="junit5TestPattern" value="[a-z][a-zA-Z0-9_]*"/>
+        </properties>
+    </rule>
+
+    <!-- ╔══════════════════════════════════════════════════════════╗ -->
+    <!-- ║  DESIGN                                                  ║ -->
+    <!-- ╚══════════════════════════════════════════════════════════╝ -->
+    <!--
+      Include the full design category, then override individual
+      thresholds below.  Do NOT reference a rule both here and
+      in a separate <rule ref="..."> block — that causes the
+      "referenced multiple times" warning.
+    -->
+    <!--
+      PMD 7 rule: if you include a category AND later re-reference a rule
+      from that same category to override its properties, PMD treats it as
+      a duplicate and warns. The ONLY correct pattern is:
+        1. Exclude the rule from the category block.
+        2. Re-reference it exactly once with your custom properties.
+      Every rule that has a threshold override below is therefore excluded here.
+    -->
+    <rule ref="category/java/design.xml">
+        <!-- Excluded because we don't want them at all -->
+        <exclude name="AvoidCatchingGenericException"/>    <!-- GlobalExceptionHandler catches Exception -->
+        <exclude name="ExcessiveImports"/>                 <!-- Spring drives high import counts -->
+        <exclude name="LawOfDemeter"/>                     <!-- Builder / fluent APIs violate this -->
+        <exclude name="LoosePackageCoupling"/>             <!-- Managed at architecture level -->
+        <exclude name="SignatureDeclareThrowsException"/>  <!-- @ControllerAdvice handles it globally -->
+
+        <!-- Excluded because they are re-referenced below with custom thresholds -->
+        <exclude name="CyclomaticComplexity"/>
+        <exclude name="NPathComplexity"/>
+        <exclude name="TooManyFields"/>
+        <exclude name="TooManyMethods"/>
+        <exclude name="ExcessivePublicCount"/>
+        <exclude name="CouplingBetweenObjects"/>
+        <exclude name="NcssCount"/>
+    </rule>
+
+    <!-- ── Threshold overrides (each rule referenced exactly once) ── -->
+
+    <rule ref="category/java/design.xml/CyclomaticComplexity">
+        <properties>
+            <property name="classReportLevel"  value="80"/>
+            <property name="methodReportLevel" value="15"/>
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/NPathComplexity">
+        <properties>
+            <property name="reportLevel" value="200"/>
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/TooManyFields">
+        <properties>
+            <property name="maxfields" value="15"/>
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/TooManyMethods">
+        <properties>
+            <property name="maxmethods" value="20"/>
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/ExcessivePublicCount">
+        <properties>
+            <property name="minimum" value="25"/>
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/CouplingBetweenObjects">
+        <properties>
+            <property name="threshold" value="20"/>
+        </properties>
+    </rule>
+
+    <!--
+      NcssCount replaces the removed ExcessiveClassLength + ExcessiveMethodLength.
+      NCSS = Non-Commenting Source Statements (more precise than raw line count).
+    -->
+    <rule ref="category/java/design.xml/NcssCount">
+        <properties>
+            <property name="methodReportLevel" value="60"/>
+            <property name="classReportLevel"  value="400"/>
+        </properties>
+    </rule>
+
+    <!-- ╔══════════════════════════════════════════════════════════╗ -->
+    <!-- ║  ERROR PRONE                                             ║ -->
+    <!-- ╚══════════════════════════════════════════════════════════╝ -->
+    <rule ref="category/java/errorprone.xml">
+        <exclude name="AvoidCatchingGenericException"/>
+        <exclude name="AvoidDuplicateLiterals"/>      <!-- String constants in @Mapping annotations -->
+        <exclude name="AvoidLiteralsInIfCondition"/>  <!-- Readable sentinel checks -->
+        <!-- BeanMembersShouldSerialize removed in PMD 7 — no exclude needed -->
+        <!-- DataflowAnomalyAnalysis removed in PMD 7 — no exclude needed -->
+        <exclude name="MissingSerialVersionUID"/>     <!-- Spring beans don't implement Serializable -->
+        <exclude name="UseLocaleWithCaseConversions"/><!-- Domain-specific; enforce at service level -->
+        <!-- Excluded so it can be re-referenced once below with elevated priority -->
+        <exclude name="NullAssignment"/>
+    </rule>
+
+    <!-- Using null explicitly is almost always a bug; treat as high-priority -->
+    <rule ref="category/java/errorprone.xml/NullAssignment">
+        <priority>2</priority>
+    </rule>
+
+    <!-- ╔══════════════════════════════════════════════════════════╗ -->
+    <!-- ║  MULTITHREADING                                          ║ -->
+    <!-- ╚══════════════════════════════════════════════════════════╝ -->
+    <rule ref="category/java/multithreading.xml">
+        <exclude name="DoNotUseThreads"/>         <!-- @Async beans DO spawn threads -->
+        <exclude name="UseConcurrentHashMap"/>    <!-- HashMap is fine in local / single-thread scope -->
+    </rule>
+
+    <!-- ╔══════════════════════════════════════════════════════════╗ -->
+    <!-- ║  PERFORMANCE                                             ║ -->
+    <!-- ╚══════════════════════════════════════════════════════════╝ -->
+    <!--
+      AvoidInstantiatingObjectsJustToGetClass was removed in PMD 7.
+      Include the full category with no exclusions needed.
+    -->
+    <rule ref="category/java/performance.xml"/>
+
+    <!-- ╔══════════════════════════════════════════════════════════╗ -->
+    <!-- ║  SECURITY  (all included — zero exclusions)             ║ -->
+    <!-- ╚══════════════════════════════════════════════════════════╝ -->
+    <rule ref="category/java/security.xml"/>
+
+    <!-- ╔══════════════════════════════════════════════════════════╗ -->
+    <!-- ║  CUSTOM RULES — GovHelpDesk specific                    ║ -->
+    <!-- ╚══════════════════════════════════════════════════════════╝ -->
+
+    <!--
+      PMD 7 XPath rules use XPath 2.0 AST node names.
+      Updated from PMD 6 AST (InterfaceDeclaration, MethodDeclaration…)
+      to PMD 7 AST (ClassDeclaration[@Interface=true()], MethodDeclaration…).
+    -->
+
+    <!--
+      Rule 1: @Transactional must not appear on interface methods.
+      Spring JDK proxies target the concrete class; @Transactional on
+      an interface method is silently ignored at runtime.
+    -->
+    <rule name="TransactionalOnInterface"
+          language="java"
+          message="Do not place @Transactional on interface methods; Spring proxies ignore it. Annotate the concrete service class instead."
+          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>
+            Spring transactional proxies operate on concrete classes.
+            @Transactional on interface methods has no effect and misleads readers.
+        </description>
+        <priority>2</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//ClassDeclaration[@Interface = true()]
+  //MethodDeclaration[
+    (./preceding-sibling::Annotation | ./Annotation)
+      /MarkerAnnotation/Name[@Image = 'Transactional']
+    or
+    (./preceding-sibling::Annotation | ./Annotation)
+      /NormalAnnotation/Name[@Image = 'Transactional']
+  ]
+                ]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <!--
+      Rule 2: Empty catch blocks silently swallow exceptions.
+      Always log, rethrow, or wrap into a domain exception.
+    -->
+<!--    <rule name="SilentCatchBlock"-->
+<!--          language="java"-->
+<!--          message="Catch block is empty. Log, rethrow, or wrap the exception — never swallow it silently."-->
+<!--          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">-->
+<!--        <description>-->
+<!--            Silent catch blocks hide bugs and make diagnostics impossible.-->
+<!--            Always log at minimum, or convert to a domain-specific exception.-->
+<!--        </description>-->
+<!--        <priority>2</priority>-->
+<!--        <properties>-->
+<!--            <property name="xpath">-->
+<!--                <value><![CDATA[-->
+<!--//CatchClause/Block[count(BlockStatement) = 0]-->
+<!--                ]]></value>-->
+<!--            </property>-->
+<!--        </properties>-->
+<!--    </rule>-->
+
+    <!--
+      Rule 3: REST controllers must not return raw JPA entities.
+      Returning entities directly leaks internal field structure
+      and violates POPIA data minimisation principles.
+    -->
+    <rule name="EntityExposedInController"
+          language="java"
+          message="Controller method returns a raw JPA entity. Return a DTO or Response record instead (POPIA data minimisation)."
+          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>
+            Exposing JPA entities directly from REST controllers may leak sensitive
+            fields. Always map to a dedicated DTO, Response, or Projection record.
+        </description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//ClassDeclaration[
+  .//Annotation/MarkerAnnotation/Name[@Image = 'RestController']
+  or .//Annotation/NormalAnnotation/Name[@Image = 'RestController']
+]
+//MethodDeclaration/ResultType//ClassType[
+  matches(@SimpleName, '^(Ticket|User|Agent|Comment|Attachment|SlaPolicy|AuditLog)$')
+  and not(matches(@SimpleName, '(Dto|Response|Record|Request|View|Projection)$'))
+]
+                ]]></value>
+            </property>
+        </properties>
+    </rule>
+
+</ruleset>

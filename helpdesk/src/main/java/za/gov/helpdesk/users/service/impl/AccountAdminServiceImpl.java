@@ -1,0 +1,126 @@
+package za.gov.helpdesk.users.service.impl;
+
+import java.util.Objects;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import za.gov.helpdesk.agent.service.AgentRoleLifecycleService;
+import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
+import za.gov.helpdesk.auditlog.model.AuditLog;
+import za.gov.helpdesk.auth.service.RefreshTokenService;
+import za.gov.helpdesk.users.dto.response.UserResponse;
+import za.gov.helpdesk.users.mapper.UserMapper;
+import za.gov.helpdesk.users.model.User;
+import za.gov.helpdesk.users.repository.UserRepository;
+import za.gov.helpdesk.users.service.AccountAdminService;
+import za.gov.helpdesk.users.service.UserQueryHelper;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class AccountAdminServiceImpl implements AccountAdminService {
+
+    private final UserRepository userRepository;
+    private final UserQueryHelper userQuery;
+    private final UserMapper userMapper;
+    private final RefreshTokenService refreshTokenService;
+    private final AuditEventPublisher auditPublisher;
+    private final AgentRoleLifecycleService agentRoleLifecycle;
+
+    @Override
+    @Transactional
+    public void deactivateUser(final Long id, final User admin) {
+        final User user = userQuery.findOrThrow(id);
+
+        if (user.getId().equals(admin.getId())) {
+            throw new IllegalStateException("Admin cannot deactivate their own account");
+        }
+        if (Boolean.FALSE.equals(user.getActive())) {
+            throw new IllegalStateException("User account is already inactive");
+        }
+
+        user.setActive(false);
+        userRepository.save(user);
+
+        refreshTokenService.revokeAll(user);
+
+        auditPublisher.publishAudit(
+                AuditLog.EntityType.USER,
+                user.getId(),
+                admin,
+                AuditLog.AuditAction.USER_DEACTIVATED,
+                "active",
+                "inactive",
+                "Deactivated by " + admin.getName());
+
+        log.info("User deactivated: user={} by admin={}", user.getEmail(), admin.getEmail());
+    }
+
+    @Override
+    @Transactional
+    public void reactivateUser(final Long id, final User admin) {
+        final User target = userQuery.findOrThrow(id);
+
+        if (Boolean.TRUE.equals(target.getActive())) {
+            throw new IllegalStateException("User account is already active");
+        }
+
+        target.setActive(true);
+        target.setLoginAttempts(0);
+        userRepository.save(target);
+
+        auditPublisher.publishAudit(
+                AuditLog.EntityType.USER,
+                target.getId(),
+                admin,
+                AuditLog.AuditAction.USER_REACTIVATED,
+                "inactive",
+                "active",
+                "Reactivated by admin: " + admin.getEmail());
+
+        log.info("User reactivated: user={} by admin={}", target.getEmail(), admin.getEmail());
+    }
+
+    @Override
+    @Transactional
+    public UserResponse changeUserRole(final Long id, final User.Role newRole, final User admin) {
+        final User target = userQuery.findOrThrow(id);
+
+        if (Objects.equals(target.getRole(), newRole)) {
+            throw new IllegalStateException("User already has role " + newRole);
+        }
+        if (target.getId().equals(admin.getId())) {
+            throw new IllegalStateException("Admin cannot change their own role");
+        }
+
+        final User.Role oldRole = target.getRole();
+        target.setRole(newRole);
+        userRepository.save(target);
+
+        agentRoleLifecycle.handleRoleChange(target, oldRole, newRole, admin);
+
+        refreshTokenService.revokeAll(target);
+
+        auditPublisher.publishAudit(
+                AuditLog.EntityType.USER,
+                target.getId(),
+                admin,
+                AuditLog.AuditAction.ROLE_CHANGED,
+                oldRole.name(),
+                newRole.name(),
+                "Role changed by admin: " + admin.getEmail());
+
+        log.info(
+                "Role changed: user={} {} -> {} by admin={}",
+                target.getEmail(),
+                oldRole,
+                newRole,
+                admin.getEmail());
+
+        return userMapper.toUserResponse(target);
+    }
+}

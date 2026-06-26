@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:replace="~{email/fragments/layout :: emailLayout(
+    heading   = 'SLA Warning — Action Required',
+    reference = ${ticketNumber},
+    content   = ~{::section}
+)}">
+    <section>
+        <p>Dear <strong th:text="${agentName}">Agent</strong>,</p>
+        <p>
+            The <strong th:text="${deadlineType}">First Response</strong> deadline
+            for the following ticket is approaching and requires immediate attention.
+        </p>
+
+        <table class="details" style="width:100%;border-collapse:collapse;margin-top:16px;">
+            <tr>
+                <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;background:#f7f7f7;font-weight:bold;width:38%;">
+                    Ticket Number
+                </td>
+                <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;" th:text="${ticketNumber}">
+                    TKT-000
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;background:#f7f7f7;font-weight:bold;width:38%;">
+                    Subject
+                </td>
+                <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;" th:text="${subject}">Subject</td>
+            </tr>
+            <tr>
+                <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;background:#f7f7f7;font-weight:bold;width:38%;">
+                    Deadline Type
+                </td>
+                <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;" th:text="${deadlineType}">First
+                    Response
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;background:#f7f7f7;font-weight:bold;width:38%;">
+                    Due At
+                </td>
+                <td style="padding:10px 14px;border:1px solid #e0e0e0;font-size:14px;"
+                    th:text="${#temporals.format(dueAt, 'dd MMM yyyy HH:mm')}">01 Jan 2025 09:00
+                </td>
+            </tr>
+        </table>
+
+        <p class="warning-banner" style="color:#dc2626;font-weight:bold;margin-top:16px;">
+            &#9888; Please action this ticket immediately to avoid an SLA breach.
+        </p>
+    </section>
+</div>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:replace="~{email/fragments/layout :: emailLayout(
+    heading   = 'Ticket Status Updated',
+    reference = ${msg.ticketNumber},
+    content   = ~{::section}
+)}">
+    <section>
+        <p>Dear <strong th:text="${msg.customerName}">Customer</strong>,</p>
+        <p>
+            The status of your ticket has been updated to
+            <span class="badge"
+                  style="padding:2px 10px;border-radius:12px;font-size:13px;font-weight:bold;"
+                  th:classappend="${s == 'OPEN'       ? 'badge-open'     :
+                              s == 'IN_PROGRESS' ? 'badge-progress' :
+                              s == 'RESOLVED'    ? 'badge-resolved' :
+                              s == 'ESCALATED'   ? 'badge-escalated':
+                                                   'badge-closed'}"
+                  th:styleappend="${s == 'OPEN' ? 'background:#dbeafe;color:#1d4ed8;' :
+                              s == 'IN_PROGRESS' ? 'background:#fef9c3;color:#92400e;' :
+                              s == 'RESOLVED' ? 'background:#dcfce7;color:#166534;' :
+                              s == 'ESCALATED' ? 'background:#fee2e2;color:#991b1b;' :
+                              'background:#f3f4f6;color:#374151;'}"
+                  th:text="${s == 'IN_PROGRESS' ? 'In Progress' :
+                       s != null ? #strings.capitalize(#strings.toLowerCase(s)) : '-'}"
+                  th:with="s=${msg.ticketStatus}">
+        Open
+      </span>.
+        </p>
+        <th:block th:replace="~{email/fragments/layout :: detailsTable(${msg})}"></th:block>
+    </section>
+</div>
+</body>
+</html>

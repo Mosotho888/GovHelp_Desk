@@ -1,0 +1,198 @@
+# INFRASTRUCTURE NAME
+name: "spring-boot-dev"
+
+# SERVICE NETWORKS
+networks:
+  spring-boot-api-network:
+    driver: bridge
+
+# SERVICES
+services:
+  db:
+    image: postgres:18-alpine
+    container_name: helpdesk-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    networks:
+      - spring-boot-api-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${PG_USER} -d ${POSTGRES_DB}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    restart: always
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    networks:
+      - spring-boot-api-network
+    depends_on:
+      - spring-boot-app
+
+  grafana:
+    image: grafana/grafana:10.4.3
+    container_name: grafana
+    restart: always
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - spring-boot-api-network
+    depends_on:
+      - prometheus
+
+  spring-boot-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    image: tebohogiven/spring-boot-app:0.0.1
+
+    ports:
+      - "8080:8080"
+
+    volumes:
+      # Mounts container uploads to a local folder named 'uploads' in your project root
+      - upload_data:/opt/app/uploads
+      - ./logs:/opt/app/logs
+
+    environment:
+      SPRING_APPLICATION_NAME: helpdesk
+
+      # Logging Configuration
+      LOGGING_FILE_NAME: /opt/app/logs/application.log
+      LOGGING_LOGBACK_ROLLINGPOLICY_MAX_FILE_SIZE: 10MB
+      LOGGING_LOGBACK_ROLLINGPOLICY_TOTAL_SIZE_CAP: 100MB
+
+      # Datasource
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${PG_USER}
+      SPRING_DATASOURCE_PASSWORD: ${PG_PASSWORD}
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      SPRING_SQL_INIT_MODE: always
+
+      # Flyway Configuration
+      SPRING_FLYWAY_ENABLED: "true"
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
+      SPRING_FLYWAY_LOCATIONS: "classpath:db/migration"
+
+      # JPA
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      SPRING_JPA_SHOW_SQL: true
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+      SPRING_JPA_OPEN_IN_VIEW: false
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: true
+      APP_DATASOURCE_TYPE: postgresql
+
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,prometheus
+      MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: true
+
+      # JWT
+      APP_JWT_SECRET: ${JWT_SECRET_KEY}
+      APP_JWT_ACCESS_TOKEN_EXPIRY_MS: ${JWT_VALIDITY}
+      APP_JWT_REFRESH_TOKEN_EXPIRY_MS: ${JWT_REFRESH_VALIDITY}
+
+      # File Upload
+      SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: 20MB
+      SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: 100MB
+      APP_UPLOAD_STORAGE_PATH: /opt/app/uploads
+
+      # Swagger / SpringDoc
+      SPRINGDOC_API_DOCS_PATH: /v3/api-docs
+      SPRINGDOC_SWAGGER_UI_PATH: /swagger-ui.html
+      SPRINGDOC_SWAGGER_UI_OPERATIONSSORTER: method
+      SPRINGDOC_API_DOCS_ENABLED: true
+      SPRINGDOC_SWAGGER_UI_ENABLED: true
+
+      # Account Lockout
+      APP_SECURITY_MAX_LOGIN_ATTEMPTS: 5
+
+      # Mail
+      SPRING_MAIL_HOST: ${MAIL_HOST}
+      SPRING_MAIL_PORT: ${MAIL_PORT}
+      SPRING_MAIL_USERNAME: ${MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${MAIL_PASSWORD}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: true
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: true
+
+      # RabbitMQ
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: ${RABBITMQ_PORT}
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      SPRING_RABBITMQ_TEMPLATE_IS_CHANNEL_TRANSACTED: true
+
+      SPRING_RABBITMQ_LISTENER_SIMPLE_ACKNOWLEDGE_MODE: manual
+
+      APP_RABBITMQ_CONCURRENT_CONSUMERS: ${MIN_CONCURRENCY}
+      APP_RABBITMQ_MAX_CONCURRENT_CONSUMERS: ${MIN_CONCURRENCY}
+
+      RATE_LIMIT_CAPACITY_UNAUTHENTICATED: ${RATE_LIMIT_CAPACITY_UNAUTHENTICATED}
+      RATE_LIMIT_CAPACITY_USER: ${RATE_LIMIT_CAPACITY_USER}
+      RATE_LIMIT_CAPACITY_AGENT: ${RATE_LIMIT_CAPACITY_AGENT}
+      RATE_LIMIT_CAPACITY_ADMIN: ${RATE_LIMIT_CAPACITY_ADMIN}
+
+    restart: always
+
+    networks:
+      - spring-boot-api-network
+
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: always
+
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_ERLANG_COOKIE: "secret_cookie_string"
+
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+    networks:
+      - spring-boot-api-network
+
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      retries: 7
+      start_period: 10s
+
+volumes:
+  postgres_data:
+  upload_data:
+  rabbitmq_data:
+  prometheus_data:
+  grafana_data:

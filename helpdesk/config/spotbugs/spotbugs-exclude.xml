@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ============================================================
+  GovHelpDesk — SpotBugs Exclude Filter
+  Version   : 1.0.0
+  Toolchain : SpotBugs 4.8.x + find-sec-bugs 1.13.x
+  ============================================================
+  This file tells SpotBugs which patterns to IGNORE.
+  The companion include filter (spotbugs-spotbugs-include.xml) forces
+  certain high-priority patterns to always surface.
+
+  Philosophy:
+    · Security bugs (find-sec-bugs): ZERO exclusions in production.
+    · Correctness bugs: exclude only proven false-positives.
+    · Performance / style: exclude freely.
+
+  SpotBugs bug code reference:
+    https://spotbugs.readthedocs.io/en/stable/bugDescriptions.html
+  find-sec-bugs reference:
+    https://find-sec-bugs.github.io/bugs.htm
+  ============================================================
+-->
+<FindBugsFilter>
+
+    <!-- ══════════════════════════════════════════════════════
+         GLOBAL EXCLUSIONS
+         (apply to all classes unless overridden below)
+    ══════════════════════════════════════════════════════ -->
+
+    <!--
+      EI_EXPOSE_REP / EI_EXPOSE_REP2
+      Defensive copying: SpotBugs flags getters returning mutable
+      collections. Spring DTOs/entities deliberately share references;
+      defensive copy is done at the service boundary, not in getters.
+    -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+        <Class name="~za\.gov\.helpdesk\..*\.(dto|domain|entity)\..*"/>
+    </Match>
+
+    <!--
+      SE_* — Serialization warnings on Spring beans.
+      Spring @Service / @Component / @Repository beans are NOT meant
+      to be serialized; these warnings are structural false-positives.
+    -->
+    <Match>
+        <Bug pattern="SE_BAD_FIELD,SE_NO_SERIALVERSIONID,SE_TRANSIENT_FIELD_NOT_RESTORED"/>
+    </Match>
+
+    <!--
+      URF_UNREAD_FIELD — Lombok / Jackson fields.
+      Fields written by Jackson deserialization or Lombok-generated
+      code appear "unread" to static analysis.
+    -->
+    <Match>
+        <Bug pattern="URF_UNREAD_FIELD"/>
+        <Class name="~za\.gov\.helpdesk\..*\.(dto|request|response)\..*"/>
+    </Match>
+
+    <!--
+      SS_SHOULD_BE_STATIC — Spring @Value / @Autowired fields.
+      These must be instance fields; they cannot be static.
+    -->
+    <Match>
+        <Bug pattern="SS_SHOULD_BE_STATIC"/>
+    </Match>
+
+    <!--
+      RCN_REDUNDANT_NULLCHECK_* — Java 17+ pattern matching.
+      The compiler/JVM guarantees non-null for pattern-matched variables;
+      SpotBugs 4.x sometimes reports false-positive nullchecks.
+    -->
+    <Match>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE,
+                      RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"/>
+    </Match>
+
+    <!-- ══════════════════════════════════════════════════════
+         TEST CLASS EXCLUSIONS
+    ══════════════════════════════════════════════════════ -->
+
+    <!--
+      Test classes: exclude noisy patterns that don't apply to tests.
+      We still want correctness and security checks in tests.
+    -->
+    <Match>
+        <Class name="~.*Test$"/>
+        <Bug pattern="DM_DEFAULT_ENCODING,
+                      NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE,
+                      NP_NULL_PARAM_DEREF,
+                      ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD,
+                      UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
+    </Match>
+
+    <!-- ══════════════════════════════════════════════════════
+         SPRING SECURITY / AUTH EXCLUSIONS
+    ══════════════════════════════════════════════════════ -->
+
+    <!--
+      HARD_CODE_PASSWORD — Spring test credentials.
+      Test application.yml uses simple passwords for H2/embedded servers.
+      Never exclude this for main source; only for test configurations.
+    -->
+    <Match>
+        <Class name="~.*Test.*|.*IT.*|.*TestConfig.*"/>
+        <Bug pattern="HARD_CODE_PASSWORD"/>
+    </Match>
+
+    <!--
+      PREDICTABLE_RANDOM — UUID.randomUUID() and Math.random() are
+      flagged by find-sec-bugs. We use SecureRandom in security
+      contexts; non-security uses (e.g. test data IDs) are fine.
+    -->
+    <Match>
+        <Class name="~.*Test.*|.*TestDataBuilder.*|.*TestFixture.*"/>
+        <Bug pattern="PREDICTABLE_RANDOM"/>
+    </Match>
+
+    <!-- ══════════════════════════════════════════════════════
+         PERFORMANCE / STYLE (safe to exclude globally)
+    ══════════════════════════════════════════════════════ -->
+
+    <!--
+      DM_CONVERT_CASE — locale-insensitive toUpperCase/toLowerCase.
+      Domain names, ticket statuses, etc. are ASCII-safe; Locale.ROOT
+      will be enforced by Checkstyle/PMD separately.
+    -->
+    <!-- NOTE: Do NOT exclude DM_DEFAULT_ENCODING globally;
+         keep it active to catch accidental charset-unaware I/O. -->
+
+    <!--
+      SBSC_USE_STRINGBUFFER_CONCATENATION — StringBuilder in loops.
+      Modern JVMs optimise simple concatenation; flag only when it
+      really matters (SpotBugs already does this correctly).
+    -->
+    <!-- Intentionally NOT excluded — keep as a reminder. -->
+
+    <!-- ══════════════════════════════════════════════════════
+         FLYWAY MIGRATION EXCLUSIONS
+    ══════════════════════════════════════════════════════ -->
+    <Match>
+        <Class name="~.*db\.migration\..*"/>
+        <Bug pattern="SQL_INJECTION_JDBC,SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE"/>
+    </Match>
+
+    <!-- ══════════════════════════════════════════════════════
+         GENERATED CODE
+         (e.g. MapStruct generated classes, QueryDSL Q-types)
+    ══════════════════════════════════════════════════════ -->
+    <Match>
+        <Class name="~.*\.Q[A-Z].*|.*MapperImpl$|.*\$\$.*"/>
+        <Bug pattern="~.*"/>
+    </Match>
+
+    <!-- ══════════════════════════════════════════════════════
+         OUTBOX RELAY — intentional type-unchecked cast
+    ══════════════════════════════════════════════════════ -->
+    <!--
+      OutboxRelay uses a TYPE_MAP (Class -> Function) for safe
+      deserialization. The cast to the concrete type is controlled
+      by the map key; SpotBugs cannot prove this statically.
+    -->
+    <Match>
+        <Class name="za.gov.helpdesk.outbox.OutboxRelay"/>
+        <Bug pattern="BC_UNCONFIRMED_CAST,BC_UNCONFIRMED_CAST_OF_RETURN_VALUE"/>
+    </Match>
+
+</FindBugsFilter>

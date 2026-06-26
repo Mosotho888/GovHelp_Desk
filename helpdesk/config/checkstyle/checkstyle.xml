@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE module PUBLIC
+        "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+        "https://checkstyle.org/dtds/configuration_1_3.dtd">
+
+<!--
+  ============================================================
+  GovHelpDesk — Checkstyle Configuration
+  Version   : 1.0.0
+  Toolchain : Checkstyle 10.x
+  Standard  : Google Java Style Guide (adapted for Spring Boot enterprise)
+  ============================================================
+  Severity legend:
+    error   → build-breaking violation
+    warning → reported but non-blocking (use sparingly)
+    ignore  → rule present but disabled intentionally
+  ============================================================
+-->
+<module name="Checker">
+
+    <!-- ── Global properties ─────────────────────────────────────────── -->
+    <property name="severity"        value="error"/>
+    <property name="fileExtensions"  value="java"/>
+    <property name="charset"         value="UTF-8"/>
+
+    <!-- Suppress specific violations via suppression file -->
+    <module name="SuppressionFilter">
+        <property name="file"                value="${config_loc}/checkstyle-suppressions.xml"/>
+        <property name="optional"            value="true"/>
+    </module>
+
+    <!-- Suppress via @SuppressWarnings annotation in source -->
+    <module name="SuppressWarningsFilter"/>
+
+    <!-- ── File-level checks ─────────────────────────────────────────── -->
+
+    <!-- No tab characters anywhere -->
+    <module name="FileTabCharacter">
+        <property name="eachLine" value="true"/>
+    </module>
+
+    <!-- Files must end with a newline -->
+    <module name="NewlineAtEndOfFile">
+        <property name="lineSeparator" value="lf"/>
+    </module>
+
+    <!-- No trailing whitespace -->
+    <module name="RegexpSingleline">
+        <property name="format"  value="\s+$"/>
+        <property name="message" value="Line has trailing whitespace."/>
+    </module>
+
+    <!-- Max line length: 120 chars (relaxed from Google's 100 for Spring verbosity) -->
+    <module name="LineLength">
+        <property name="max"            value="120"/>
+        <property name="ignorePattern"  value="^package.*|^import.*|a href|href|http://|https://|ftp://"/>
+    </module>
+
+    <!-- ── Per-file / Tree walker checks ─────────────────────────────── -->
+    <module name="TreeWalker">
+
+        <!-- Allow @SuppressWarnings to suppress Checkstyle rules -->
+        <module name="SuppressWarningsHolder"/>
+
+        <!-- ── Imports ──────────────────────────────────────────────── -->
+        <module name="AvoidStarImport"/>
+        <module name="AvoidStaticImport">
+            <!-- Allow static imports for test assertions and Mockito -->
+            <property name="excludes"
+                      value="org.junit.jupiter.api.Assertions.*,
+                             org.mockito.Mockito.*,
+                             org.mockito.ArgumentMatchers.*,
+                             org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*,
+                             org.springframework.test.web.servlet.result.MockMvcResultMatchers.*,
+                             org.hamcrest.Matchers.*"/>
+        </module>
+        <module name="IllegalImport">
+            <!-- Ban sun.* internals and deprecated Apache Commons -->
+            <property name="illegalPkgs" value="sun, sunw"/>
+        </module>
+        <module name="RedundantImport"/>
+        <module name="UnusedImports">
+            <property name="processJavadoc" value="false"/>
+        </module>
+        <module name="ImportOrder">
+            <property name="groups"
+                      value="/^java\./,/^javax\./,/^jakarta\./,/^org\./,/^com\./,za.gov.helpdesk"/>
+            <property name="ordered"        value="true"/>
+            <property name="separated"      value="true"/>
+            <property name="option"         value="above"/>
+            <property name="sortStaticImportsAlphabetically" value="true"/>
+        </module>
+
+        <!-- ── Naming conventions ───────────────────────────────────── -->
+        <module name="PackageName">
+            <property name="format" value="^[a-z]+(\.[a-z][a-z0-9]*)*$"/>
+        </module>
+        <module name="TypeName">
+            <!-- Classes, interfaces, enums, annotations: UpperCamelCase -->
+            <property name="format" value="^[A-Z][a-zA-Z0-9]*$"/>
+        </module>
+        <module name="MethodName">
+            <property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
+        </module>
+        <module name="ParameterName">
+            <property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
+        </module>
+        <module name="LocalVariableName">
+            <property name="format"        value="^[a-z][a-zA-Z0-9]*$"/>
+            <property name="allowOneCharVarInForLoop" value="true"/>
+        </module>
+        <module name="MemberName">
+            <property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
+        </module>
+        <module name="StaticVariableName">
+            <property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
+        </module>
+        <module name="ConstantName">
+            <!-- UPPER_SNAKE_CASE for static final constants -->
+            <property name="format" value="^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$"/>
+        </module>
+        <module name="ClassTypeParameterName">
+            <property name="format" value="^[A-Z][A-Z0-9]?$"/>
+        </module>
+        <module name="MethodTypeParameterName">
+            <property name="format" value="^[A-Z][A-Z0-9]?$"/>
+        </module>
+
+        <!-- ── Javadoc ───────────────────────────────────────────────── -->
+        <!-- Public API must be documented -->
+        <module name="MissingJavadocMethod">
+            <property name="scope"                      value="public"/>
+            <property name="minLineCount"               value="2"/>
+            <property name="allowMissingPropertyJavadoc" value="true"/>
+            <property name="ignoreMethodNamesRegex"     value="^(get|set|is|has|equals|hashCode|toString|builder|of|from).*$"/>
+            <property name="tokens"                     value="METHOD_DEF,ANNOTATION_FIELD_DEF"/>
+        </module>
+        <module name="MissingJavadocType">
+            <property name="scope"          value="public"/>
+            <!-- Skip generated, test, config classes -->
+            <property name="excludeScope"   value="private"/>
+        </module>
+        <module name="JavadocStyle">
+            <property name="checkFirstSentence" value="true"/>
+            <property name="checkEmptyJavadoc"  value="true"/>
+        </module>
+        <module name="JavadocMethod">
+            <property name="validateThrows"             value="false"/>
+            <property name="allowMissingParamTags"      value="true"/>
+            <property name="allowMissingReturnTag"      value="true"/>
+        </module>
+        <module name="NonEmptyAtclauseDescription"/>
+        <module name="AtclauseOrder">
+            <property name="tagOrder" value="@param,@return,@throws,@deprecated"/>
+        </module>
+        <module name="InvalidJavadocPosition"/>
+
+        <!-- ── Code structure / design ──────────────────────────────── -->
+
+        <!-- Brace style: K&R (same-line opening brace) -->
+        <module name="LeftCurly"/>
+        <module name="RightCurly"/>
+        <module name="NeedBraces">
+            <!-- Require braces even for single-line if/else/for/while -->
+            <property name="tokens"
+                      value="LITERAL_DO,LITERAL_ELSE,LITERAL_FOR,LITERAL_IF,LITERAL_WHILE"/>
+        </module>
+
+        <!-- Empty blocks are suspicious; at minimum require a comment -->
+        <module name="EmptyBlock">
+            <property name="option" value="text"/>
+            <property name="tokens"
+                      value="LITERAL_WHILE,LITERAL_TRY,LITERAL_FINALLY,LITERAL_DO,
+                             LITERAL_IF,LITERAL_ELSE,LITERAL_FOR,INSTANCE_INIT,
+                             STATIC_INIT,LITERAL_SWITCH,LITERAL_SYNCHRONIZED"/>
+        </module>
+        <module name="EmptyCatchBlock">
+            <property name="exceptionVariableName" value="expected|ignored"/>
+        </module>
+
+        <!-- Indentation: 4 spaces -->
+        <module name="Indentation">
+            <property name="basicOffset"           value="4"/>
+            <property name="braceAdjustment"       value="0"/>
+            <property name="caseIndent"            value="4"/>
+            <property name="throwsIndent"          value="8"/>
+            <property name="lineWrappingIndentation" value="8"/>
+            <property name="arrayInitIndent"       value="4"/>
+            <property name="forceStrictCondition"  value="false"/>
+        </module>
+
+        <!-- Modifier order: public protected private abstract default static … -->
+        <module name="ModifierOrder"/>
+        <module name="RedundantModifier"/>
+
+        <!-- Whitespace -->
+        <module name="GenericWhitespace"/>
+        <module name="MethodParamPad"/>
+        <module name="NoWhitespaceBefore"/>
+        <module name="NoWhitespaceAfter">
+            <property name="tokens"
+                      value="AT,INC,DEC,UNARY_MINUS,UNARY_PLUS,BNOT,LNOT,DOT,ARRAY_DECLARATOR,INDEX_OP"/>
+        </module>
+        <module name="WhitespaceAfter">
+            <property name="tokens" value="COMMA,SEMI,TYPECAST,LITERAL_IF,LITERAL_ELSE,
+                                           LITERAL_WHILE,LITERAL_DO,LITERAL_FOR,LITERAL_RETURN"/>
+        </module>
+        <module name="WhitespaceAround">
+            <property name="allowEmptyConstructors"  value="true"/>
+            <property name="allowEmptyLambdas"       value="true"/>
+            <property name="allowEmptyMethods"       value="true"/>
+            <property name="allowEmptyTypes"         value="true"/>
+            <property name="allowEmptyLoops"         value="true"/>
+        </module>
+        <module name="OperatorWrap">
+            <property name="option" value="NL"/>
+            <property name="tokens"
+                      value="BAND,BOR,BSR,BXOR,DIV,EQUAL,GE,GT,LAND,LE,LITERAL_INSTANCEOF,
+                             LOR,LT,MINUS,MOD,NOT_EQUAL,PLUS,QUESTION,SL,SR,STAR,METHOD_REF"/>
+        </module>
+        <module name="SeparatorWrap">
+            <property name="id"     value="SeparatorWrapDot"/>
+            <property name="tokens" value="DOT"/>
+            <property name="option" value="nl"/>
+        </module>
+        <module name="SeparatorWrap">
+            <property name="id"     value="SeparatorWrapComma"/>
+            <property name="tokens" value="COMMA"/>
+            <property name="option" value="EOL"/>
+        </module>
+        <module name="NoLineWrap">
+            <property name="tokens" value="PACKAGE_DEF,IMPORT,STATIC_IMPORT"/>
+        </module>
+        <module name="EmptyLineSeparator">
+            <property name="tokens"
+                      value="PACKAGE_DEF,IMPORT,STATIC_IMPORT,CLASS_DEF,INTERFACE_DEF,
+                             ENUM_DEF,STATIC_INIT,INSTANCE_INIT,METHOD_DEF,CTOR_DEF,
+                             VARIABLE_DEF,RECORD_DEF,COMPACT_CTOR_DEF"/>
+            <property name="allowNoEmptyLineBetweenFields"    value="true"/>
+            <property name="allowMultipleEmptyLines"          value="false"/>
+            <property name="allowMultipleEmptyLinesInsideClassMembers" value="false"/>
+        </module>
+
+        <!-- ── Complexity ────────────────────────────────────────────── -->
+        <module name="CyclomaticComplexity">
+            <!-- Spring services can get complex; warn above 10, error above 15 -->
+            <property name="max"      value="15"/>
+            <property name="severity" value="error"/>
+        </module>
+        <module name="NPathComplexity">
+            <property name="max" value="200"/>
+        </module>
+        <module name="MethodLength">
+            <property name="max"            value="80"/>
+            <property name="countEmpty"     value="false"/>
+        </module>
+        <module name="ParameterNumber">
+            <property name="max"            value="7"/>
+            <property name="ignoreOverriddenMethods" value="true"/>
+        </module>
+        <module name="ClassFanOutComplexity">
+            <property name="max" value="20"/>
+            <!-- Commonly injected Spring types don't count as coupling -->
+            <property name="excludedClasses"
+                      value="boolean,byte,char,double,float,int,long,short,void,
+                             Boolean,Byte,Character,Double,Float,Integer,Long,Short,
+                             String,Object,Class,Void,
+                             List,ArrayList,LinkedList,Set,HashSet,LinkedHashSet,TreeSet,
+                             Map,HashMap,LinkedHashMap,TreeMap,
+                             Collection,Optional,Stream,
+                             Logger,LoggerFactory,
+                             Override,Deprecated,SuppressWarnings,FunctionalInterface,
+                             Autowired,Service,Repository,Component,Controller,RestController,
+                             Transactional,RequestMapping,GetMapping,PostMapping,PutMapping,
+                             DeleteMapping,PatchMapping,Valid,Validated,NotNull,NotBlank,Size"/>
+        </module>
+
+        <!-- ── Coding best practices ────────────────────────────────── -->
+        <module name="OneStatementPerLine"/>
+        <module name="MultipleVariableDeclarations"/>
+        <module name="ArrayTypeStyle"/>
+        <module name="FallThrough"/>
+        <module name="DefaultComesLast"/>
+        <module name="MissingSwitchDefault"/>
+        <module name="UpperEll"/>           <!-- Long literals: 1000L not 1000l -->
+        <module name="StringLiteralEquality"/>
+        <module name="EqualsHashCode"/>
+        <module name="SimplifyBooleanExpression"/>
+        <module name="SimplifyBooleanReturn"/>
+        <module name="HiddenField">
+            <property name="ignoreSetter"          value="true"/>
+            <property name="ignoreConstructorParameter" value="true"/>
+            <property name="ignoreAbstractMethods" value="true"/>
+            <property name="setterCanReturnItsClass" value="true"/>
+        </module>
+        <module name="IllegalInstantiation">
+            <!-- Use factory methods -->
+            <property name="classes" value="java.lang.Boolean,java.lang.Integer,java.lang.Long"/>
+        </module>
+        <module name="InnerAssignment"/>
+        <module name="MagicNumber">
+            <property name="ignoreNumbers"          value="-1,0,1,2,3,4,8,16,100,200,400,404,500"/>
+            <property name="ignoreHashCodeMethod"   value="true"/>
+            <property name="ignoreAnnotation"       value="true"/>
+            <property name="ignoreFieldDeclaration" value="true"/>
+        </module>
+        <module name="AvoidNestedBlocks"/>
+        <module name="ReturnCount">
+            <property name="max"       value="4"/>
+            <property name="maxForVoid" value="3"/>
+        </module>
+        <module name="NestedIfDepth">
+            <property name="max" value="3"/>
+        </module>
+        <module name="NestedTryDepth">
+            <property name="max" value="2"/>
+        </module>
+        <module name="ExplicitInitialization"/>
+        <module name="DeclarationOrder"/>
+        <module name="OverloadMethodsDeclarationOrder"/>
+
+        <!-- ── Class design ──────────────────────────────────────────── -->
+        <module name="VisibilityModifier">
+            <!-- Spring allows package-private for test collaboration -->
+            <property name="packageAllowed"             value="true"/>
+            <property name="protectedAllowed"           value="true"/>
+            <!-- Immutable fields and Spring @Value fields may be package-private -->
+            <property name="allowPublicImmutableFields" value="true"/>
+            <property name="ignoreAnnotationCanonicalNames"
+                      value="org.springframework.beans.factory.annotation.Value,
+                             org.springframework.beans.factory.annotation.Autowired,
+                             com.fasterxml.jackson.annotation.JsonProperty,
+                             lombok.Getter,lombok.Setter"/>
+        </module>
+        <module name="InterfaceIsType"/>
+
+        <!-- ── Annotations ───────────────────────────────────────────── -->
+        <module name="MissingOverride"/>
+        <module name="PackageAnnotation"/>
+        <module name="AnnotationLocation">
+            <property name="id"     value="AnnotationLocationMostCases"/>
+            <property name="tokens" value="CLASS_DEF,INTERFACE_DEF,ENUM_DEF,
+                                           METHOD_DEF,CTOR_DEF,RECORD_DEF,
+                                           COMPACT_CTOR_DEF"/>
+        </module>
+
+    </module>
+
+</module>
