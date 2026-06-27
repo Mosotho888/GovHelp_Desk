@@ -262,6 +262,7 @@ jobs:
         with:
           context: ./helpdesk
           push: true
+          platforms: linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
