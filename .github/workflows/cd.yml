@@ -1,0 +1,39 @@
+name: GovHelpDesk CD
+
+on:
+  workflow_run:
+    workflows: ["GovHelpDesk CI"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy to OCI
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Copy monitoring config to VM
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.OCI_VM_IP }}
+          username: ubuntu
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          source: "helpdesk/monitoring/"
+          target: "~/helpdesk/"
+          strip_components: 1
+
+      - name: Deploy to OCI VM
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.OCI_VM_IP }}
+          username: ubuntu
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/helpdesk
+            docker compose pull app
+            docker compose up -d --no-deps app
+            docker image prune -f
