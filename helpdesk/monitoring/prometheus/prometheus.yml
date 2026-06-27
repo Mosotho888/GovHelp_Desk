@@ -7,7 +7,7 @@ scrape_configs:
   - job_name: 'helpdesk-api'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: [ 'spring-boot-app:8080' ]
+      - targets: [ 'app:8080' ]
     # Attach a human-readable label so Grafana queries can filter by app
     relabel_configs:
       - source_labels: [ __address__ ]
