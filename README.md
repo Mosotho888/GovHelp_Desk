@@ -2,7 +2,7 @@
 
 A production-ready REST API for government support ticket management, built with Spring Boot 3.5 and Java 17.
 
-[![CI](https://github.com/Mosotho888/govhelpdesk/actions/workflows/ci.yml/badge.svg)](https://github.com/Mosotho888/govhelpdesk/actions/workflows/ci.yml)
+[![CI](https://github.com/Mosotho888/GovHelp_Desk/actions/workflows/ci.yml/badge.svg)](https://github.com/Mosotho888/GovHelp_Desk/actions/workflows/ci.yml)
 [![Java](https://img.shields.io/badge/Java-17-orange)](https://adoptium.net)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-brightgreen)](https://spring.io/projects/spring-boot)
 [![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
