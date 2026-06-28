@@ -31,7 +31,7 @@ public class OpenApiConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .addServersItem(new Server().url("https://api.sothoman.com").description("Production"))
-                .addServersItem(new Servers().url("http://localhost:8080").description("Local"))
+                .addServersItem(new Server().url("http://localhost:8080").description("Local"))
                 .info(
                         new Info()
                                 .title("Helpdesk API")
