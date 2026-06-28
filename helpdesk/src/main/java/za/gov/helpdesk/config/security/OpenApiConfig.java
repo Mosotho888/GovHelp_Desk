@@ -28,6 +28,8 @@ public class OpenApiConfig {
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
+                .addServersItem(new Server().url("https://api.sothoman.com").description("Production"))
+                .addServersItem(new Servers().url("http://localhost:8080").description("Local"))
                 .info(
                         new Info()
                                 .title("Helpdesk API")
