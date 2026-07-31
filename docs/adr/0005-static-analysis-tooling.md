@@ -14,7 +14,7 @@ problems that different tools specialise in.
 ## Decision
 
 Adopt four complementary static analysis tools, each configured with a production-grade ruleset under
-`helpdesk/config/`:
+`../../helpdesk/config`:
 
 - **Checkstyle** (`config/checkstyle/checkstyle.xml` +
   `checkstyle-suppressions.xml`) - enforces style and structural conventions (naming, import order, Javadoc presence on
@@ -36,7 +36,7 @@ Two conventions were adopted alongside the tooling:
   codebase hides *why* a rule doesn't apply and makes the ruleset's intent harder to audit later; an explicit, commented
   exclusion in the shared ruleset file keeps that reasoning in one place.
 - **`SuppressionSingleFilter` must be a direct child of `Checker`, not nested inside
-  `TreeWalker`**, per Checkstyle's XML module schema — this was a real configuration bug during setup, documented here
+  `TreeWalker`**, per Checkstyle's XML module schema - this was a real configuration bug during setup, documented here
   so it doesn't get silently reintroduced.
 
 ## Alternatives considered
@@ -61,5 +61,5 @@ Two conventions were adopted alongside the tooling:
   happened with PMD 7) introduces breaking rule-category changes that require the ruleset to be updated before CI goes
   green again.
 - Initial setup cost was non-trivial - most of the early hardening work (see
-  [`CHANGELOG.md`](../../CHANGELOG.md)) was spent getting all four tools to agree on a consistent, low-noise ruleset
-  rather than either over-suppressing or drowning contributors in low-value warnings.
+  [`../../CHANGELOG.md`](../../CHANGELOG.md)) was spent getting all four tools to agree on a consistent, low-noise
+  ruleset rather than either over-suppressing or drowning contributors in low-value warnings.

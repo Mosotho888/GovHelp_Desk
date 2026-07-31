@@ -50,7 +50,7 @@ These are consumed by `docker-compose.yml` and must be present in `.env`:
 | `RATE_LIMIT_CAPACITY_UNAUTHENTICATED`, `_USER`, `_AGENT`, `_ADMIN` | Per-role hourly rate-limit bucket capacities                                                                 |
 | `GRAFANA_USER`, `GRAFANA_PASSWORD`                                 | Grafana admin credentials (defaults to `admin`/`admin` if unset — **change this in any shared environment**) |
 
-Never commit a populated `.env` file - it is already covered by `.gitignore`.
+Never commit a populated `.env` file - it is already covered by `../../.gitignore`.
 
 ## Docker image
 
@@ -70,7 +70,7 @@ the registry for production must target
 
 ## CI pipeline
 
-Defined in `.github/workflows/ci.yml`, three sequential jobs on every push:
+Defined in `../../.github/workflows/ci.yml`, three sequential jobs on every push:
 
 1. **`build-and-test`** - compiles and runs the full test suite (JUnit 5, Mockito, Testcontainers, Rest-Assured).
 2. **`static-analysis`** - Checkstyle, PMD, SpotBugs/FindSecBugs, Spotless check (not auto-fix) -
@@ -79,12 +79,13 @@ Defined in `.github/workflows/ci.yml`, three sequential jobs on every push:
 
 ## CD pipeline
 
-Defined in `.github/workflows/cd.yml`, triggered by a `workflow_run` completion event from the CI workflow, gated on
+Defined in `../../.github/workflows/cd.yml`, triggered by a `workflow_run` completion event from the CI workflow, gated
+on
 `github.event.workflow_run.conclusion == 'success'` and restricted to
 `main`:
 
-1. SCPs the current `helpdesk/monitoring/` directory to the VM (so Prometheus scrape config changes ship alongside code
-   changes).
+1. SCPs the current `../../helpdesk/monitoring` directory to the VM (so Prometheus scrape config changes ship alongside
+   code changes).
 2. SSHes into the OCI VM (`appleboy/ssh-action`) and runs:
    ```bash
    cd ~/helpdesk
@@ -105,7 +106,7 @@ There is no automated rollback yet. To roll back manually:
 3. Edit `docker-compose.yml` (or pass an explicit tag) to pin the `app` service to that image.
 4. `docker compose up -d --no-deps app`.
 
-Automating this is tracked in [`ROADMAP.md`](../../ROADMAP.md).
+Automating this is tracked in [`../../ROADMAP.md`](../../ROADMAP.md).
 
 ## DNS and TLS
 

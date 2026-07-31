@@ -1,7 +1,7 @@
 # Database
 
 PostgreSQL 18 is the system of record. Schema is managed entirely by Flyway migrations under
-`helpdesk/src/main/resources/db/migration` - Hibernate's DDL auto-generation is disabled in production
+`../../helpdesk/src/main/resources/db/migration` - Hibernate's DDL auto-generation is disabled in production
 (`SPRING_JPA_HIBERNATE_DDL_AUTO=validate`), so the migrations are the single source of truth for schema state.
 
 ## Entity-relationship diagram

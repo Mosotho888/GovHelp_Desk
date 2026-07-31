@@ -2,7 +2,7 @@
 
 This documents the actual security mechanisms implemented in the codebase, as a reference for reviewers and future
 contributors. For how to report a vulnerability, see
-[`SECURITY.md`](../../SECURITY.md) at the repo root.
+[`../../SECURITY.md`](../../SECURITY.md) at the repo root.
 
 ## Authentication
 
@@ -111,4 +111,4 @@ common, easily-overlooked information disclosure vector.
 - The system runs as a single instance with no WAF or DDoS mitigation beyond what Cloudflare provides at the DNS/edge
   layer.
 - There is no dependency-vulnerability scanning (e.g. OWASP Dependency-Check or GitHub Dependabot alerts) wired into CI
-  yet - tracked in [`ROADMAP.md`](../../ROADMAP.md) as a planned improvement.
+  yet - tracked in [`../../ROADMAP.md`](../../ROADMAP.md) as a planned improvement.
