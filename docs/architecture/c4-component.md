@@ -63,7 +63,7 @@ graph TB
     class sec, rl, gex edgeStyle
     class auth, users, agent, ticket, comment, attachment, sla, auditlog domain
     class outbox, notification msg
-    class db, mq store
+class db, mq store
 ```
 
 ## Key components and their single responsibility
