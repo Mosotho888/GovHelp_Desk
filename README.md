@@ -29,7 +29,8 @@ A production-ready REST API for government support ticket management, built with
 
 ## Overview
 
-GovHelpDesk is a multi-role support ticketing system designed for government departments. Citizens submit tickets, agents work them, and administrators oversee the operation.
+GovHelpDesk is a multi-role support ticketing system designed for government departments. Citizens submit tickets,
+agents work them, and administrators oversee the operation.
 
 Key capabilities:
 
@@ -81,36 +82,36 @@ Observability:
 
 ### Key design patterns
 
-| Pattern | Where used | Why |
-|---|---|---|
-| Transactional Outbox | `OutboxEvent` table + `OutboxRelay` | Guarantees at-least-once message delivery without distributed transactions |
-| Repository per aggregate | `TicketRepository`, `CommentRepository`, etc. | Clean domain boundaries, testable in isolation |
-| DTO separation | `*Request` / `*Response` / `*Message` | Entities never leave the service layer |
-| Domain events | `TicketEventDispatcher` | Decouples ticket state changes from audit/notification side effects |
-| Per-domain metrics | `TicketMetrics`, `AuthMetrics`, etc. | Each domain owns its observability; no shared God Object |
+| Pattern                  | Where used                                    | Why                                                                        |
+|--------------------------|-----------------------------------------------|----------------------------------------------------------------------------|
+| Transactional Outbox     | `OutboxEvent` table + `OutboxRelay`           | Guarantees at-least-once message delivery without distributed transactions |
+| Repository per aggregate | `TicketRepository`, `CommentRepository`, etc. | Clean domain boundaries, testable in isolation                             |
+| DTO separation           | `*Request` / `*Response` / `*Message`         | Entities never leave the service layer                                     |
+| Domain events            | `TicketEventDispatcher`                       | Decouples ticket state changes from audit/notification side effects        |
+| Per-domain metrics       | `TicketMetrics`, `AuthMetrics`, etc.          | Each domain owns its observability; no shared God Object                   |
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Language | Java 17 |
-| Framework | Spring Boot 3.5 |
-| Security | Spring Security 6, JWT (JJWT 0.12.6) |
-| Persistence | Spring Data JPA, Hibernate 6, PostgreSQL 18 |
-| Migrations | Flyway (7 migration scripts) |
-| Messaging | Spring AMQP, RabbitMQ 3 |
-| Email | Spring Mail + Thymeleaf templates |
-| API Docs | SpringDoc OpenAPI 3 (Swagger UI) |
-| Mapping | MapStruct 1.5.5 |
-| Boilerplate | Lombok 1.18.30 |
-| Rate Limiting | Bucket4j 8.10.1 + Caffeine cache |
-| Monitoring | Micrometer, Prometheus, Grafana |
-| Containerisation | Docker, Docker Compose |
-| Testing | JUnit 5, Mockito, Testcontainers, Rest-Assured |
-| CI | GitHub Actions |
-| Static Analysis | Checkstyle, SpotBugs, PMD, Spotless |
+| Layer            | Technology                                     |
+|------------------|------------------------------------------------|
+| Language         | Java 17                                        |
+| Framework        | Spring Boot 3.5                                |
+| Security         | Spring Security 6, JWT (JJWT 0.12.6)           |
+| Persistence      | Spring Data JPA, Hibernate 6, PostgreSQL 18    |
+| Migrations       | Flyway (7 migration scripts)                   |
+| Messaging        | Spring AMQP, RabbitMQ 3                        |
+| Email            | Spring Mail + Thymeleaf templates              |
+| API Docs         | SpringDoc OpenAPI 3 (Swagger UI)               |
+| Mapping          | MapStruct 1.5.5                                |
+| Boilerplate      | Lombok 1.18.30                                 |
+| Rate Limiting    | Bucket4j 8.10.1 + Caffeine cache               |
+| Monitoring       | Micrometer, Prometheus, Grafana                |
+| Containerisation | Docker, Docker Compose                         |
+| Testing          | JUnit 5, Mockito, Testcontainers, Rest-Assured |
+| CI               | GitHub Actions                                 |
+| Static Analysis  | Checkstyle, SpotBugs, PMD, Spotless            |
 
 ---
 
@@ -156,85 +157,85 @@ Interactive documentation is available at `http://localhost:8080/swagger-ui.html
 
 ### Authentication — `/v1/auth`
 
-| Method | Path | Role | Description |
-|---|---|---|---|
-| `POST` | `/login` | Public | Authenticate, receive access + refresh tokens |
-| `POST` | `/refresh` | Public | Exchange refresh token for new access token |
-| `POST` | `/logout` | Authenticated | Revoke all refresh tokens |
-| `POST` | `/password-reset/request` | Public | Request OTP via email |
-| `POST` | `/password-reset/confirm` | Public | Confirm OTP, set new password |
+| Method | Path                      | Role          | Description                                   |
+|--------|---------------------------|---------------|-----------------------------------------------|
+| `POST` | `/login`                  | Public        | Authenticate, receive access + refresh tokens |
+| `POST` | `/refresh`                | Public        | Exchange refresh token for new access token   |
+| `POST` | `/logout`                 | Authenticated | Revoke all refresh tokens                     |
+| `POST` | `/password-reset/request` | Public        | Request OTP via email                         |
+| `POST` | `/password-reset/confirm` | Public        | Confirm OTP, set new password                 |
 
 ### Tickets — `/v1/tickets`
 
-| Method | Path | Role | Description |
-|---|---|---|---|
-| `POST` | `/` | USER+ | Create a new ticket |
-| `GET` | `/` | USER+ | List tickets (USERs see only their own) |
-| `GET` | `/{id}` | USER+ | Get ticket by ID |
-| `PATCH` | `/{id}` | AGENT+ | Update status, assignee, priority |
-| `DELETE` | `/{id}` | ADMIN | Delete ticket |
+| Method   | Path    | Role   | Description                             |
+|----------|---------|--------|-----------------------------------------|
+| `POST`   | `/`     | USER+  | Create a new ticket                     |
+| `GET`    | `/`     | USER+  | List tickets (USERs see only their own) |
+| `GET`    | `/{id}` | USER+  | Get ticket by ID                        |
+| `PATCH`  | `/{id}` | AGENT+ | Update status, assignee, priority       |
+| `DELETE` | `/{id}` | ADMIN  | Delete ticket                           |
 
 ### Comments — `/v1`
 
-| Method | Path | Role | Description |
-|---|---|---|---|
-| `POST` | `/tickets/{id}/comments` | USER+ | Add comment or internal note |
-| `GET` | `/tickets/{id}/comments` | USER+ | List comments (internal notes filtered by role) |
-| `POST` | `/comments/{id}/replies` | USER+ | Reply to a comment |
-| `GET` | `/comments/{id}/replies` | USER+ | List replies |
-| `PUT` | `/comments/{id}` | Author/ADMIN | Edit comment |
-| `DELETE` | `/comments/{id}` | Author/ADMIN | Delete comment |
+| Method   | Path                     | Role         | Description                                     |
+|----------|--------------------------|--------------|-------------------------------------------------|
+| `POST`   | `/tickets/{id}/comments` | USER+        | Add comment or internal note                    |
+| `GET`    | `/tickets/{id}/comments` | USER+        | List comments (internal notes filtered by role) |
+| `POST`   | `/comments/{id}/replies` | USER+        | Reply to a comment                              |
+| `GET`    | `/comments/{id}/replies` | USER+        | List replies                                    |
+| `PUT`    | `/comments/{id}`         | Author/ADMIN | Edit comment                                    |
+| `DELETE` | `/comments/{id}`         | Author/ADMIN | Delete comment                                  |
 
 ### Attachments — `/v1`
 
-| Method | Path | Role | Description |
-|---|---|---|---|
-| `POST` | `/tickets/{id}/attachments` | USER+ | Upload files (max 20MB each, 100MB total) |
-| `GET` | `/tickets/{id}/attachments` | USER+ | List attachments for ticket |
-| `GET` | `/attachments/{id}` | USER+ | Download attachment |
-| `DELETE` | `/attachments/{id}` | Owner/ADMIN | Delete attachment |
+| Method   | Path                        | Role        | Description                               |
+|----------|-----------------------------|-------------|-------------------------------------------|
+| `POST`   | `/tickets/{id}/attachments` | USER+       | Upload files (max 20MB each, 100MB total) |
+| `GET`    | `/tickets/{id}/attachments` | USER+       | List attachments for ticket               |
+| `GET`    | `/attachments/{id}`         | USER+       | Download attachment                       |
+| `DELETE` | `/attachments/{id}`         | Owner/ADMIN | Delete attachment                         |
 
 ### Agents — `/v1/agents`
 
-| Method | Path | Role | Description |
-|---|---|---|---|
-| `POST` | `/` | ADMIN | Register a user as an agent |
-| `GET` | `/` | ADMIN | List all agents |
-| `GET` | `/{id}` | AGENT+ | Get agent by ID |
-| `PATCH` | `/{id}` | AGENT+ | Update availability or department |
-| `GET` | `/{id}/stats` | AGENT+ | Agent performance statistics |
+| Method  | Path          | Role   | Description                       |
+|---------|---------------|--------|-----------------------------------|
+| `POST`  | `/`           | ADMIN  | Register a user as an agent       |
+| `GET`   | `/`           | ADMIN  | List all agents                   |
+| `GET`   | `/{id}`       | AGENT+ | Get agent by ID                   |
+| `PATCH` | `/{id}`       | AGENT+ | Update availability or department |
+| `GET`   | `/{id}/stats` | AGENT+ | Agent performance statistics      |
 
 ### Users — `/v1/users`
 
-| Method | Path | Role | Description |
-|---|---|---|---|
-| `POST` | `/` | ADMIN | Create user |
-| `GET` | `/` | ADMIN | List all users |
-| `GET` | `/me` | Authenticated | Get own profile |
-| `GET` | `/{id}` | ADMIN | Get user by ID |
-| `PUT` | `/{id}` | ADMIN | Full update |
-| `DELETE` | `/{id}` | ADMIN | Deactivate user |
-| `POST` | `/{id}/reactivate` | ADMIN | Reactivate user |
-| `PATCH` | `/{id}/role` | ADMIN | Change role |
-| `PATCH` | `/{id}/password` | ADMIN | Reset password |
-| `PATCH` | `/me/password` | Authenticated | Change own password |
+| Method   | Path               | Role          | Description         |
+|----------|--------------------|---------------|---------------------|
+| `POST`   | `/`                | ADMIN         | Create user         |
+| `GET`    | `/`                | ADMIN         | List all users      |
+| `GET`    | `/me`              | Authenticated | Get own profile     |
+| `GET`    | `/{id}`            | ADMIN         | Get user by ID      |
+| `PUT`    | `/{id}`            | ADMIN         | Full update         |
+| `DELETE` | `/{id}`            | ADMIN         | Deactivate user     |
+| `POST`   | `/{id}/reactivate` | ADMIN         | Reactivate user     |
+| `PATCH`  | `/{id}/role`       | ADMIN         | Change role         |
+| `PATCH`  | `/{id}/password`   | ADMIN         | Reset password      |
+| `PATCH`  | `/me/password`     | Authenticated | Change own password |
 
 ### Audit Log — `/v1/audit`
 
-| Method | Path | Role | Description |
-|---|---|---|---|
-| `GET` | `/tickets/{id}` | AGENT+ | Audit history for a ticket |
-| `GET` | `/users/{id}` | ADMIN | Audit history for a user |
-| `GET` | `/agents/{id}` | ADMIN | Audit history for an agent |
-| `GET` | `/auth` | ADMIN | Auth event log (logins, resets) |
-| `GET` | `/actor/{actorId}` | ADMIN | All actions by a specific user |
-| `GET` | `/action/{action}` | ADMIN | All events of a given action type |
+| Method | Path               | Role   | Description                       |
+|--------|--------------------|--------|-----------------------------------|
+| `GET`  | `/tickets/{id}`    | AGENT+ | Audit history for a ticket        |
+| `GET`  | `/users/{id}`      | ADMIN  | Audit history for a user          |
+| `GET`  | `/agents/{id}`     | ADMIN  | Audit history for an agent        |
+| `GET`  | `/auth`            | ADMIN  | Auth event log (logins, resets)   |
+| `GET`  | `/actor/{actorId}` | ADMIN  | All actions by a specific user    |
+| `GET`  | `/action/{action}` | ADMIN  | All events of a given action type |
 
 ### SLA — `/v1/tickets/{id}/sla`
 
-| Method | Path | Role | Description |
-|---|---|---|---|
-| `GET` | `/` | AGENT+ | SLA record for a ticket (deadlines, breach status) |
+| Method | Path | Role   | Description                                        |
+|--------|------|--------|----------------------------------------------------|
+| `GET`  | `/`  | AGENT+ | SLA record for a ticket (deadlines, breach status) |
 
 ---
 
@@ -273,8 +274,7 @@ docker compose up -d db rabbitmq
 ./mvnw spring-boot:run
 ```
 
-The API is available at `http://localhost:8080`.
-Swagger UI is at `http://localhost:8080/swagger-ui.html`.
+The API is available at `http://localhost:8080`. Swagger UI is at `http://localhost:8080/swagger-ui.html`.
 
 ---
 
@@ -284,38 +284,38 @@ All configuration is driven by environment variables. Copy `.env.example` to `.e
 
 ### Required
 
-| Variable | Description | Example |
-|---|---|---|
-| `PG_HOST` | PostgreSQL host | `localhost` |
-| `PG_PORT` | PostgreSQL port | `5432` |
-| `PG_USER` | Database user | `helpdesk_user` |
-| `PG_PASSWORD` | Database password | `changeme` |
-| `POSTGRES_DB` | Database name | `helpdesk_db` |
-| `JWT_SECRET_KEY` | HS512 secret, min 64 chars | `your-very-long-secret...` |
-| `JWT_VALIDITY` | Access token TTL (ms) | `900000` (15 min) |
-| `JWT_REFRESH_VALIDITY` | Refresh token TTL (ms) | `604800000` (7 days) |
-| `MAIL_HOST` | SMTP host | `smtp.gmail.com` |
-| `MAIL_PORT` | SMTP port | `587` |
-| `MAIL_USERNAME` | SMTP username / email | `noreply@gov.za` |
-| `MAIL_PASSWORD` | SMTP password or app password | `your-app-password` |
-| `RABBITMQ_USERNAME` | RabbitMQ username | `admin` |
-| `RABBITMQ_PASSWORD` | RabbitMQ password | `changeme` |
-| `RABBITMQ_PORT` | RabbitMQ AMQP port | `5672` |
+| Variable               | Description                   | Example                    |
+|------------------------|-------------------------------|----------------------------|
+| `PG_HOST`              | PostgreSQL host               | `localhost`                |
+| `PG_PORT`              | PostgreSQL port               | `5432`                     |
+| `PG_USER`              | Database user                 | `helpdesk_user`            |
+| `PG_PASSWORD`          | Database password             | `changeme`                 |
+| `POSTGRES_DB`          | Database name                 | `helpdesk_db`              |
+| `JWT_SECRET_KEY`       | HS512 secret, min 64 chars    | `your-very-long-secret...` |
+| `JWT_VALIDITY`         | Access token TTL (ms)         | `900000` (15 min)          |
+| `JWT_REFRESH_VALIDITY` | Refresh token TTL (ms)        | `604800000` (7 days)       |
+| `MAIL_HOST`            | SMTP host                     | `smtp.gmail.com`           |
+| `MAIL_PORT`            | SMTP port                     | `587`                      |
+| `MAIL_USERNAME`        | SMTP username / email         | `noreply@gov.za`           |
+| `MAIL_PASSWORD`        | SMTP password or app password | `your-app-password`        |
+| `RABBITMQ_USERNAME`    | RabbitMQ username             | `admin`                    |
+| `RABBITMQ_PASSWORD`    | RabbitMQ password             | `changeme`                 |
+| `RABBITMQ_PORT`        | RabbitMQ AMQP port            | `5672`                     |
 
 ### Optional (have defaults)
 
-| Variable | Default | Description |
-|---|---|---|
-| `UPLOAD_PATH` | `./uploads` | Filesystem path for attachments |
-| `RATE_LIMIT_CAPACITY_UNAUTHENTICATED` | `100` | Requests/hour for anonymous callers |
-| `RATE_LIMIT_CAPACITY_USER` | `1000` | Requests/hour for USER role |
-| `RATE_LIMIT_CAPACITY_AGENT` | `5000` | Requests/hour for AGENT role |
-| `RATE_LIMIT_CAPACITY_ADMIN` | `10000` | Requests/hour for ADMIN role |
-| `OUTBOX_POLL_INTERVAL` | `PT5S` | How often OutboxRelay polls (ISO 8601 duration) |
-| `OUTBOX_PURGE_CRON` | `0 0 3 * * *` | Cron for purging old processed events (3 AM daily) |
-| `SLA_MONITOR_INTERVAL` | `PT5M` | How often SlaBreachMonitor runs |
-| `MIN_CONCURRENCY` | `1` | RabbitMQ consumer thread count |
-| `HIBERNATE_DIALECT` | — | Set to `org.hibernate.dialect.PostgreSQLDialect` |
+| Variable                              | Default       | Description                                        |
+|---------------------------------------|---------------|----------------------------------------------------|
+| `UPLOAD_PATH`                         | `./uploads`   | Filesystem path for attachments                    |
+| `RATE_LIMIT_CAPACITY_UNAUTHENTICATED` | `100`         | Requests/hour for anonymous callers                |
+| `RATE_LIMIT_CAPACITY_USER`            | `1000`        | Requests/hour for USER role                        |
+| `RATE_LIMIT_CAPACITY_AGENT`           | `5000`        | Requests/hour for AGENT role                       |
+| `RATE_LIMIT_CAPACITY_ADMIN`           | `10000`       | Requests/hour for ADMIN role                       |
+| `OUTBOX_POLL_INTERVAL`                | `PT5S`        | How often OutboxRelay polls (ISO 8601 duration)    |
+| `OUTBOX_PURGE_CRON`                   | `0 0 3 * * *` | Cron for purging old processed events (3 AM daily) |
+| `SLA_MONITOR_INTERVAL`                | `PT5M`        | How often SlaBreachMonitor runs                    |
+| `MIN_CONCURRENCY`                     | `1`           | RabbitMQ consumer thread count                     |
+| `HIBERNATE_DIALECT`                   | —             | Set to `org.hibernate.dialect.PostgreSQLDialect`   |
 
 ---
 
@@ -345,15 +345,15 @@ docker compose down -v
 
 ### Service ports
 
-| Service | Port | URL |
-|---|---|---|
-| Spring Boot API | `8080` | `http://localhost:8080` |
-| Swagger UI | `8080` | `http://localhost:8080/swagger-ui.html` |
-| PostgreSQL | `5433` | `localhost:5433` (mapped from 5432 inside container) |
-| RabbitMQ AMQP | `5672` | `localhost:5672` |
-| RabbitMQ Management | `15672` | `http://localhost:15672` |
-| Prometheus | `9090` | `http://localhost:9090` |
-| Grafana | `3000` | `http://localhost:3000` (admin / admin) |
+| Service             | Port    | URL                                                  |
+|---------------------|---------|------------------------------------------------------|
+| Spring Boot API     | `8080`  | `http://localhost:8080`                              |
+| Swagger UI          | `8080`  | `http://localhost:8080/swagger-ui.html`              |
+| PostgreSQL          | `5433`  | `localhost:5433` (mapped from 5432 inside container) |
+| RabbitMQ AMQP       | `5672`  | `localhost:5672`                                     |
+| RabbitMQ Management | `15672` | `http://localhost:15672`                             |
+| Prometheus          | `9090`  | `http://localhost:9090`                              |
+| Grafana             | `3000`  | `http://localhost:3000` (admin / admin)              |
 
 ---
 
@@ -373,10 +373,11 @@ docker compose down -v
 ./mvnw package -DskipTests
 ```
 
-Tests use **Testcontainers** — PostgreSQL and RabbitMQ containers start automatically during the test run. Docker must be running. No manual database setup is required.
+Tests use **Testcontainers** — PostgreSQL and RabbitMQ containers start automatically during the test run. Docker must
+be running. No manual database setup is required.
 
-Coverage report is generated at `target/site/jacoco/index.html` after `./mvnw verify`.
-The minimum required line coverage is **80%** — the build fails if it drops below this.
+Coverage report is generated at `target/site/jacoco/index.html` after `./mvnw verify`. The minimum required line
+coverage is **80%** — the build fails if it drops below this.
 
 ---
 
@@ -388,20 +389,21 @@ Prometheus and Grafana are fully provisioned. After `docker compose up -d promet
 2. Navigate to **Dashboards → GovHelpDesk** folder
 3. Eight dashboards are pre-loaded:
 
-| Dashboard | What it shows |
-|---|---|
-| **Tickets** | Create/resolve/close/escalate rates, resolution time p50/p95/p99 |
-| **Comments** | Public vs internal note volume, edit/delete rates |
-| **Attachments** | Upload/download rates, file size distribution |
-| **Agents** | Registrations, availability changes, department reassignments |
-| **SLA** | Response/resolution breach and warning rates, 24h window |
-| **Outbox Relay** | Pending backlog gauge, publish/failure/dead-letter rates |
+| Dashboard           | What it shows                                                    |
+|---------------------|------------------------------------------------------------------|
+| **Tickets**         | Create/resolve/close/escalate rates, resolution time p50/p95/p99 |
+| **Comments**        | Public vs internal note volume, edit/delete rates                |
+| **Attachments**     | Upload/download rates, file size distribution                    |
+| **Agents**          | Registrations, availability changes, department reassignments    |
+| **SLA**             | Response/resolution breach and warning rates, 24h window         |
+| **Outbox Relay**    | Pending backlog gauge, publish/failure/dead-letter rates         |
 | **Auth & Security** | Login success/failure ratio, token lifecycle, brute-force signal |
-| **Notifications** | Email ACK/NACK/DLQ rates, audit consumer throughput |
+| **Notifications**   | Email ACK/NACK/DLQ rates, audit consumer throughput              |
 
 ### Custom metrics
 
-All custom metrics use the `helpdesk.*` prefix. Micrometer auto-instruments the rest (`http.*`, `jvm.*`, `hikaricp.*`, etc.).
+All custom metrics use the `helpdesk.*` prefix. Micrometer auto-instruments the rest (`http.*`, `jvm.*`, `hikaricp.*`,
+etc.).
 
 Each domain owns its metrics through a dedicated `@Component` bean:
 
@@ -442,10 +444,10 @@ push / pull_request
 
 Go to **Settings → Secrets and variables → Actions** and add:
 
-| Secret | Description |
-|---|---|
-| `DOCKERHUB_USERNAME` | Your Docker Hub username |
-| `DOCKERHUB_TOKEN` | Docker Hub access token (Account Settings → Security) |
+| Secret               | Description                                           |
+|----------------------|-------------------------------------------------------|
+| `DOCKERHUB_USERNAME` | Your Docker Hub username                              |
+| `DOCKERHUB_TOKEN`    | Docker Hub access token (Account Settings → Security) |
 
 ---
 
@@ -555,3 +557,43 @@ monitoring/
 Dockerfile                      # Multi-stage: eclipse-temurin:17-jdk → 17-jre
 docker-compose.yml
 ```
+
+## Limitations and Future Enhancements
+
+GovHelpDesk currently focuses on providing the core functionality required for an IT department Help Desk. While it
+supports secure authentication, ticket lifecycle management, SLA monitoring, audit logging, notifications, and
+observability, several enterprise features are intentionally reserved for future releases.
+
+### Planned Enhancements
+
+- **Asset Management**
+    - Register and manage IT assets (laptops, desktops, printers, monitors, networking equipment, and software
+      licenses).
+    - Associate support tickets with specific assets to provide technicians with device history, warranty information,
+      and ownership details.
+
+- **Ticket Categories and Subcategories**
+    - Organise tickets into hierarchical categories such as Hardware, Software, Network, Accounts, and Security.
+    - Improve reporting, filtering, and automated ticket routing.
+
+- **Operational Dashboards**
+    - Provide dashboards for agents and administrators showing ticket volumes, SLA compliance, workload distribution,
+      resolution times, and performance metrics.
+
+- **Knowledge Base**
+    - Create searchable documentation containing troubleshooting guides, FAQs, and standard operating procedures to
+      encourage self-service and reduce repetitive support requests.
+
+- **Automation Rules**
+    - Automatically assign tickets based on category or department.
+    - Trigger notifications, escalations, and SLA-based workflows without manual intervention.
+
+- **Saved Replies**
+    - Allow agents to use predefined response templates for common IT support scenarios, improving consistency and
+      reducing response times.
+
+- **Customer Satisfaction (CSAT)**
+    - Collect user feedback after ticket resolution to measure service quality and support continuous improvement.
+
+These enhancements are planned to extend GovHelpDesk from a production-ready IT Help Desk into a more comprehensive IT
+Service Management (ITSM) platform while maintaining a modular and scalable architecture.
