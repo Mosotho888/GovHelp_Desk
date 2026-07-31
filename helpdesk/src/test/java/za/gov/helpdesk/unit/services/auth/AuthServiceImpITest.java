@@ -40,25 +40,16 @@ import static org.mockito.Mockito.times;
 @DisplayName("AuthService unit tests")
 public class AuthServiceImpITest {
 
-    @Mock
-    private AuthenticationManager authManager;
-    @Mock
-    private UserRepository userRepository;
-    @Mock
-    private JwtService jwtService;
-    @Mock
-    private AuditEventPublisher auditPublisher;
-    @Mock
-    private RefreshTokenService refreshTokenService;
-    @Mock
-    private LoginLockoutService lockoutService;
-    @Mock
-    private AuthResponseFactory authResponseFactory;
-    @Mock
-    private AuthMetrics authMetrics;
+    @Mock private AuthenticationManager authManager;
+    @Mock private UserRepository userRepository;
+    @Mock private JwtService jwtService;
+    @Mock private AuditEventPublisher auditPublisher;
+    @Mock private RefreshTokenService refreshTokenService;
+    @Mock private LoginLockoutService lockoutService;
+    @Mock private AuthResponseFactory authResponseFactory;
+    @Mock private AuthMetrics authMetrics;
 
-    @InjectMocks
-    private AuthServiceImpl authService;
+    @InjectMocks private AuthServiceImpl authService;
 
     private User testUser;
 
