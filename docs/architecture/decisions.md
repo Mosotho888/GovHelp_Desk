@@ -1,7 +1,7 @@
 # Architecture Decisions - Index
 
 Significant, hard-to-reverse architectural decisions are recorded as individual Architecture Decision Records (ADRs)
-under [`docs/adr/`](../adr/), using the lightweight Michael Nygard format. This page is a chronological index with a
+under [`docs/adr/`](../adr), using the lightweight Michael Nygard format. This page is a chronological index with a
 one-line summary of each.
 
 | #                                                   | Title                                    | Status   | Summary                                                                                                                                                                               |

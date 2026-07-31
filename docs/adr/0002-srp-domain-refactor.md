@@ -56,7 +56,7 @@ rather than inlining them.
 
 **Harder:**
 
-- More classes and more indirection to navigate for a newcomer to the codebase — mitigated by consistent naming and
+- More classes and more indirection to navigate for a newcomer to the codebase - mitigated by consistent naming and
   package conventions (see [`../../CONTRIBUTING.md`](../../CONTRIBUTING.md)).
 - The refactor temporarily broke the existing test suite, since tests written against the old monolithic services no
   longer matched the new collaborator boundaries. This required a full test suite rewrite (58 broken tests → 94 passing

@@ -32,8 +32,8 @@ graph TB
     classDef external fill: #999999, color: #fff, stroke: #6b6b6b
     classDef client fill: #666, color: #fff, stroke: #444
     class api container
-class db, mq db
-class prom, grafana container
+class db,mq db
+class prom,grafana container
 class fs db
 class smtp external
 class browser client

@@ -23,7 +23,7 @@ code blocks directly inside the relevant markdown file, rather than as separate 
 
 If a static PNG/SVG export is ever needed (e.g. for a slide deck or a README badge), export it with
 the [Mermaid CLI](https://github.com/mermaid-js/mermaid-cli) and drop the result in
-[`docs/images/`](../images/):
+[`docs/images/`](../images):
 
 ```bash
 npx -p @mermaid-js/mermaid-cli mmdc -i c4-container.mmd -o ../images/c4-container.png

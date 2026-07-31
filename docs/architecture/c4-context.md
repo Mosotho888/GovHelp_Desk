@@ -22,9 +22,9 @@ graph TB
     classDef person fill: #08427b, color: #fff, stroke: #052e56
     classDef system fill: #1168bd, color: #fff, stroke: #0b4884
     classDef external fill: #999999, color: #fff, stroke: #6b6b6b
-    class employee, agent, admin person
+    class employee,agent,admin person
     class system system
-    class smtp, cloudflare, oci external
+    class smtp,cloudflare,oci external
 ```
 
 ## Actors

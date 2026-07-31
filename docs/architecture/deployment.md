@@ -43,9 +43,9 @@ graph TB
     classDef store fill: #2b6e34, color: #fff, stroke: #1d4c25
     classDef ci fill: #8b6f1f, color: #fff, stroke: #5c4a14
     class user ext
-class dns, tls ext
-class app,prom, graf svc
-class db,mq, vol store
+class dns,tls ext
+class app,prom,graf svc
+class db,mq,vol store
 class gha,ghcr ci
 ```
 
