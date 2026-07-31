@@ -60,10 +60,12 @@ graph TB
     classDef domain fill: #1168bd, color: #fff, stroke: #0b4884
     classDef msg fill: #8b6f1f, color: #fff, stroke: #5c4a14
     classDef store fill: #2b6e34, color: #fff, stroke: #1d4c25
-    class sec, rl, gex edgeStyle
-    class auth, users, agent, ticket, comment, attachment, sla, auditlog domain
-    class outbox, notification msg
-class db, mq store
+%% @formatter:off
+    class sec,rl,gex edgeStyle
+    class auth,users,agent,ticket,comment,attachment,sla,auditlog domain
+    class outbox,notification msg
+    class db,mq store
+    %% @formatter:on
 ```
 
 ## Key components and their single responsibility
