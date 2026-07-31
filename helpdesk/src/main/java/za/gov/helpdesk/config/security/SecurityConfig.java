@@ -70,7 +70,7 @@ public class SecurityConfig {
      */
     @Bean
     public SecurityFilterChain configure(final HttpSecurity http) throws Exception {
-        return http.cors(cors -> cors.configurationSource(corsConfigurationSource))
+        return http.cors(AbstractHttpConfigurer::disable)
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(
                         auth ->
