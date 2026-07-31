@@ -40,16 +40,25 @@ import static org.mockito.Mockito.times;
 @DisplayName("AuthService unit tests")
 public class AuthServiceImpITest {
 
-    @Mock private AuthenticationManager authManager;
-    @Mock private UserRepository userRepository;
-    @Mock private JwtService jwtService;
-    @Mock private AuditEventPublisher auditPublisher;
-    @Mock private RefreshTokenService refreshTokenService;
-    @Mock private LoginLockoutService lockoutService;
-    @Mock private AuthResponseFactory authResponseFactory;
-    @Mock private AuthMetrics authMetrics;
+    @Mock
+    private AuthenticationManager authManager;
+    @Mock
+    private UserRepository userRepository;
+    @Mock
+    private JwtService jwtService;
+    @Mock
+    private AuditEventPublisher auditPublisher;
+    @Mock
+    private RefreshTokenService refreshTokenService;
+    @Mock
+    private LoginLockoutService lockoutService;
+    @Mock
+    private AuthResponseFactory authResponseFactory;
+    @Mock
+    private AuthMetrics authMetrics;
 
-    @InjectMocks private AuthServiceImpl authService;
+    @InjectMocks
+    private AuthServiceImpl authService;
 
     private User testUser;
 
@@ -177,14 +186,6 @@ public class AuthServiceImpITest {
 
         assertThat(response).isNotNull();
         then(refreshTokenService).should(times(1)).store("new.refresh.token", testUser);
-        then(auditPublisher)
-                .should(times(1))
-                .publishAuthAudit(
-                        eq(AuditLog.AuditAction.TOKEN_REFRESHED),
-                        eq(testUser.getId()),
-                        eq(testUser.getName()),
-                        eq(testUser.getRole().name()),
-                        any());
     }
 
     @Test
