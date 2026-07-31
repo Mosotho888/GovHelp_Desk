@@ -125,7 +125,7 @@ public class AttachmentServiceImpl implements AttachmentService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public Attachment getAttachmentById(final Long attachmentId, final User actor) {
         final Attachment attachment = attachmentQuery.findOrThrow(attachmentId, actor);
 

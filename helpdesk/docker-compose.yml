@@ -16,6 +16,7 @@ services:
       POSTGRES_USER: ${PG_USER}
       POSTGRES_PASSWORD: ${PG_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+      TZ: Africa/Johannesburg
     ports:
       - "5433:5432"
     volumes:
@@ -42,7 +43,7 @@ services:
     networks:
       - spring-boot-api-network
     depends_on:
-      - spring-boot-app
+      - app
 
   grafana:
     image: grafana/grafana:10.4.3
@@ -79,6 +80,9 @@ services:
 
     environment:
       SPRING_APPLICATION_NAME: helpdesk
+
+      TZ: Africa/Johannesburg
+      JAVA_TOOL_OPTIONS: "-Duser.timezone=Africa/Johannesburg"
 
       # Logging Configuration
       LOGGING_FILE_NAME: /opt/app/logs/application.log
@@ -185,7 +189,7 @@ services:
       - spring-boot-api-network
 
     healthcheck:
-      test: ["CMD", "rabbitmqctl", "status"]
+      test: [ "CMD", "rabbitmqctl", "status" ]
       interval: 10s
       retries: 7
       start_period: 10s

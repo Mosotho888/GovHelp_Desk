@@ -177,14 +177,6 @@ public class AuthServiceImpITest {
 
         assertThat(response).isNotNull();
         then(refreshTokenService).should(times(1)).store("new.refresh.token", testUser);
-        then(auditPublisher)
-                .should(times(1))
-                .publishAuthAudit(
-                        eq(AuditLog.AuditAction.TOKEN_REFRESHED),
-                        eq(testUser.getId()),
-                        eq(testUser.getName()),
-                        eq(testUser.getRole().name()),
-                        any());
     }
 
     @Test

@@ -105,13 +105,6 @@ public class AuthServiceImpl implements AuthService {
         final String newRefreshToken = jwtService.generateRefreshToken(user);
         refreshTokenService.store(newRefreshToken, user);
 
-        auditPublisher.publishAuthAudit(
-                AuditLog.AuditAction.TOKEN_REFRESHED,
-                user.getId(),
-                user.getName(),
-                user.getRole().name(),
-                "Access token refreshed");
-
         authMetrics.incrementTokenRefreshed();
 
         return authResponseFactory.build(user, newRefreshToken);
