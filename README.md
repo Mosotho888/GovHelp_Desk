@@ -1,17 +1,26 @@
 # GovHelpDesk
 
-A production-ready REST API for government support ticket management, built with Spring Boot 3.5 and Java 17.
+A production-ready REST API for government support ticket management, built with Spring Boot 3.5 and Java 21.
 
 [![CI](https://github.com/Mosotho888/GovHelp_Desk/actions/workflows/ci.yml/badge.svg)](https://github.com/Mosotho888/GovHelp_Desk/actions/workflows/ci.yml)
-[![Java](https://img.shields.io/badge/Java-17-orange)](https://adoptium.net)
+[![Java](https://img.shields.io/badge/Java-21-orange)](https://adoptium.net)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-brightgreen)](https://spring.io/projects/spring-boot)
 [![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-govhelpdesk.sothoman.com-blueviolet)](https://govhelpdesk.sothoman.com)
+[![API](https://img.shields.io/badge/API-api.sothoman.com-informational)](https://api.sothoman.com/swagger-ui.html)
+
+**🔗 Live app:** [govhelpdesk.sothoman.com](https://govhelpdesk.sothoman.com) · **📘 API docs:**
+[api.sothoman.com/swagger-ui.html](https://api.sothoman.com/swagger-ui.html)
+
+This repository contains the **backend API** only. The production UI is built and deployed from a companion repository -
+see [Frontend](#frontend).
 
 ---
 
 ## Table of Contents
 
 - [Overview](#overview)
+- [Frontend](#frontend)
 - [Architecture](#architecture)
 - [Tech Stack](#tech-stack)
 - [Domain Model](#domain-model)
@@ -21,7 +30,7 @@ A production-ready REST API for government support ticket management, built with
 - [Running with Docker](#running-with-docker)
 - [Running Tests](#running-tests)
 - [Monitoring](#monitoring)
-- [CI Pipeline](#ci-pipeline)
+- [CI/CD Pipeline](#cicd-pipeline)
 - [Static Analysis](#static-analysis)
 - [Project Structure](#project-structure)
 
@@ -30,65 +39,104 @@ A production-ready REST API for government support ticket management, built with
 ## Overview
 
 GovHelpDesk is a multi-role support ticketing system designed for government departments. Citizens submit tickets,
-agents work them, and administrators oversee the operation.
+agents work them, and administrators oversee the operation. It's a full-stack, production-deployed portfolio project:
+this Spring Boot API on the backend, paired with a dedicated React frontend (see [Frontend](#frontend) below).
+
+### Why this exists
+
+The idea came out of an IT Support Internship at a South African local municipality. There was no system for logging
+support calls: when someone called in, the request was captured verbally and tracked informally rather than through a
+proper ticketing workflow. GovHelpDesk started as a way to solve that specific, real problem - a structured way to log a
+call as a ticket, route it to an agent, and track it through to resolution - and grew into a full production build:
+a complete SDLC process, a hardened Spring Boot backend, a React frontend, and a real deployment, built to demonstrate
+the same engineering rigor a government IT department's ticketing system would actually need.
 
 Key capabilities:
 
-- **Ticket lifecycle management** — create, assign, update, escalate, resolve, close
-- **SLA enforcement** — per-priority deadlines, automated warning and breach detection
-- **Role-based access control** — `USER`, `AGENT`, and `ADMIN` roles with endpoint-level enforcement
-- **Async notifications** — email notifications via RabbitMQ + transactional outbox pattern
-- **Audit trail** — every state change recorded to a queryable audit log
-- **Observability** — Prometheus metrics per domain, Grafana dashboards, structured logging
+- **Ticket lifecycle management** - create, assign, update, escalate, resolve, close
+- **SLA enforcement** - per-priority deadlines, automated warning and breach detection
+- **Role-based access control** - `USER`, `AGENT`, and `ADMIN` roles with endpoint-level enforcement
+- **Async notifications** - email notifications via RabbitMQ + transactional outbox pattern
+- **Audit trail** - every state change recorded to a queryable audit log
+- **Observability** - Prometheus metrics per domain, Grafana dashboards, structured logging
+
+---
+
+## Frontend
+
+The production UI lives in a separate repository:
+**[Mosotho888/Helpdesk_Frontend](https://github.com/Mosotho888/Helpdesk_Frontend)** - deployed at
+[govhelpdesk.sothoman.com](https://govhelpdesk.sothoman.com).
+
+| Layer            | Technology                                                       |
+|------------------|------------------------------------------------------------------|
+| Build tool       | Vite                                                             |
+| Framework        | React + TypeScript                                               |
+| Data fetching    | TanStack Query                                                   |
+| Tables           | TanStack Table                                                   |
+| UI components    | shadcn/ui                                                        |
+| Forms/validation | React Hook Form + Zod                                            |
+| Deployment       | Docker, deployed via GitHub Actions CI/CD to the same OCI ARM VM |
+
+It implements the full feature set against this API: authentication, ticket management, comments, attachments, agent
+views, user administration, SLA display, and audit logs.
 
 ---
 
 ## Architecture
 
+```mermaid
+graph TB
+    clients["Clients<br/>React frontend / Swagger UI"]
+    api["Spring Boot 3.5 API<br/>SecurityFilterChain (JWT + Bucket4j)<br/>Controllers → Services → Repositories"]
+    outbox[("Transactional Outbox<br/>(DB table)")]
+    relay["OutboxRelay<br/>polls every 5s"]
+    db[("PostgreSQL<br/>primary store")]
+    mq(("RabbitMQ<br/>4 queues: audit, email,<br/>SLA, reset"))
+    smtp["SMTP<br/>(email)"]
+    prom["Prometheus<br/>scrapes /actuator/prometheus"]
+    grafana["Grafana<br/>8 dashboards"]
+    clients -->|HTTPS| api
+    api -->|JPA / JDBC| db
+    api -->|writes| outbox
+    outbox --> relay
+    relay -->|AMQP| mq
+    mq -->|consumers| smtp
+    api -.->|exposes metrics| prom
+    prom --> grafana
+    classDef api fill: #1168bd, color: #fff, stroke: #0b4884
+    classDef store fill: #2b6e34, color: #fff, stroke: #1d4c25
+    classDef client fill: #666, color: #fff, stroke: #444
+    classDef ext fill: #999, color: #fff, stroke: #666
+%% @formatter:off
+    class api,relay api
+    class db,mq,outbox store
+    class clients client
+    class smtp,prom,grafana ext
+%% @formatter:on
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        REST Clients                         │
-│                   (Swagger UI / Postman)                    │
-└────────────────────────┬────────────────────────────────────┘
-                         │ HTTPS
-┌────────────────────────▼────────────────────────────────────┐
-│                   Spring Boot 3.5 API                       │
-│                                                             │
-│  SecurityFilterChain (JWT + Bucket4j rate limiting)         │
-│                                                             │
-│  Controllers → Services → Repositories                      │
-│                    │                                        │
-│          ┌─────────▼──────────┐                             │
-│          │  Transactional     │   Outbox events persisted   │
-│          │  Outbox (DB table) │──► OutboxRelay polls every  │
-│          └────────────────────┘   5 seconds                 │
-└──────┬───────────────────────────────────┬──────────────────┘
-       │ JPA / JDBC                        │ AMQP
-┌──────▼──────┐                   ┌────────▼───────┐
-│ PostgreSQL  │                   │   RabbitMQ     │
-│  (primary   │                   │  (4 queues:    │
-│   store)    │                   │  audit, email, │
-└─────────────┘                   │  SLA, reset)   │
-                                  └────────┬───────┘
-                                           │ consumers
-                                  ┌────────▼───────┐
-                                  │  SMTP (email)  │
-                                  └────────────────┘
 
-Observability:
-  Spring Actuator → Prometheus (scrape /actuator/prometheus)
-                  → Grafana   (8 provisioned dashboards)
-```
+This is a simplified overview. The full, versioned architecture - C4 diagrams and the reasoning behind each major
+decision - lives under [`docs/architecture/`](docs/architecture):
+
+| Doc                                                    | What it covers                                                                          |
+|--------------------------------------------------------|-----------------------------------------------------------------------------------------|
+| [`c4-context.md`](docs/architecture/c4-context.md)     | System context: actors (Employee/Agent/Admin), external systems (SMTP, Cloudflare, OCI) |
+| [`c4-container.md`](docs/architecture/c4-container.md) | Container-level view: API, PostgreSQL, RabbitMQ, file storage, Prometheus, Grafana      |
+| [`c4-component.md`](docs/architecture/c4-component.md) | Component breakdown of the API - domain modules, cross-cutting policies, messaging      |
+| [`deployment.md`](docs/architecture/deployment.md)     | Production topology on OCI, and *why* each infra choice was made                        |
+| [`decisions.md`](docs/architecture/decisions.md)       | Index of Architecture Decision Records (ADRs) under [`docs/adr/`](docs/adr)             |
 
 ### Key design patterns
 
-| Pattern                  | Where used                                    | Why                                                                        |
-|--------------------------|-----------------------------------------------|----------------------------------------------------------------------------|
-| Transactional Outbox     | `OutboxEvent` table + `OutboxRelay`           | Guarantees at-least-once message delivery without distributed transactions |
-| Repository per aggregate | `TicketRepository`, `CommentRepository`, etc. | Clean domain boundaries, testable in isolation                             |
-| DTO separation           | `*Request` / `*Response` / `*Message`         | Entities never leave the service layer                                     |
-| Domain events            | `TicketEventDispatcher`                       | Decouples ticket state changes from audit/notification side effects        |
-| Per-domain metrics       | `TicketMetrics`, `AuthMetrics`, etc.          | Each domain owns its observability; no shared God Object                   |
+| Pattern                  | Where used                                                                   | Why                                                                                    |
+|--------------------------|------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| Transactional Outbox     | `OutboxEvent` table + `OutboxRelay`                                          | Guarantees at-least-once message delivery without distributed transactions             |
+| Repository per aggregate | `TicketRepository`, `CommentRepository`, etc.                                | Clean domain boundaries, testable in isolation                                         |
+| DTO separation           | `*Request` / `*Response` / `*Message`                                        | Entities never leave the service layer                                                 |
+| Domain events            | `TicketEventDispatcher`                                                      | Decouples ticket state changes from audit/notification side effects                    |
+| Policy objects           | `CommentAccessPolicy`, `AttachmentValidator`, `TicketStatusTransitionPolicy` | Authorization/validation rules live in one testable place, not scattered service `if`s |
+| Per-domain metrics       | `TicketMetrics`, `AuthMetrics`, etc.                                         | Each domain owns its observability; no shared God Object                               |
 
 ---
 
@@ -96,7 +144,7 @@ Observability:
 
 | Layer            | Technology                                     |
 |------------------|------------------------------------------------|
-| Language         | Java 17                                        |
+| Language         | Java 21                                        |
 | Framework        | Spring Boot 3.5                                |
 | Security         | Spring Security 6, JWT (JJWT 0.12.6)           |
 | Persistence      | Spring Data JPA, Hibernate 6, PostgreSQL 18    |
@@ -117,34 +165,43 @@ Observability:
 
 ## Domain Model
 
+```mermaid
+erDiagram
+    users ||--o| agents: "extends (role=AGENT)"
+    users ||--o{ tickets: "requests"
+    agents ||--o{ tickets: "is assigned"
+    tickets ||--o{ comments: "has"
+    tickets ||--o{ attachments: "has"
+    tickets ||--o| ticket_sla: "has"
+    tickets ||--o{ audit_logs: "logs"
+    users ||--o{ outbox_events: "triggers (via services)"
+
+    users {
+        string role "USER | AGENT | ADMIN"
+    }
+    agents {
+        string availability "ONLINE | BUSY | AWAY | OFFLINE"
+    }
+    tickets {
+        string status "OPEN to IN_PROGRESS to RESOLVED to CLOSED"
+        string priority "LOW | MEDIUM | HIGH | URGENT"
+    }
 ```
-users ──────────────────────────────────────────────────────────────┐
-  │ (role: USER / AGENT / ADMIN)                                    │
-  │                                                                 │
-  ├── agents (1:1 extension of users with role=AGENT)               │
-  │     └── availability: ONLINE / BUSY / AWAY / OFFLINE           │
-  │                                                                 │
-tickets (requester_id → users, assignee_id → agents)                │
-  │  status:   OPEN → IN_PROGRESS → RESOLVED → CLOSED              │
-  │  priority: CRITICAL / HIGH / MEDIUM / LOW                      │
-  │                                                                 │
-  ├── comments (threaded replies, internal notes)                   │
-  ├── attachments (stored on filesystem, metadata in DB)           │
-  ├── ticket_sla (response/resolution deadlines, breach flags)     │
-  └── audit_logs (every state change with actor + before/after)    │
-                                                                    │
-outbox_events (transactional relay to RabbitMQ) ────────────────────┘
-refresh_tokens (JWT refresh token store)
-password_reset_tokens (OTP-based reset flow)
-sla_policies (per-priority SLA configuration)
-```
+
+Full field-level ER diagram: [`docs/database/database.md`](docs/database/database.md). Not pictured above (no direct FK
+to a ticket, but part of the same schema): `refresh_tokens` (JWT refresh token store), `password_reset_tokens`
+(OTP-based reset flow), `sla_policies` (per-priority SLA configuration).
 
 ### Ticket status flow
 
-```
-OPEN ──► IN_PROGRESS ──► RESOLVED ──► CLOSED
-  │            │
-  └────────────┴──► ESCALATED
+```mermaid
+stateDiagram-v2
+    [*] --> OPEN
+    OPEN --> IN_PROGRESS
+    IN_PROGRESS --> RESOLVED
+    RESOLVED --> CLOSED
+    OPEN --> ESCALATED
+    IN_PROGRESS --> ESCALATED
 ```
 
 ---
@@ -153,9 +210,12 @@ OPEN ──► IN_PROGRESS ──► RESOLVED ──► CLOSED
 
 All endpoints are prefixed with `/v1`. Authentication is JWT Bearer token from `/v1/auth/login`.
 
-Interactive documentation is available at `http://localhost:8080/swagger-ui.html` when the app is running.
+Interactive documentation is available at `http://localhost:8080/swagger-ui.html` locally, or
+[api.sothoman.com/swagger-ui.html](https://api.sothoman.com/swagger-ui.html) in production. For the authoritative,
+source-verified reference (kept in sync with the controllers directly), see
+[`docs/api/api-reference.md`](docs/api/api-reference.md).
 
-### Authentication — `/v1/auth`
+### Authentication - `/v1/auth`
 
 | Method | Path                      | Role          | Description                                   |
 |--------|---------------------------|---------------|-----------------------------------------------|
@@ -165,7 +225,7 @@ Interactive documentation is available at `http://localhost:8080/swagger-ui.html
 | `POST` | `/password-reset/request` | Public        | Request OTP via email                         |
 | `POST` | `/password-reset/confirm` | Public        | Confirm OTP, set new password                 |
 
-### Tickets — `/v1/tickets`
+### Tickets - `/v1/tickets`
 
 | Method   | Path    | Role   | Description                             |
 |----------|---------|--------|-----------------------------------------|
@@ -175,7 +235,7 @@ Interactive documentation is available at `http://localhost:8080/swagger-ui.html
 | `PATCH`  | `/{id}` | AGENT+ | Update status, assignee, priority       |
 | `DELETE` | `/{id}` | ADMIN  | Delete ticket                           |
 
-### Comments — `/v1`
+### Comments - `/v1`
 
 | Method   | Path                     | Role         | Description                                     |
 |----------|--------------------------|--------------|-------------------------------------------------|
@@ -186,7 +246,7 @@ Interactive documentation is available at `http://localhost:8080/swagger-ui.html
 | `PUT`    | `/comments/{id}`         | Author/ADMIN | Edit comment                                    |
 | `DELETE` | `/comments/{id}`         | Author/ADMIN | Delete comment                                  |
 
-### Attachments — `/v1`
+### Attachments - `/v1`
 
 | Method   | Path                        | Role        | Description                               |
 |----------|-----------------------------|-------------|-------------------------------------------|
@@ -195,32 +255,37 @@ Interactive documentation is available at `http://localhost:8080/swagger-ui.html
 | `GET`    | `/attachments/{id}`         | USER+       | Download attachment                       |
 | `DELETE` | `/attachments/{id}`         | Owner/ADMIN | Delete attachment                         |
 
-### Agents — `/v1/agents`
+### Agents - `/v1/agents`
 
-| Method  | Path          | Role   | Description                       |
-|---------|---------------|--------|-----------------------------------|
-| `POST`  | `/`           | ADMIN  | Register a user as an agent       |
-| `GET`   | `/`           | ADMIN  | List all agents                   |
-| `GET`   | `/{id}`       | AGENT+ | Get agent by ID                   |
-| `PATCH` | `/{id}`       | AGENT+ | Update availability or department |
-| `GET`   | `/{id}/stats` | AGENT+ | Agent performance statistics      |
+| Method  | Path          | Role         | Description                       |
+|---------|---------------|--------------|-----------------------------------|
+| `POST`  | `/`           | ADMIN        | Register a user as an agent       |
+| `GET`   | `/`           | AGENT, ADMIN | List all agents                   |
+| `GET`   | `/{id}`       | AGENT, ADMIN | Get agent by ID                   |
+| `PATCH` | `/{id}`       | AGENT, ADMIN | Update availability or department |
+| `GET`   | `/{id}/stats` | ADMIN        | Agent performance statistics      |
 
-### Users — `/v1/users`
+### Users - `/v1/users`
 
-| Method   | Path               | Role          | Description         |
-|----------|--------------------|---------------|---------------------|
-| `POST`   | `/`                | ADMIN         | Create user         |
-| `GET`    | `/`                | ADMIN         | List all users      |
-| `GET`    | `/me`              | Authenticated | Get own profile     |
-| `GET`    | `/{id}`            | ADMIN         | Get user by ID      |
-| `PUT`    | `/{id}`            | ADMIN         | Full update         |
-| `DELETE` | `/{id}`            | ADMIN         | Deactivate user     |
-| `POST`   | `/{id}/reactivate` | ADMIN         | Reactivate user     |
-| `PATCH`  | `/{id}/role`       | ADMIN         | Change role         |
-| `PATCH`  | `/{id}/password`   | ADMIN         | Reset password      |
-| `PATCH`  | `/me/password`     | Authenticated | Change own password |
+| Method  | Path           | Role          | Description         |
+|---------|----------------|---------------|---------------------|
+| `POST`  | `/`            | ADMIN         | Create user         |
+| `GET`   | `/`            | ADMIN         | List all users      |
+| `GET`   | `/me`          | Authenticated | Get own profile     |
+| `GET`   | `/{id}`        | ADMIN or self | Get user by ID      |
+| `PUT`   | `/{id}`        | ADMIN or self | Full update         |
+| `PATCH` | `/me/password` | Authenticated | Change own password |
 
-### Audit Log — `/v1/audit`
+### Admin - `/v1/admin/users`
+
+| Method   | Path               | Role  | Description     |
+|----------|--------------------|-------|-----------------|
+| `DELETE` | `/{id}`            | ADMIN | Deactivate user |
+| `POST`   | `/{id}/reactivate` | ADMIN | Reactivate user |
+| `PATCH`  | `/{id}/role`       | ADMIN | Change role     |
+| `PATCH`  | `/{id}/password`   | ADMIN | Reset password  |
+
+### Audit Log - `/v1/audit`
 
 | Method | Path               | Role   | Description                       |
 |--------|--------------------|--------|-----------------------------------|
@@ -231,7 +296,7 @@ Interactive documentation is available at `http://localhost:8080/swagger-ui.html
 | `GET`  | `/actor/{actorId}` | ADMIN  | All actions by a specific user    |
 | `GET`  | `/action/{action}` | ADMIN  | All events of a given action type |
 
-### SLA — `/v1/tickets/{id}/sla`
+### SLA - `/v1/tickets/{id}/sla`
 
 | Method | Path | Role   | Description                                        |
 |--------|------|--------|----------------------------------------------------|
@@ -243,24 +308,21 @@ Interactive documentation is available at `http://localhost:8080/swagger-ui.html
 
 ### Prerequisites
 
-- Java 17+
+- Java 21+
 - Maven 3.9+
 - Docker and Docker Compose
 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/govhelpdesk.git
-cd govhelpdesk
+git clone https://github.com/Mosotho888/GovHelp_Desk.git
+cd GovHelp_Desk/helpdesk
 ```
 
 ### 2. Create your `.env` file
 
-```bash
-cp .env.example .env
-```
-
-Edit `.env` with your values (see [Configuration](#configuration)).
+Create a `.env` file in `helpdesk/` with the variables listed in [Configuration](#configuration) below (there is
+currently no committed `.env.example` template — copy the required-variables table as a starting point).
 
 ### 3. Start infrastructure
 
@@ -373,11 +435,11 @@ docker compose down -v
 ./mvnw package -DskipTests
 ```
 
-Tests use **Testcontainers** — PostgreSQL and RabbitMQ containers start automatically during the test run. Docker must
+Tests use **Testcontainers** - PostgreSQL and RabbitMQ containers start automatically during the test run. Docker must
 be running. No manual database setup is required.
 
 Coverage report is generated at `target/site/jacoco/index.html` after `./mvnw verify`. The minimum required line
-coverage is **80%** — the build fails if it drops below this.
+coverage is **80%** - the build fails if it drops below this.
 
 ---
 
@@ -389,16 +451,16 @@ Prometheus and Grafana are fully provisioned. After `docker compose up -d promet
 2. Navigate to **Dashboards → GovHelpDesk** folder
 3. Eight dashboards are pre-loaded:
 
-| Dashboard           | What it shows                                                    |
-|---------------------|------------------------------------------------------------------|
-| **Tickets**         | Create/resolve/close/escalate rates, resolution time p50/p95/p99 |
-| **Comments**        | Public vs internal note volume, edit/delete rates                |
-| **Attachments**     | Upload/download rates, file size distribution                    |
-| **Agents**          | Registrations, availability changes, department reassignments    |
-| **SLA**             | Response/resolution breach and warning rates, 24h window         |
-| **Outbox Relay**    | Pending backlog gauge, publish/failure/dead-letter rates         |
-| **Auth & Security** | Login success/failure ratio, token lifecycle, brute-force signal |
-| **Notifications**   | Email ACK/NACK/DLQ rates, audit consumer throughput              |
+| Dashboard             | What it shows                                                    |
+|-----------------------|------------------------------------------------------------------|
+| **Tickets**           | Create/resolve/close/escalate rates, resolution time p50/p95/p99 |
+| **Comments**          | Public vs internal note volume, edit/delete rates                |
+| **Attachments**       | Upload/download rates, file size distribution                    |
+| **Agents**            | Registrations, availability changes, department reassignments    |
+| **SLA**               | Response/resolution breach and warning rates, 24h window         |
+| **Outbox Relay**      | Pending backlog gauge, publish/failure/dead-letter rates         |
+| **Auth and Security** | Login success/failure ratio, token lifecycle, brute-force signal |
+| **Notifications**     | Email ACK/NACK/DLQ rates, audit consumer throughput              |
 
 ### Custom metrics
 
@@ -422,32 +484,58 @@ Prometheus scrapes `/actuator/prometheus` every 15 seconds.
 
 ---
 
-## CI Pipeline
+## CI/CD Pipeline
 
-Every push triggers the GitHub Actions pipeline at `.github/workflows/ci.yml`.
+### CI - `.github/workflows/ci.yml`
 
+Every push triggers the GitHub Actions CI pipeline.
+
+```mermaid
+graph LR
+    trigger["push / pull_request"]
+    test["build-and-test<br/>compile + tests + JaCoCo 80% coverage<br/>(Testcontainers: PostgreSQL + RabbitMQ)"]
+    analysis["static-analysis<br/>Spotless → Checkstyle → PMD + CPD → SpotBugs"]
+    publish["docker-publish<br/>build + push to Docker Hub<br/>tags: latest, short-sha, YYYY.MM.DD<br/>(main branch only)"]
+    trigger --> test
+    trigger --> analysis
+    test --> publish
+    analysis --> publish
 ```
-push / pull_request
-       │
-       ├── build-and-test        compile + tests + JaCoCo 80% coverage check
-       │                         (Testcontainers spins up PostgreSQL + RabbitMQ)
-       │
-       ├── static-analysis       Spotless → Checkstyle → PMD + CPD → SpotBugs
-       │   (parallel)
-       │
-       └── docker-publish        build + push to Docker Hub
-           (main branch only,    tags: latest, <short-sha>, YYYY.MM.DD
-            needs both above)
+
+### CD - `.github/workflows/cd.yml`
+
+On successful CI against `main`, the CD workflow deploys straight to production:
+
+```mermaid
+graph LR
+    ci["CI workflow succeeds<br/>on main"]
+    scp["SCP monitoring config<br/>→ OCI VM (~/helpdesk/monitoring)"]
+    ssh["SSH into OCI VM"]
+    pull["docker compose pull app"]
+    up["docker compose up -d<br/>--no-deps app"]
+    prune["docker image prune -f"]
+    ci --> scp
+    ci --> ssh
+    ssh --> pull --> up --> prune
 ```
+
+This deploys only the `app` service - the database, RabbitMQ, Prometheus, and Grafana containers are left running
+untouched. The live API is served at [api.sothoman.com](https://api.sothoman.com) from an OCI Free Tier ARM VM (Ubuntu
+22.04, Johannesburg), fronted by Cloudflare DNS with Full (Strict) SSL.
+
+`railway.json` is kept in the repo as a documented fallback deploy target (a quick demo without provisioning a VM) - it
+is not the primary target. See [ADR 0004](docs/adr/0004-oci-arm-free-tier-deployment.md) for why OCI was chosen instead.
 
 ### Required GitHub repository secrets
 
 Go to **Settings → Secrets and variables → Actions** and add:
 
-| Secret               | Description                                           |
-|----------------------|-------------------------------------------------------|
-| `DOCKERHUB_USERNAME` | Your Docker Hub username                              |
-| `DOCKERHUB_TOKEN`    | Docker Hub access token (Account Settings → Security) |
+| Secret                | Description                                           | Used by |
+|-----------------------|-------------------------------------------------------|---------|
+| `DOCKERHUB_USERNAME`  | Your Docker Hub username                              | CI      |
+| `DOCKERHUB_TOKEN`     | Docker Hub access token (Account Settings → Security) | CI      |
+| `OCI_VM_IP`           | Public IP of the OCI deployment VM                    | CD      |
+| `OCI_SSH_PRIVATE_KEY` | SSH private key with access to the OCI VM             | CD      |
 
 ---
 
@@ -455,7 +543,7 @@ Go to **Settings → Secrets and variables → Actions** and add:
 
 Four tools run on every push. All configuration lives under `config/`.
 
-### Spotless — formatting
+### Spotless - formatting
 
 Enforces consistent formatting using the Eclipse formatter engine.
 
@@ -464,11 +552,11 @@ Enforces consistent formatting using the Eclipse formatter engine.
 ./mvnw spotless:apply   # auto-fix (run locally before committing)
 ```
 
-**Always run `./mvnw spotless:apply` before pushing.** CI runs `check` only — it will fail if any file is unformatted.
+**Always run `./mvnw spotless:apply` before pushing.** CI runs `check` only - it will fail if any file is unformatted.
 
 Config: `config/spotless/eclipse-formatter.xml`
 
-### Checkstyle — source style
+### Checkstyle - source style
 
 Enforces naming conventions, import order, line length (120), brace placement, and magic number rules.
 
@@ -482,7 +570,7 @@ Config: `config/checkstyle/checkstyle.xml`
 > **Note:** Existing wildcard imports (`import lombok.*`) are flagged by Checkstyle.
 > Fix with **IntelliJ → Code → Optimize Imports** on each affected file.
 
-### PMD — code quality
+### PMD - code quality
 
 Detects code complexity, dead code, bad patterns, and copy-paste duplication (CPD).
 
@@ -494,7 +582,7 @@ Detects code complexity, dead code, bad patterns, and copy-paste duplication (CP
 
 Config: `config/pmd/pmd-ruleset.xml`
 
-### SpotBugs — bytecode bugs
+### SpotBugs - bytecode bugs
 
 Finds null dereferences, resource leaks, unsafe synchronisation, and dangerous API usage by analysing compiled bytecode.
 

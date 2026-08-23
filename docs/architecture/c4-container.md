@@ -7,7 +7,7 @@ This zooms into the GovHelpDesk system boundary from
 ```mermaid
 graph TB
     subgraph clients["Clients"]
-        browser["Swagger UI / REST client<br/>(Browser or HTTP client)"]
+        browser["React frontend<br/>(Helpdesk_Frontend, govhelpdesk.sothoman.com)<br/>+ Swagger UI / REST clients"]
     end
 
     subgraph govhelpdesk["GovHelpDesk System (Docker Compose stack)"]
@@ -31,12 +31,14 @@ graph TB
     classDef db fill: #2b6e34, color: #fff, stroke: #1d4c25
     classDef external fill: #999999, color: #fff, stroke: #6b6b6b
     classDef client fill: #666, color: #fff, stroke: #444
+%% @formatter:off
     class api container
-class db,mq db
-class prom,grafana container
-class fs db
-class smtp external
-class browser client
+    class db,mq db
+    class prom,grafana container
+    class fs db
+    class smtp external
+    class browser client
+%% @formatter:on
 ```
 
 ## Containers
