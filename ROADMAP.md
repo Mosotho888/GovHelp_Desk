@@ -1,7 +1,7 @@
 # Roadmap
 
-GovHelpDesk is a portfolio-quality, recruiter-facing project demonstrating a production-grade Spring Boot backend for
-South African government support ticketing. This roadmap tracks where the project has been and where it's headed.
+GovHelpDesk is a portfolio-quality, recruiter-facing project demonstrating a production-grade full-stack build for South
+African government support ticketing. This roadmap tracks where the project has been and where it's headed.
 
 ## Shipped
 
@@ -21,10 +21,14 @@ South African government support ticketing. This roadmap tracks where the projec
   (Spring Boot + PostgreSQL + RabbitMQ + Prometheus + Grafana)
 - [x] Observability: per-domain Micrometer metrics, Prometheus scraping, Grafana dashboards
 - [x] Test suite rewrite post-refactor: 94 tests across 11 files, including three new integration test classes
+- [x] Production React frontend (Vite + TypeScript + TanStack Query/Table + shadcn/ui + React Hook Form + Zod),
+  Dockerized and deployed via GitHub Actions CI/CD to [govhelpdesk.sothoman.com](https://govhelpdesk.sothoman.com) —
+  see [`Helpdesk_Frontend`](https://github.com/Mosotho888/Helpdesk_Frontend)
 
 ## In progress
 
-- [ ] Merge `chore/normalize-line-endings` and push the updated README
+- [ ] Push the updated README and aligned `docs/` (frontend references, Java 21 correction, API reference fixes) to
+  `main`
 - [ ] End-to-end validation of the CI/CD pipeline with a real commit against `main`
 
 ## Planned
@@ -35,12 +39,11 @@ South African government support ticketing. This roadmap tracks where the projec
 - [ ] Formal load-testing pass (k6 or Gatling) to validate rate-limit tiers under load
 - [ ] Multi-tenancy exploration for supporting more than one government department per deployment
 - [ ] Structured audit log export (CSV/PDF) for compliance reporting
-- [ ] OpenAPI-generated TypeScript client for a future frontend
+- [ ] Generated TypeScript client from the OpenAPI spec, to replace hand-written frontend API types with a build-time
+  contract check against the backend
 
 ## Explicitly out of scope (for now)
 
-- A frontend/UI - GovHelpDesk is intentionally backend-focused; Swagger UI is considered sufficient documentation and
-  testing surface for this stage of the project.
 - Horizontal scaling / multi-instance deployment - the OCI Free Tier ARM VM is a single-node target chosen for cost
   reasons while the project is portfolio-stage.
 

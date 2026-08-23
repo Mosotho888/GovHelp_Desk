@@ -15,4 +15,6 @@ public interface AgentRepository extends JpaRepository<Agent, Long> {
     Optional<Agent> findByIdAndUserId(Long id, Long userId);
 
     boolean existsByUserId(Long userId);
+
+    long countByAvailability(Agent.Availability availability);
 }

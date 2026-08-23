@@ -22,9 +22,11 @@ graph TB
     classDef person fill: #08427b, color: #fff, stroke: #052e56
     classDef system fill: #1168bd, color: #fff, stroke: #0b4884
     classDef external fill: #999999, color: #fff, stroke: #6b6b6b
+%% @formatter:off
     class employee,agent,admin person
     class system system
     class smtp,cloudflare,oci external
+%% @formatter:on
 ```
 
 ## Actors
@@ -43,8 +45,9 @@ graph TB
 | Cloudflare                  | DNS + TLS termination in front of the production VM                          | Full (Strict) SSL mode between Cloudflare and the origin                                                                    |
 | Oracle Cloud Infrastructure | Hosts the production deployment                                              | Free Tier ARM (Ampere) VM, Ubuntu 22.04, Johannesburg region                                                                |
 
-## Not shown
+## Frontend
 
-GovHelpDesk has no browser-based frontend at this stage of the project. Interactive API exploration and testing is done
-through the built-in Swagger UI, which is considered sufficient for a backend-focused portfolio project (see
-[ADR 0004](../adr/0004-oci-arm-free-tier-deployment.md) for the deployment rationale).
+A dedicated React frontend ([`Mosotho888/Helpdesk_Frontend`](https://github.com/Mosotho888/Helpdesk_Frontend), deployed
+at [govhelpdesk.sothoman.com](https://govhelpdesk.sothoman.com)) is the primary client for Employees, Support Agents,
+and Administrators, consuming this API over HTTPS/JWT exactly as shown in the diagram above. The built-in Swagger UI
+remains available for interactive API exploration and testing independent of the frontend.

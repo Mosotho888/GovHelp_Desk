@@ -6,7 +6,7 @@ requests are welcome.
 ## Getting set up
 
 1. Fork and clone the repository.
-2. Requirements: Java 17, Maven (or use the bundled `./mvnw`), Docker + Docker Compose.
+2. Requirements: Java 21, Maven (or use the bundled `./mvnw`), Docker + Docker Compose.
 3. Copy the environment variables referenced in `helpdesk/docker-compose.yml` into a local
    `.env` file (database credentials, JWT secret, RabbitMQ credentials, mail settings).
 4. From `helpdesk/`, run:
