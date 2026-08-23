@@ -90,20 +90,20 @@ public class SlaBreachMonitor {
             sendWarning(sla, "First Response");
             sla.setResponseWarningSent(true);
             ticketSlaRepository.save(sla);
-            slaMetrics.incrementResponseWarning();
+            slaMetrics.incrementResponseWarning(sla.getTicket().getPriority());
         }
 
         final List<TicketSla> resolutionWarnings =
                 ticketSlaRepository.findResolutionWarningsDue(now, now.plusMinutes(maxThreshold));
 
         for (final TicketSla sla : resolutionWarnings) {
-            if (isWithinWarningWindow(sla, policies, sla.getResolutionDueAt(), now)) {
+            if (!isWithinWarningWindow(sla, policies, sla.getResolutionDueAt(), now)) {
                 continue;
             }
             sendWarning(sla, "Resolution");
             sla.setResolutionWarningSent(true);
             ticketSlaRepository.save(sla);
-            slaMetrics.incrementResolutionWarning();
+            slaMetrics.incrementResolutionWarning(sla.getTicket().getPriority());
         }
     }
 
@@ -123,7 +123,7 @@ public class SlaBreachMonitor {
                             sla.setResponseBreached(true);
                             ticketSlaRepository.save(sla);
                             sendBreach(sla, "First Response");
-                            slaMetrics.incrementResponseBreached();
+                            slaMetrics.incrementResponseBreached(sla.getTicket().getPriority());
                             log.warn("Response SLA breached: ticket={}", sla.getTicket().getId());
                         });
 
@@ -134,7 +134,7 @@ public class SlaBreachMonitor {
                             sla.setResolutionBreached(true);
                             ticketSlaRepository.save(sla);
                             sendBreach(sla, "Resolution");
-                            slaMetrics.incrementResolutionBreached();
+                            slaMetrics.incrementResolutionBreached(sla.getTicket().getPriority());
                             log.warn("Resolution SLA breached: ticket={}", sla.getTicket().getId());
                         });
     }
@@ -157,7 +157,7 @@ public class SlaBreachMonitor {
         final SlaPolicy policy = policies.get(sla.getTicket().getPriority());
         final int thresholdMinutes =
                 policy != null ? policy.getWarningThresholdMinutes() : REMINDER;
-        return dueAt.isAfter(now.plusMinutes(thresholdMinutes));
+        return !dueAt.isAfter(now.plusMinutes(thresholdMinutes));
     }
 
     /**

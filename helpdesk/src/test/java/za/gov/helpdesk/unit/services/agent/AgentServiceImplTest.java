@@ -177,7 +177,7 @@ public class AgentServiceImplTest {
 
         assertThat(agent.getAvailability()).isEqualTo(Agent.Availability.ONLINE);
 
-        then(agentMetrics).should(times(1)).incrementAvailabilityChanged();
+        then(agentMetrics).should(times(1)).incrementAvailabilityChanged(agent.getAvailability());
         then(auditPublisher)
                 .should(times(1))
                 .publishAudit(

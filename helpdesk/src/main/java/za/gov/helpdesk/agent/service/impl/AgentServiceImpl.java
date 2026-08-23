@@ -130,7 +130,7 @@ public class AgentServiceImpl implements AgentService {
                     request.getAvailability().name(),
                     null);
             agent.setAvailability(request.getAvailability());
-            agentMetrics.incrementAvailabilityChanged();
+            agentMetrics.incrementAvailabilityChanged(request.getAvailability());
         }
 
         if (request.getDepartment() != null
