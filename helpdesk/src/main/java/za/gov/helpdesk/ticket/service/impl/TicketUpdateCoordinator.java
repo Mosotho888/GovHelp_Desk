@@ -1,13 +1,19 @@
 package za.gov.helpdesk.ticket.service.impl;
 
+import java.util.Optional;
+
 import org.springframework.stereotype.Component;
 
 import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.agent.service.AgentQueryHelper;
 import za.gov.helpdesk.auditlog.model.AuditLog;
+import za.gov.helpdesk.category.model.Category;
+import za.gov.helpdesk.category.service.CategoryQueryHelper;
 import za.gov.helpdesk.sla.service.SlaService;
 import za.gov.helpdesk.ticket.event.TicketEventDispatcher;
 import za.gov.helpdesk.ticket.metrics.TicketMetrics;
+import za.gov.helpdesk.ticket.model.Priority;
+import za.gov.helpdesk.ticket.model.Status;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.policy.TicketStatusTransitionPolicy;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
@@ -26,6 +32,8 @@ public class TicketUpdateCoordinator {
 
     private final TicketRepository ticketRepository;
     private final AgentQueryHelper agentQuery;
+    private final CategoryQueryHelper categoryQuery;
+    private final CategoryRoutingService categoryRoutingService;
     private final TicketEventDispatcher eventDispatcher;
     private final TicketStatusTransitionPolicy transitionPolicy;
     private final SlaService slaService;
@@ -48,8 +56,38 @@ public class TicketUpdateCoordinator {
                 actor,
                 AuditLog.AuditAction.TICKET_CREATED,
                 null,
-                Ticket.Status.OPEN.name(),
+                Status.OPEN.name(),
                 "Ticket created: " + ticket.getSubject(),
+                null);
+
+        if (ticket.getAssignee() == null) {
+            autoRouteByCategory(ticket, actor);
+        }
+    }
+
+    /**
+     * Attempts to route a freshly created, unassigned ticket to an agent based on its category's
+     * default department. A no-op if the category has no routing department configured or nobody in
+     * that department is currently online - the ticket simply stays in the shared queue.
+     */
+    private void autoRouteByCategory(final Ticket ticket, final User actor) {
+        final Optional<Agent> candidate =
+                categoryRoutingService.resolveAssignee(ticket.getCategory());
+        if (candidate.isEmpty()) {
+            return;
+        }
+
+        final Agent agent = candidate.get();
+        ticket.setAssignee(agent);
+        ticketRepository.save(ticket);
+
+        eventDispatcher.publish(
+                ticket,
+                actor,
+                AuditLog.AuditAction.ASSIGNED_TO_AGENT,
+                "Unassigned",
+                agent.getUser().getName(),
+                "Auto-routed via category '" + ticket.getCategory().getName() + "'",
                 null);
     }
 
@@ -81,17 +119,16 @@ public class TicketUpdateCoordinator {
      * @param newStatus the targeted operational state matrix to transition towards
      * @param actor the verified system identity authorizing the mutation state change
      */
-    public void applyStatusChange(
-            final Ticket ticket, final Ticket.Status newStatus, final User actor) {
-        final Ticket.Status oldStatus = ticket.getStatus();
+    public void applyStatusChange(final Ticket ticket, final Status newStatus, final User actor) {
+        final Status oldStatus = ticket.getStatus();
         transitionPolicy.assertCanTransition(oldStatus, newStatus);
         ticket.setStatus(newStatus);
 
-        if (newStatus == Ticket.Status.IN_PROGRESS) {
+        if (newStatus == Status.IN_PROGRESS) {
             slaService.recordFirstResponse(ticket.getId());
         }
 
-        if (newStatus == Ticket.Status.RESOLVED) {
+        if (newStatus == Status.RESOLVED) {
             slaService.recordResolution(ticket.getId());
             ticketMetrics.incrementResolved();
             if (ticket.getCreatedAt() != null) {
@@ -99,17 +136,17 @@ public class TicketUpdateCoordinator {
             }
         }
 
-        if (newStatus == Ticket.Status.CLOSED) {
+        if (newStatus == Status.CLOSED) {
             ticketMetrics.incrementClosed();
         }
 
-        if (newStatus == Ticket.Status.ESCALATED) {
+        if (newStatus == Status.ESCALATED) {
             ticket.setEscalated(true);
             ticketMetrics.incrementEscalated();
         }
 
         final AuditLog.AuditAction action =
-                (newStatus == Ticket.Status.CLOSED)
+                (newStatus == Status.CLOSED)
                         ? AuditLog.AuditAction.TICKET_CLOSED
                         : AuditLog.AuditAction.STATUS_CHANGED;
 
@@ -157,8 +194,8 @@ public class TicketUpdateCoordinator {
      * @param actor the verified system identity authorizing the adjustment change
      */
     public void applyPriorityChange(
-            final Ticket ticket, final Ticket.Priority newPriority, final User actor) {
-        final Ticket.Priority oldPriority = ticket.getPriority();
+            final Ticket ticket, final Priority newPriority, final User actor) {
+        final Priority oldPriority = ticket.getPriority();
         ticket.setPriority(newPriority);
 
         eventDispatcher.publish(
@@ -167,6 +204,37 @@ public class TicketUpdateCoordinator {
                 AuditLog.AuditAction.PRIORITY_CHANGED,
                 oldPriority.name(),
                 newPriority.name(),
+                null,
+                null);
+    }
+
+    /**
+     * Reclassifies a ticket into a different category and publishes an audit entry recording the
+     * change. Deliberately does not re-run auto-routing on recategorisation - moving a ticket to a
+     * new category shouldn't silently rip it away from whoever is already working it.
+     *
+     * @param ticket the mutable domain entity instance to update
+     * @param newCategoryId id of the {@link Category} to move the ticket into
+     * @param actor the verified system identity authorizing the change
+     */
+    public void applyCategoryChange(
+            final Ticket ticket, final Long newCategoryId, final User actor) {
+        final Category newCategory = categoryQuery.findOrThrow(newCategoryId);
+        if (ticket.getCategory() != null
+                && ticket.getCategory().getId().equals(newCategory.getId())) {
+            return;
+        }
+
+        final String oldCategoryName =
+                (ticket.getCategory() != null) ? ticket.getCategory().getName() : "Uncategorised";
+
+        ticket.setCategory(newCategory);
+        eventDispatcher.publish(
+                ticket,
+                actor,
+                AuditLog.AuditAction.CATEGORY_CHANGED,
+                oldCategoryName,
+                newCategory.getName(),
                 null,
                 null);
     }
@@ -181,7 +249,7 @@ public class TicketUpdateCoordinator {
      */
     public void applyEscalation(final Ticket ticket, final String reason, final User actor) {
         ticket.setEscalated(true);
-        applyStatusChange(ticket, Ticket.Status.ESCALATED, actor);
+        applyStatusChange(ticket, Status.ESCALATED, actor);
         eventDispatcher.publish(
                 ticket, actor, AuditLog.AuditAction.ESCALATED, "false", "true", reason, reason);
     }

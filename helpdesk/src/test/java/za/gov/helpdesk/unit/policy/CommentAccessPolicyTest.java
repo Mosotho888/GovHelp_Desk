@@ -9,6 +9,7 @@ import org.springframework.security.access.AccessDeniedException;
 
 import za.gov.helpdesk.comment.model.Comment;
 import za.gov.helpdesk.comment.policy.CommentAccessPolicy;
+import za.gov.helpdesk.ticket.model.Status;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.users.model.User;
 
@@ -36,7 +37,7 @@ public class CommentAccessPolicyTest {
                         .id(10L)
                         .subject("Test")
                         .description("desc")
-                        .status(Ticket.Status.OPEN)
+                        .status(Status.OPEN)
                         .requester(agent)
                         .build();
     }

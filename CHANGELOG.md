@@ -10,7 +10,32 @@ them rather than a strict semver cadence.
 
 ### Added
 
+- Hierarchical ticket categories (`ticket_categories`, `V8__create_ticket_categories.sql`): self-referencing tree capped
+  at three levels (Category → Subcategory → Type), seeded with Hardware, Software, Network, Accounts, and Security plus
+  realistic subcategories.
+- `TicketCategory` CRUD API (`/v1/categories`) with tree retrieval, admin-gated create/update/deactivate, sibling name
+  uniqueness, and max-depth enforcement (`InvalidCategoryOperationException`, HTTP 422).
+- Category-based ticket filtering: `GET /v1/tickets` accepts `categoryId` and `includeDescendants`, so filtering by a
+  parent category also matches its subcategories.
+- Automated category-based routing (`CategoryRoutingService`): a ticket created without an explicit assignee is routed
+  to the least-loaded `ONLINE` agent in its category's configured `defaultDepartment`, falling back to the shared queue
+  when nobody is available.
+- `CATEGORY_CHANGED` audit action, published via `TicketUpdateCoordinator.applyCategoryChange` whenever a ticket is
+  recategorised.
+- `ADR 0006` documenting the category/routing design and its trade-offs (in-memory tree resolution over recursive SQL,
+  three-level depth cap, department-based routing over a full rules engine).
+- Frontend: `features/categories` module (tree fetch, admin management screen, reusable `CategorySelect` picker), wired
+  into ticket creation, ticket detail/actions, and the ticket table's filters and columns.
 - Line-ending normalisation (`.gitattributes`) to keep LF consistent across contributors.
+
+### Changed
+
+- `Ticket.category` changed from a free-text `String` to a `@ManyToOne TicketCategory` (`tickets.category_id`); existing
+  seeded free-text values (`Hardware`, `Access`, `Maintenance`, `Infrastructure`) are backfilled onto the closest
+  matching seeded category by the migration.
+- `CreateTicketRequest` / `UpdateTicketRequest` now take `categoryId` instead of a free-text `category` string;
+  `TicketResponse.category` is now a `CategorySummaryResponse` (id, name, and a breadcrumb `path`) instead of a plain
+  string.
 
 ### Fixed
 

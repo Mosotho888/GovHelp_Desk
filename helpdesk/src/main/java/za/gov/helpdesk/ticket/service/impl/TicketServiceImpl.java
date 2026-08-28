@@ -6,13 +6,14 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.agent.service.AgentQueryHelper;
+import za.gov.helpdesk.category.service.CategoryQueryHelper;
 import za.gov.helpdesk.ticket.dto.request.CreateTicketRequest;
 import za.gov.helpdesk.ticket.dto.request.UpdateTicketRequest;
 import za.gov.helpdesk.ticket.dto.response.TicketResponse;
-import za.gov.helpdesk.ticket.event.TicketEventDispatcher;
 import za.gov.helpdesk.ticket.mapper.TicketMapper;
+import za.gov.helpdesk.ticket.model.Priority;
+import za.gov.helpdesk.ticket.model.Status;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
 import za.gov.helpdesk.ticket.service.TicketQueryHelper;
@@ -28,32 +29,31 @@ public class TicketServiceImpl implements TicketService {
     private final TicketRepository ticketRepository;
     private final TicketQueryHelper ticketQuery;
     private final AgentQueryHelper agentQuery;
+    private final CategoryQueryHelper categoryQuery;
     private final TicketMapper ticketMapper;
-    private final TicketEventDispatcher eventDispatcher;
     private final TicketUpdateCoordinator updateCoordinator;
 
     @Override
     @Transactional
     public TicketResponse createTicket(final CreateTicketRequest request, final User actor) {
 
-        final Ticket.TicketBuilder builder =
-                Ticket.builder()
-                        .subject(request.getSubject())
-                        .description(request.getDescription())
-                        .priority(
-                                request.getPriority() != null
-                                        ? request.getPriority()
-                                        : Ticket.Priority.MEDIUM)
-                        .category(request.getCategory())
-                        .requester(actor)
-                        .status(Ticket.Status.OPEN);
+        final Ticket ticket = ticketMapper.toEntity(request);
+        ticket.setRequester(actor);
+        ticket.setStatus(Status.OPEN);
 
-        if (request.getAssigneeId() != null) {
-            final Agent agent = agentQuery.findOrThrow(request.getAssigneeId());
-            builder.assignee(agent);
+        if (ticket.getPriority() == null) {
+            ticket.setPriority(Priority.MEDIUM);
         }
 
-        final Ticket savedTicket = ticketRepository.save(builder.build());
+        if (request.getCategoryId() != null) {
+            ticket.setCategory(categoryQuery.findOrThrow(request.getCategoryId()));
+        }
+
+        if (request.getAssigneeId() != null) {
+            ticket.setAssignee(agentQuery.findOrThrow(request.getAssigneeId()));
+        }
+
+        final Ticket savedTicket = ticketRepository.save(ticket);
         updateCoordinator.handlePostCreation(savedTicket, actor);
 
         return ticketMapper.toTicketResponse(savedTicket);
@@ -68,14 +68,23 @@ public class TicketServiceImpl implements TicketService {
     @Override
     @Transactional(readOnly = true)
     public Page<TicketResponse> getTickets(
-            final Ticket.Status status,
-            final Ticket.Priority priority,
+            final Status status,
+            final Priority priority,
             final Long assigneeId,
+            final Long categoryId,
+            final boolean includeDescendants,
             final Pageable pageable,
             final User actor) {
 
         return ticketQuery
-                .findWithFiltersAndSecurity(status, priority, assigneeId, pageable, actor)
+                .findWithFiltersAndSecurity(
+                        status,
+                        priority,
+                        assigneeId,
+                        categoryId,
+                        includeDescendants,
+                        pageable,
+                        actor)
                 .map(ticketMapper::toTicketResponse);
     }
 
@@ -89,7 +98,7 @@ public class TicketServiceImpl implements TicketService {
         processStatusUpdate(ticket, request, actor);
         processAssigneeUpdate(ticket, request, actor);
         processPriorityUpdate(ticket, request, actor);
-        processCategoryUpdate(ticket, request);
+        processCategoryUpdate(ticket, request, actor);
         processEscalationUpdate(ticket, request, actor);
 
         return ticketMapper.toTicketResponse(ticketRepository.save(ticket));
@@ -131,9 +140,10 @@ public class TicketServiceImpl implements TicketService {
         }
     }
 
-    private void processCategoryUpdate(final Ticket ticket, final UpdateTicketRequest request) {
-        if (request.getCategory() != null) {
-            ticket.setCategory(request.getCategory());
+    private void processCategoryUpdate(
+            final Ticket ticket, final UpdateTicketRequest request, final User actor) {
+        if (request.getCategoryId() != null) {
+            updateCoordinator.applyCategoryChange(ticket, request.getCategoryId(), actor);
         }
     }
 

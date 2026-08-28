@@ -24,7 +24,8 @@ import org.springframework.web.bind.annotation.RestController;
 import za.gov.helpdesk.ticket.dto.request.CreateTicketRequest;
 import za.gov.helpdesk.ticket.dto.request.UpdateTicketRequest;
 import za.gov.helpdesk.ticket.dto.response.TicketResponse;
-import za.gov.helpdesk.ticket.model.Ticket;
+import za.gov.helpdesk.ticket.model.Priority;
+import za.gov.helpdesk.ticket.model.Status;
 import za.gov.helpdesk.ticket.service.TicketService;
 import za.gov.helpdesk.users.security.CustomUserDetails;
 
@@ -54,15 +55,23 @@ public class TicketController {
     @GetMapping
     @Operation(summary = "List tickets with optional filters")
     public ResponseEntity<Page<TicketResponse>> getTickets(
-            @RequestParam(required = false) final Ticket.Status status,
-            @RequestParam(required = false) final Ticket.Priority priority,
+            @RequestParam(required = false) final Status status,
+            @RequestParam(required = false) final Priority priority,
             @RequestParam(required = false) final Long assigneeId,
+            @RequestParam(required = false) final Long categoryId,
+            @RequestParam(defaultValue = "false") final boolean includeDescendants,
             @PageableDefault(size = 25, sort = "createdAt", direction = Sort.Direction.DESC)
                     final Pageable pageable,
             @AuthenticationPrincipal final CustomUserDetails principal) {
         return ResponseEntity.ok(
                 ticketService.getTickets(
-                        status, priority, assigneeId, pageable, principal.getUser()));
+                        status,
+                        priority,
+                        assigneeId,
+                        categoryId,
+                        includeDescendants,
+                        pageable,
+                        principal.getUser()));
     }
 
     @GetMapping("/{id}")

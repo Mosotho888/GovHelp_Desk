@@ -94,6 +94,7 @@ public class AuditLog {
         ASSIGNED_TO_AGENT,
         ESCALATED,
         PRIORITY_CHANGED,
+        CATEGORY_CHANGED,
         TICKET_DELETED,
         TICKET_CLOSED,
         USER_CREATED,

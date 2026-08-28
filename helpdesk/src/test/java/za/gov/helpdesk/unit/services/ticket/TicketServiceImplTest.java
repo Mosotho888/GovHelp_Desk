@@ -13,11 +13,14 @@ import org.springframework.security.access.AccessDeniedException;
 
 import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.agent.service.AgentQueryHelper;
+import za.gov.helpdesk.category.service.CategoryQueryHelper;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
 import za.gov.helpdesk.ticket.dto.request.CreateTicketRequest;
 import za.gov.helpdesk.ticket.dto.request.UpdateTicketRequest;
 import za.gov.helpdesk.ticket.dto.response.TicketResponse;
 import za.gov.helpdesk.ticket.mapper.TicketMapper;
+import za.gov.helpdesk.ticket.model.Priority;
+import za.gov.helpdesk.ticket.model.Status;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
 import za.gov.helpdesk.ticket.service.TicketQueryHelper;
@@ -43,6 +46,7 @@ class TicketServiceImplTest {
     @Mock private TicketRepository ticketRepository;
     @Mock private TicketQueryHelper ticketQuery;
     @Mock private AgentQueryHelper agentQuery;
+    @Mock private CategoryQueryHelper categoryQuery;
     @Mock private TicketMapper ticketMapper;
     @Mock private TicketUpdateCoordinator updateCoordinator;
 
@@ -95,8 +99,8 @@ class TicketServiceImplTest {
                         .id(100L)
                         .subject("Login broken")
                         .description("Cannot access dashboard")
-                        .status(Ticket.Status.OPEN)
-                        .priority(Ticket.Priority.HIGH)
+                        .status(Status.OPEN)
+                        .priority(Priority.HIGH)
                         .requester(endUser)
                         .createdAt(LocalDateTime.now())
                         .updatedAt(LocalDateTime.now())
@@ -109,15 +113,21 @@ class TicketServiceImplTest {
         final CreateTicketRequest req = new CreateTicketRequest();
         req.setSubject("Login broken");
         req.setDescription("Cannot access dashboard");
-        req.setPriority(Ticket.Priority.HIGH);
+        req.setPriority(Priority.HIGH);
 
+        final Ticket unmappedTicket = new Ticket();
+        unmappedTicket.setSubject("Login broken");
+        unmappedTicket.setDescription("Cannot access dashboard");
+        unmappedTicket.setPriority(Priority.HIGH);
+
+        given(ticketMapper.toEntity(req)).willReturn(unmappedTicket);
         given(ticketRepository.save(any(Ticket.class))).willReturn(openTicket);
         given(ticketMapper.toTicketResponse(openTicket)).willReturn(responseFor(openTicket));
 
         final TicketResponse response = ticketService.createTicket(req, endUser);
 
         assertThat(response.getSubject()).isEqualTo("Login broken");
-        assertThat(response.getStatus()).isEqualTo(Ticket.Status.OPEN);
+        assertThat(response.getStatus()).isEqualTo(Status.OPEN);
 
         then(ticketRepository).should(times(1)).save(any(Ticket.class));
         then(updateCoordinator).should(times(1)).handlePostCreation(openTicket, endUser);
@@ -135,17 +145,18 @@ class TicketServiceImplTest {
                         .id(101L)
                         .subject("Test")
                         .description("Test desc")
-                        .status(Ticket.Status.OPEN)
-                        .priority(Ticket.Priority.MEDIUM)
+                        .status(Status.OPEN)
+                        .priority(Priority.MEDIUM)
                         .requester(endUser)
                         .build();
 
+        given(ticketMapper.toEntity(req)).willReturn(mediumTicket);
         given(ticketRepository.save(any(Ticket.class))).willReturn(mediumTicket);
         given(ticketMapper.toTicketResponse(mediumTicket)).willReturn(responseFor(mediumTicket));
 
         final TicketResponse response = ticketService.createTicket(req, endUser);
 
-        assertThat(response.getPriority()).isEqualTo(Ticket.Priority.MEDIUM);
+        assertThat(response.getPriority()).isEqualTo(Priority.MEDIUM);
     }
 
     @Test
@@ -157,17 +168,22 @@ class TicketServiceImplTest {
         req.setDescription("desc");
         req.setAssigneeId(1L);
 
+        final Ticket unmappedTicket = new Ticket();
+        unmappedTicket.setSubject("Assigned ticket");
+        unmappedTicket.setDescription("desc");
+
         final Ticket ticketWithAssignee =
                 Ticket.builder()
                         .id(102L)
                         .subject("Assigned ticket")
                         .description("desc")
-                        .status(Ticket.Status.OPEN)
-                        .priority(Ticket.Priority.MEDIUM)
+                        .status(Status.OPEN)
+                        .priority(Priority.MEDIUM)
                         .requester(endUser)
                         .assignee(agent)
                         .build();
 
+        given(ticketMapper.toEntity(req)).willReturn(unmappedTicket);
         given(agentQuery.findOrThrow(1L)).willReturn(agent);
         given(ticketRepository.save(any(Ticket.class))).willReturn(ticketWithAssignee);
         given(ticketMapper.toTicketResponse(ticketWithAssignee))
@@ -187,6 +203,11 @@ class TicketServiceImplTest {
         req.setDescription("desc");
         req.setAssigneeId(999L);
 
+        final Ticket unmappedTicket = new Ticket();
+        unmappedTicket.setSubject("Test");
+        unmappedTicket.setDescription("desc");
+
+        given(ticketMapper.toEntity(req)).willReturn(unmappedTicket);
         given(agentQuery.findOrThrow(999L)).willThrow(new ResourceNotFoundException("Agent", 999L));
 
         assertThatThrownBy(() -> ticketService.createTicket(req, endUser))
@@ -220,7 +241,7 @@ class TicketServiceImplTest {
     @DisplayName("updateTicket() OPEN -> IN_PROGRESS routes status change to coordinator")
     void updateTicket_openToInProgress_recordsFirstResponse() {
         final UpdateTicketRequest req = new UpdateTicketRequest();
-        req.setStatus(Ticket.Status.IN_PROGRESS);
+        req.setStatus(Status.IN_PROGRESS);
 
         givenAuthorizedTicket(100L, openTicket, agentUser);
 
@@ -228,11 +249,11 @@ class TicketServiceImplTest {
         doAnswer(
                         invocation -> {
                             Ticket t = invocation.getArgument(0);
-                            t.setStatus(Ticket.Status.IN_PROGRESS);
+                            t.setStatus(Status.IN_PROGRESS);
                             return null;
                         })
                 .when(updateCoordinator)
-                .applyStatusChange(openTicket, Ticket.Status.IN_PROGRESS, agentUser);
+                .applyStatusChange(openTicket, Status.IN_PROGRESS, agentUser);
 
         given(ticketRepository.save(any(Ticket.class))).willAnswer(i -> i.getArgument(0));
         given(ticketMapper.toTicketResponse(any(Ticket.class)))
@@ -241,10 +262,10 @@ class TicketServiceImplTest {
         final TicketResponse response = ticketService.updateTicket(100L, req, agentUser);
 
         // 2. Verified status matches mutated state and the coordinator was called
-        assertThat(response.getStatus()).isEqualTo(Ticket.Status.IN_PROGRESS);
+        assertThat(response.getStatus()).isEqualTo(Status.IN_PROGRESS);
         then(updateCoordinator)
                 .should(times(1))
-                .applyStatusChange(openTicket, Ticket.Status.IN_PROGRESS, agentUser);
+                .applyStatusChange(openTicket, Status.IN_PROGRESS, agentUser);
     }
 
     @Test
@@ -271,8 +292,8 @@ class TicketServiceImplTest {
                         .id(100L)
                         .subject("Login broken")
                         .description("desc")
-                        .status(Ticket.Status.OPEN)
-                        .priority(Ticket.Priority.HIGH)
+                        .status(Status.OPEN)
+                        .priority(Priority.HIGH)
                         .requester(endUser)
                         .assignee(agent)
                         .build();
@@ -293,7 +314,7 @@ class TicketServiceImplTest {
     @DisplayName("updateTicket() priority change triggers coordinator execution step")
     void updateTicket_priorityChange_dispatchesPriorityChanged() {
         final UpdateTicketRequest req = new UpdateTicketRequest();
-        req.setPriority(Ticket.Priority.URGENT);
+        req.setPriority(Priority.URGENT);
 
         givenAuthorizedTicket(100L, openTicket, agentUser);
 
@@ -301,11 +322,11 @@ class TicketServiceImplTest {
         doAnswer(
                         invocation -> {
                             Ticket t = invocation.getArgument(0);
-                            t.setPriority(Ticket.Priority.URGENT);
+                            t.setPriority(Priority.URGENT);
                             return null;
                         })
                 .when(updateCoordinator)
-                .applyPriorityChange(openTicket, Ticket.Priority.URGENT, agentUser);
+                .applyPriorityChange(openTicket, Priority.URGENT, agentUser);
 
         given(ticketRepository.save(any(Ticket.class))).willAnswer(i -> i.getArgument(0));
         given(ticketMapper.toTicketResponse(any(Ticket.class)))
@@ -314,17 +335,17 @@ class TicketServiceImplTest {
         final TicketResponse response = ticketService.updateTicket(100L, req, agentUser);
 
         // 2. Verified priority matches mutated state and the coordinator was called
-        assertThat(response.getPriority()).isEqualTo(Ticket.Priority.URGENT);
+        assertThat(response.getPriority()).isEqualTo(Priority.URGENT);
         then(updateCoordinator)
                 .should(times(1))
-                .applyPriorityChange(openTicket, Ticket.Priority.URGENT, agentUser);
+                .applyPriorityChange(openTicket, Priority.URGENT, agentUser);
     }
 
     @Test
     @DisplayName("updateTicket() skips priority logic when priority is unchanged")
     void updateTicket_samePriority_noEventDispatched() {
         final UpdateTicketRequest req = new UpdateTicketRequest();
-        req.setPriority(Ticket.Priority.HIGH);
+        req.setPriority(Priority.HIGH);
 
         givenAuthorizedTicket(100L, openTicket, agentUser);
         given(ticketRepository.save(any(Ticket.class))).willAnswer(i -> i.getArgument(0));
@@ -363,8 +384,8 @@ class TicketServiceImplTest {
                         .id(100L)
                         .subject("Login broken")
                         .description("desc")
-                        .status(Ticket.Status.ESCALATED)
-                        .priority(Ticket.Priority.HIGH)
+                        .status(Status.ESCALATED)
+                        .priority(Priority.HIGH)
                         .requester(endUser)
                         .escalated(true)
                         .build();
@@ -414,7 +435,6 @@ class TicketServiceImplTest {
                 .description(ticket.getDescription())
                 .status(ticket.getStatus())
                 .priority(ticket.getPriority())
-                .category(ticket.getCategory())
                 .escalated(ticket.isEscalated())
                 .createdAt(ticket.getCreatedAt())
                 .updatedAt(ticket.getUpdatedAt())

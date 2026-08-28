@@ -26,6 +26,7 @@ import za.gov.helpdesk.attachment.service.storage.FileStorageService;
 import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
+import za.gov.helpdesk.ticket.model.Status;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
 import za.gov.helpdesk.ticket.service.TicketQueryHelper;
@@ -88,7 +89,7 @@ public class AttachmentServiceImplTest {
                         .id(10L)
                         .subject("Test")
                         .description("desc")
-                        .status(Ticket.Status.OPEN)
+                        .status(Status.OPEN)
                         .requester(uploader)
                         .createdAt(LocalDateTime.now())
                         .updatedAt(LocalDateTime.now())

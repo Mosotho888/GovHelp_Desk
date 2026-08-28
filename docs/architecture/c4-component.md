@@ -70,21 +70,23 @@ graph TB
 
 ## Key components and their single responsibility
 
-| Component                                          | Package                      | Responsibility                                                                                            |
-|----------------------------------------------------|------------------------------|-----------------------------------------------------------------------------------------------------------|
-| `JwtAuthenticationFilter` / `JwtService`           | `auth.jwt`                   | Parses and validates bearer tokens once per request; issues access/refresh tokens                         |
-| `LoginLockoutService`                              | `auth.policy`                | Tracks failed login attempts and locks accounts after the configured threshold                            |
-| `TicketEventDispatcher`                            | `ticket.event`               | Decouples ticket state changes from their audit/notification side effects                                 |
-| `TicketStatusTransitionPolicy`                     | `ticket.policy`              | Validates that a requested status change is a legal transition                                            |
-| `TicketUpdateCoordinator`                          | `ticket.service.impl`        | Orchestrates multi-field ticket updates (status, assignee, priority) as one cohesive operation            |
-| `CommentAccessPolicy`                              | `comment.policy`             | Enforces the author-or-admin, 15-minute edit window rule for comment mutation                             |
-| `AttachmentValidator`                              | `attachment.policy`          | Enforces file count, size, and MIME-type limits before storage                                            |
-| `FileStorageServiceImpl`                           | `attachment.service.storage` | Normalises and containment-checks the destination path to prevent path traversal                          |
-| `SlaBreachMonitor`                                 | `sla.schedular`              | `@Scheduled` job (every 5 minutes) that flags response/resolution breaches                                |
-| `BusinessHoursCalculator`                          | `sla.service`                | Computes SLA due dates against business-hours logic                                                       |
+| Component                                    | Package                      | Responsibility                                                                                            |
+|----------------------------------------------|------------------------------|-----------------------------------------------------------------------------------------------------------|
+| `JwtAuthenticationFilter` / `JwtService`     | `auth.jwt`                   | Parses and validates bearer tokens once per request; issues access/refresh tokens                         |
+| `LoginLockoutService`                        | `auth.policy`                | Tracks failed login attempts and locks accounts after the configured threshold                            |
+| `TicketEventDispatcher`                      | `ticket.event`               | Decouples ticket state changes from their audit/notification side effects                                 |
+| `TicketStatusTransitionPolicy`               | `ticket.policy`              | Validates that a requested status change is a legal transition                                            |
+| `TicketUpdateCoordinator`                    | `ticket.service.impl`        | Orchestrates multi-field ticket updates (status, assignee, priority, category) as one cohesive operation |
+| `CategoryRoutingService`                     | `ticket.service.impl`        | Auto-assigns a newly created, unassigned ticket to the least-loaded online agent in its category's department |
+| `CategoryQueryHelper`                        | `category.service`           | Builds category breadcrumb paths and resolves a category's descendant ids for filtering                  |
+| `CommentAccessPolicy`                        | `comment.policy`             | Enforces the author-or-admin, 15-minute edit window rule for comment mutation                             |
+| `AttachmentValidator`                        | `attachment.policy`          | Enforces file count, size, and MIME-type limits before storage                                            |
+| `FileStorageServiceImpl`                     | `attachment.service.storage` | Normalises and containment-checks the destination path to prevent path traversal                          |
+| `SlaBreachMonitor`                           | `sla.schedular`              | `@Scheduled` job (every 5 minutes) that flags response/resolution breaches                                |
+| `BusinessHoursCalculator`                    | `sla.service`                | Computes SLA due dates against business-hours logic                                                       |
 | `OutboxWriter` / `OutboxRelay` / `OutboxProcessor` | `outbox`                     | Implements the transactional outbox pattern — see [ADR 0001](../adr/0001-transactional-outbox-pattern.md) |
-| `RateLimitingFilter` / `RateLimitPolicyProvider`   | `config.security`            | Token-bucket rate limiting, capacity resolved by authenticated role                                       |
-| `GlobalExceptionHandler`                           | `exception.global`           | Central `@ControllerAdvice` translating domain exceptions to a consistent `ApiErrorResponse`              |
+| `RateLimitingFilter` / `RateLimitPolicyProvider` | `config.security`            | Token-bucket rate limiting, capacity resolved by authenticated role                                       |
+| `GlobalExceptionHandler`                     | `exception.global`           | Central `@ControllerAdvice` translating domain exceptions to a consistent `ApiErrorResponse`              |
 
 ## Design patterns in use
 

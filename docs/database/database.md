@@ -11,6 +11,8 @@ erDiagram
     users ||--o| agents: "extends (role=AGENT)"
     users ||--o{ tickets: "requests"
     agents ||--o{ tickets: "is assigned"
+    ticket_categories ||--o{ tickets: "classifies"
+    ticket_categories ||--o{ ticket_categories: "parent_id (self-referencing)"
     tickets ||--o{ comments: "has"
     comments ||--o{ comments: "replies to (parent_id)"
     users ||--o{ comments: "authors"
@@ -41,13 +43,25 @@ erDiagram
         varchar availability "ONLINE|BUSY|AWAY|OFFLINE"
     }
 
+    ticket_categories {
+        bigint id PK
+        varchar name
+        varchar slug UK
+        bigint parent_id FK "self-referencing, nullable"
+        smallint level "0-2, CHECK constrained"
+        varchar default_department
+        boolean active
+        timestamp created_at
+        timestamp updated_at
+    }
+
     tickets {
         bigint id PK
         varchar subject
         text description
         varchar status "OPEN|IN_PROGRESS|ESCALATED|RESOLVED|CLOSED"
         varchar priority "LOW|MEDIUM|HIGH|URGENT"
-        varchar category
+        bigint category_id FK "references ticket_categories.id, nullable"
         bigint requester_id FK
         bigint assignee_id FK "references agents.id"
         boolean escalated
@@ -161,12 +175,26 @@ the account-lockout mechanism - see
 A strict 1:1 extension of `users` for rows with `role = AGENT` (`user_id` is `UNIQUE`), rather than a separate identity.
 `availability` drives ticket assignment/routing decisions.
 
+### `ticket_categories`
+
+Self-referencing hierarchy (`parent_id`) capped at three levels (`level` 0-2, database-level `CHECK` constrained) -
+Category → Subcategory → Type. `slug` is a unique, URL-safe identifier generated server-side from `name` at creation
+time. `default_department` names the team a ticket should auto-route to when filed under that category (inherited from
+the parent at creation time if left blank, so subcategories don't all need to repeat it); routing itself is described
+in [`docs/architecture/decisions.md`](../architecture/decisions.md). Categories are soft-deleted via
+`active = false` rather than removed outright, since historical tickets keep their category label - `PreAuthorize`
+and application-level checks prevent deactivating a category that still has active subcategories, and prevent nesting
+past the depth cap. `uq_ticket_categories_parent_name` enforces unique sibling names per parent (including among
+top-level categories, where `parent_id IS NULL`).
+
 ### `tickets`
 
-The core aggregate. `assignee_id` references `agents.id` (not `users.id`) since only agents can be assigned. `status`
-and `priority` are both database-level `CHECK` constrained. Indexes support the three most common access patterns:
-status-ordered listing (`idx_tickets_status`), a requester's own tickets (`idx_tickets_requester`), and an agent's
-assigned queue by status (`idx_tickets_assignee`).
+The core aggregate. `assignee_id` references `agents.id` (not `users.id`) since only agents can be assigned.
+`category_id` references `ticket_categories.id` and is nullable - a ticket can be filed without a category and
+categorised later. `status` and `priority` are both database-level `CHECK` constrained. Indexes support the four most
+common access patterns: status-ordered listing (`idx_tickets_status`), a requester's own tickets
+(`idx_tickets_requester`), an agent's assigned queue by status (`idx_tickets_assignee`), and category-based filtering
+(`idx_tickets_category`).
 
 ### `comments`
 
@@ -210,15 +238,16 @@ raw OTP) for password reset.
 
 ## Migration history
 
-| Version | File                                   | Summary                                                                                    |
-|---------|----------------------------------------|--------------------------------------------------------------------------------------------|
-| V1      | `V1__helpdesk_schema.sql`              | Core schema: `users`, `agents`, `tickets`, `comments`, `attachments`, original `audit_log` |
-| V2      | `V2__seed_data.sql`                    | Seed data for local/demo environments                                                      |
-| V3      | `V3__refactor_audit_log.sql`           | Generalised `audit_log` from ticket-only to entity-generic, added actor/IP metadata        |
-| V4      | `V4__create_refresh_tokens.sql`        | Added `refresh_tokens`                                                                     |
-| V5      | `V5__create_password_reset_tokens.sql` | Added `password_reset_tokens`                                                              |
-| V6      | `V6__create_sla_tables.sql`            | Added `sla_policies` (seeded) and `ticket_sla`                                             |
-| V7      | `V7__create_outbox_events.sql`         | Added `outbox_events` for the transactional outbox pattern                                 |
+| Version | File                                   | Summary                                                                                                                            |
+|---------|----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| V1      | `V1__helpdesk_schema.sql`              | Core schema: `users`, `agents`, `tickets`, `comments`, `attachments`, original `audit_log`                                         |
+| V2      | `V2__seed_data.sql`                    | Seed data for local/demo environments                                                                                              |
+| V3      | `V3__refactor_audit_log.sql`           | Generalised `audit_log` from ticket-only to entity-generic, added actor/IP metadata                                                |
+| V4      | `V4__create_refresh_tokens.sql`        | Added `refresh_tokens`                                                                                                             |
+| V5      | `V5__create_password_reset_tokens.sql` | Added `password_reset_tokens`                                                                                                      |
+| V6      | `V6__create_sla_tables.sql`            | Added `sla_policies` (seeded) and `ticket_sla`                                                                                     |
+| V7      | `V7__create_outbox_events.sql`         | Added `outbox_events` for the transactional outbox pattern                                                                         |
+| V8      | `V8__create_ticket_categories.sql`     | Added hierarchical `ticket_categories`, seeded default tree, migrated `tickets.category` (free text) to `tickets.category_id` (FK) |
 
 New migrations should always be additive and forward-only (Flyway's model) - never edit a committed migration file once
 it has run against any shared environment.

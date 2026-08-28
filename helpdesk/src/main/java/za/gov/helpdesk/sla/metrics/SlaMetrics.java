@@ -5,8 +5,7 @@ import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
-import za.gov.helpdesk.ticket.model.Ticket;
-import za.gov.helpdesk.ticket.model.Ticket.Priority;
+import za.gov.helpdesk.ticket.model.Priority;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -16,7 +15,7 @@ import lombok.Getter;
 @Getter
 public class SlaMetrics {
 
-    private final Map<Ticket.Priority, Counter> responseBreached = new EnumMap<>(Priority.class);
+    private final Map<Priority, Counter> responseBreached = new EnumMap<>(Priority.class);
     private final Map<Priority, Counter> resolutionBreached = new EnumMap<>(Priority.class);
     private final Map<Priority, Counter> responseWarning = new EnumMap<>(Priority.class);
     private final Map<Priority, Counter> resolutionWarning = new EnumMap<>(Priority.class);

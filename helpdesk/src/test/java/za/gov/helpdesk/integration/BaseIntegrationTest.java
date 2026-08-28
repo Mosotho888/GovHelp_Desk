@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import za.gov.helpdesk.sla.model.SlaPolicy;
 import za.gov.helpdesk.sla.repository.SlaPolicyRepository;
-import za.gov.helpdesk.ticket.model.Ticket;
+import za.gov.helpdesk.ticket.model.Priority;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 
@@ -137,7 +137,7 @@ public abstract class BaseIntegrationTest {
     protected void seedCoreUsersAndSla() {
         slaPolicyRepository.save(
                 SlaPolicy.builder()
-                        .priority(Ticket.Priority.MEDIUM)
+                        .priority(Priority.MEDIUM)
                         .resolutionMinutes(480)
                         .responseMinutes(480)
                         .build());

@@ -16,6 +16,7 @@ import za.gov.helpdesk.sla.model.SlaPolicy;
 import za.gov.helpdesk.sla.model.TicketSla;
 import za.gov.helpdesk.sla.repository.SlaPolicyRepository;
 import za.gov.helpdesk.sla.repository.TicketSlaRepository;
+import za.gov.helpdesk.ticket.model.Priority;
 import za.gov.helpdesk.ticket.model.Ticket;
 
 import lombok.RequiredArgsConstructor;
@@ -49,7 +50,7 @@ public class SlaBreachMonitor {
     public void run() {
         final LocalDateTime now = LocalDateTime.now();
 
-        final Map<Ticket.Priority, SlaPolicy> policies =
+        final Map<Priority, SlaPolicy> policies =
                 slaPolicyRepository.findAll().stream()
                         .collect(Collectors.toMap(SlaPolicy::getPriority, Function.identity()));
 
@@ -77,7 +78,7 @@ public class SlaBreachMonitor {
      */
     private void processWarnings(
             final LocalDateTime now,
-            final Map<Ticket.Priority, SlaPolicy> policies,
+            final Map<Priority, SlaPolicy> policies,
             final int maxThreshold) {
 
         final List<TicketSla> responseWarnings =
@@ -151,7 +152,7 @@ public class SlaBreachMonitor {
      */
     private boolean isWithinWarningWindow(
             final TicketSla sla,
-            final Map<Ticket.Priority, SlaPolicy> policies,
+            final Map<Priority, SlaPolicy> policies,
             final LocalDateTime dueAt,
             final LocalDateTime now) {
         final SlaPolicy policy = policies.get(sla.getTicket().getPriority());

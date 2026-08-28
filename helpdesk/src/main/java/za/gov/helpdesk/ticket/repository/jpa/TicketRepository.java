@@ -1,6 +1,7 @@
 package za.gov.helpdesk.ticket.repository.jpa;
 
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -11,6 +12,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import za.gov.helpdesk.agent.model.Agent;
+import za.gov.helpdesk.ticket.model.Priority;
+import za.gov.helpdesk.ticket.model.Status;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.users.model.User;
 
@@ -24,11 +27,13 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
             WHERE (:status IS NULL OR t.status = :status)
               AND (:priority IS NULL OR t.priority = :priority)
               AND (:assigneeId IS NULL OR t.assignee.id = :assigneeId)
+              AND (:categoryIds IS NULL OR t.category.id IN :categoryIds)
             """)
     Page<Ticket> findWithFilters(
-            @Param("status") Ticket.Status status,
-            @Param("priority") Ticket.Priority priority,
+            @Param("status") Status status,
+            @Param("priority") Priority priority,
             @Param("assigneeId") Long assigneeId,
+            @Param("categoryIds") Set<Long> categoryIds,
             Pageable pageable);
 
     @Query(
@@ -54,24 +59,26 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
                     + "WHERE (:status IS NULL OR t.status = :status) "
                     + "AND (:priority IS NULL OR t.priority = :priority) "
                     + "AND (:assigneeId IS NULL OR t.assignee.id = :assigneeId) "
+                    + "AND (:categoryIds IS NULL OR t.category.id IN :categoryIds) "
                     + "AND (t.assignee IS NULL OR t.assignee.user.email = :agentEmail)")
     Page<Ticket> findWithFiltersForAgent(
             @Param("status") String status,
             @Param("priority") String priority,
             @Param("assigneeId") Long assigneeId,
+            @Param("categoryIds") Set<Long> categoryIds,
             @Param("agentEmail") String agentEmail,
             Pageable pageable);
 
     // For end users: only their own tickets
     Page<Ticket> findByRequester(User requester, Pageable pageable);
 
-    Long countByAssigneeIdAndStatus(Long assigneeId, Ticket.Status status);
+    Long countByAssigneeIdAndStatus(Long assigneeId, Status status);
 
     @Modifying
     @Query(
             "UPDATE Ticket t SET t.assignee = null "
                     + "WHERE t.assignee = :agent "
-                    + "AND t.status NOT IN (za.gov.helpdesk.ticket.model.Ticket.Status.CLOSED, "
-                    + "za.gov.helpdesk.ticket.model.Ticket.Status.RESOLVED)")
+                    + "AND t.status NOT IN (za.gov.helpdesk.ticket.model.Status.CLOSED, "
+                    + "za.gov.helpdesk.ticket.model.Status.RESOLVED)")
     int unassignFromAgent(@Param("agent") Agent agent);
 }

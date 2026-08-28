@@ -170,6 +170,8 @@ erDiagram
     users ||--o| agents: "extends (role=AGENT)"
     users ||--o{ tickets: "requests"
     agents ||--o{ tickets: "is assigned"
+    ticket_categories ||--o{ tickets: "classifies"
+    ticket_categories ||--o{ ticket_categories: "parent_id"
     tickets ||--o{ comments: "has"
     tickets ||--o{ attachments: "has"
     tickets ||--o| ticket_sla: "has"
@@ -181,6 +183,9 @@ erDiagram
     }
     agents {
         string availability "ONLINE | BUSY | AWAY | OFFLINE"
+    }
+    ticket_categories {
+        smallint level "0-2, max 3 levels deep"
     }
     tickets {
         string status "OPEN to IN_PROGRESS to RESOLVED to CLOSED"
@@ -227,13 +232,23 @@ source-verified reference (kept in sync with the controllers directly), see
 
 ### Tickets - `/v1/tickets`
 
-| Method   | Path    | Role   | Description                             |
-|----------|---------|--------|-----------------------------------------|
-| `POST`   | `/`     | USER+  | Create a new ticket                     |
-| `GET`    | `/`     | USER+  | List tickets (USERs see only their own) |
-| `GET`    | `/{id}` | USER+  | Get ticket by ID                        |
-| `PATCH`  | `/{id}` | AGENT+ | Update status, assignee, priority       |
-| `DELETE` | `/{id}` | ADMIN  | Delete ticket                           |
+| Method   | Path    | Role   | Description                                                                                |
+|----------|---------|--------|----------------------------------------------------------------------------------------------|
+| `POST`   | `/`     | USER+  | Create a new ticket                                                                          |
+| `GET`    | `/`     | USER+  | List tickets (USERs see only their own); filter by `categoryId` (+ `includeDescendants`)     |
+| `GET`    | `/{id}` | USER+  | Get ticket by ID                                                                             |
+| `PATCH`  | `/{id}` | AGENT+ | Update status, assignee, priority, or category                                              |
+| `DELETE` | `/{id}` | ADMIN  | Delete ticket                                                                                |
+
+### Ticket Categories - `/v1/categories`
+
+| Method   | Path    | Role   | Description                                              |
+|----------|---------|--------|-------------------------------------------------------------|
+| `GET`    | `/`     | USER+  | Get the full category tree                                 |
+| `GET`    | `/{id}` | USER+  | Get a single category                                       |
+| `POST`   | `/`     | ADMIN  | Create a category or subcategory (max 3 levels deep)        |
+| `PATCH`  | `/{id}` | ADMIN  | Rename, re-route (default department), or (de)activate     |
+| `DELETE` | `/{id}` | ADMIN  | Soft-deactivate a category                                  |
 
 ### Comments - `/v1`
 
@@ -606,6 +621,7 @@ src/
 │   │   ├── attachment/         # File upload/download
 │   │   ├── auditlog/           # Audit trail (consumer + query API)
 │   │   ├── auth/               # JWT auth, refresh tokens, password reset
+|   |   |── category/           # Threaded categories (Level 2)
 │   │   ├── comment/            # Threaded comments and internal notes
 │   │   ├── config/
 │   │   │   ├── metrics/        # Per-domain Micrometer beans
@@ -660,10 +676,6 @@ observability, several enterprise features are intentionally reserved for future
     - Associate support tickets with specific assets to provide technicians with device history, warranty information,
       and ownership details.
 
-- **Ticket Categories and Subcategories**
-    - Organise tickets into hierarchical categories such as Hardware, Software, Network, Accounts, and Security.
-    - Improve reporting, filtering, and automated ticket routing.
-
 - **Operational Dashboards**
     - Provide dashboards for agents and administrators showing ticket volumes, SLA compliance, workload distribution,
       resolution times, and performance metrics.
@@ -673,8 +685,9 @@ observability, several enterprise features are intentionally reserved for future
       encourage self-service and reduce repetitive support requests.
 
 - **Automation Rules**
-    - Automatically assign tickets based on category or department.
-    - Trigger notifications, escalations, and SLA-based workflows without manual intervention.
+    - Trigger notifications, escalations, and SLA-based workflows without manual intervention, building on the
+      category-based auto-assignment already in place (see [
+      `docs/adr/0006-hierarchical-ticket-categories.md`](docs/adr/0006-hierarchical-ticket-categories.md)).
 
 - **Saved Replies**
     - Allow agents to use predefined response templates for common IT support scenarios, improving consistency and

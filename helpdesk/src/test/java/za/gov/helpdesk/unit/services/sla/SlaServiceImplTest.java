@@ -21,6 +21,7 @@ import za.gov.helpdesk.sla.repository.TicketSlaRepository;
 import za.gov.helpdesk.sla.service.BusinessHoursCalculator;
 import za.gov.helpdesk.sla.service.SlaQueryHelper;
 import za.gov.helpdesk.sla.service.impl.SlaServiceImpl;
+import za.gov.helpdesk.ticket.model.Priority;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.users.model.User;
 
@@ -73,7 +74,7 @@ class SlaServiceImplTest {
                         .id(100L)
                         .subject("Login broken")
                         .description("Cannot access dashboard")
-                        .priority(Ticket.Priority.HIGH)
+                        .priority(Priority.HIGH)
                         .requester(requester)
                         .assignee(agent)
                         .build();
@@ -84,14 +85,14 @@ class SlaServiceImplTest {
     void initializeSla_usesPolicyDeadlines() {
         final SlaPolicy policy =
                 SlaPolicy.builder()
-                        .priority(Ticket.Priority.HIGH)
+                        .priority(Priority.HIGH)
                         .responseMinutes(240)
                         .resolutionMinutes(480)
                         .build();
         final LocalDateTime responseDue = LocalDateTime.now().plusHours(4);
         final LocalDateTime resolutionDue = LocalDateTime.now().plusHours(8);
 
-        given(slaQuery.getPolicyOrThrow(Ticket.Priority.HIGH)).willReturn(policy);
+        given(slaQuery.getPolicyOrThrow(Priority.HIGH)).willReturn(policy);
         given(calculator.addBusinessMinutes(any(LocalDateTime.class), eq(240L)))
                 .willReturn(responseDue);
         given(calculator.addBusinessMinutes(any(LocalDateTime.class), eq(480L)))
@@ -109,7 +110,7 @@ class SlaServiceImplTest {
     @Test
     @DisplayName("initializeSla() throws clearly when no SLA policy exists for priority")
     void initializeSla_missingPolicy_throwsIllegalState() {
-        given(slaQuery.getPolicyOrThrow(Ticket.Priority.HIGH))
+        given(slaQuery.getPolicyOrThrow(Priority.HIGH))
                 .willThrow(
                         new IllegalStateException(
                                 "No SLA policy configured for system priority: HIGH"));
@@ -248,7 +249,7 @@ class SlaServiceImplTest {
     void getSlaStatus_onTrack_returnsOnTrack() {
         final SlaPolicy policy =
                 SlaPolicy.builder()
-                        .priority(Ticket.Priority.HIGH)
+                        .priority(Priority.HIGH)
                         .responseMinutes(240)
                         .resolutionMinutes(480)
                         .warningThresholdMinutes(30)
@@ -261,8 +262,7 @@ class SlaServiceImplTest {
                         .build();
 
         given(slaQuery.findByTicketOrThrow(100L)).willReturn(sla);
-        given(slaPolicyRepository.findByPriority(Ticket.Priority.HIGH))
-                .willReturn(Optional.of(policy));
+        given(slaPolicyRepository.findByPriority(Priority.HIGH)).willReturn(Optional.of(policy));
 
         final TicketSlaResponse response = slaService.getSlaStatus(100L);
 
@@ -276,7 +276,7 @@ class SlaServiceImplTest {
     void getSlaStatus_withinWarningThreshold_returnsAtRisk() {
         final SlaPolicy policy =
                 SlaPolicy.builder()
-                        .priority(Ticket.Priority.HIGH)
+                        .priority(Priority.HIGH)
                         .responseMinutes(240)
                         .resolutionMinutes(480)
                         .warningThresholdMinutes(60)
@@ -290,8 +290,7 @@ class SlaServiceImplTest {
                         .build();
 
         given(slaQuery.findByTicketOrThrow(100L)).willReturn(sla);
-        given(slaPolicyRepository.findByPriority(Ticket.Priority.HIGH))
-                .willReturn(Optional.of(policy));
+        given(slaPolicyRepository.findByPriority(Priority.HIGH)).willReturn(Optional.of(policy));
 
         final TicketSlaResponse response = slaService.getSlaStatus(100L);
 

@@ -14,7 +14,7 @@ import za.gov.helpdesk.agent.repository.jpa.AgentRepository;
 import za.gov.helpdesk.auditlog.repository.AuditLogRepository;
 import za.gov.helpdesk.sla.model.SlaPolicy;
 import za.gov.helpdesk.sla.repository.SlaPolicyRepository;
-import za.gov.helpdesk.ticket.model.Ticket;
+import za.gov.helpdesk.ticket.model.Priority;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
 import za.gov.helpdesk.users.model.User;
 
@@ -51,7 +51,7 @@ public class AuditLogIntegrationTest extends BaseIntegrationTest {
 
         if (slaPolicyRepository.count() == 0) {
             final var mediumPolicy = new SlaPolicy();
-            mediumPolicy.setPriority(Ticket.Priority.MEDIUM);
+            mediumPolicy.setPriority(Priority.MEDIUM);
             mediumPolicy.setResolutionMinutes(480);
             mediumPolicy.setResponseMinutes(480);
             slaPolicyRepository.save(mediumPolicy);

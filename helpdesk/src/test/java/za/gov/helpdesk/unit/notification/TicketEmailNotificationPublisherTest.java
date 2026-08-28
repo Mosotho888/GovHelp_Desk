@@ -14,6 +14,8 @@ import za.gov.helpdesk.notification.dto.TicketEmailNotificationMessage;
 import za.gov.helpdesk.notification.messaging.TicketEmailNotificationPublisher;
 import za.gov.helpdesk.outbox.model.OutboxEvent;
 import za.gov.helpdesk.outbox.relay.OutboxWriter;
+import za.gov.helpdesk.ticket.model.Priority;
+import za.gov.helpdesk.ticket.model.Status;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.users.model.User;
 
@@ -60,8 +62,8 @@ class TicketEmailNotificationPublisherTest {
                         .id(100L)
                         .subject("Login broken")
                         .description("Cannot access dashboard")
-                        .status(Ticket.Status.IN_PROGRESS)
-                        .priority(Ticket.Priority.HIGH)
+                        .status(Status.IN_PROGRESS)
+                        .priority(Priority.HIGH)
                         .requester(requester)
                         .assignee(agent)
                         .build();
