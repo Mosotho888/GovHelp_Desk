@@ -84,12 +84,35 @@ Repeated failed `/login` attempts count toward account lockout - see
 | `POST`   | `/`     | Authenticated               | Create a new ticket                                  |
 | `GET`    | `/`     | Authenticated               | List tickets (paginated; `USER`s see only their own) |
 | `GET`    | `/{id}` | Authenticated (actor-aware) | Get a ticket by ID                                   |
-| `PATCH`  | `/{id}` | `AGENT`, `ADMIN`            | Update status, assignee, and/or priority             |
+| `PATCH`  | `/{id}` | `AGENT`, `ADMIN`            | Update status, assignee, priority, and/or category   |
 | `DELETE` | `/{id}` | `ADMIN`                     | Delete a ticket                                      |
 
 Ticket status flow: `OPEN → IN_PROGRESS → RESOLVED → CLOSED`, with an `ESCALATED` branch reachable from `OPEN` or
 `IN_PROGRESS`. Transitions outside this graph are rejected by
 `TicketStatusTransitionPolicy`.
+
+`GET /` accepts optional `status`, `priority`, `assigneeId`, and `categoryId` query parameters. By default `categoryId`
+matches that exact category only; pass `includeDescendants=true` to also match every subcategory beneath it (e.g.
+`categoryId=<Hardware's id>&includeDescendants=true` returns tickets filed under Hardware, Laptop, Desktop, Printer,
+etc.). A ticket created without an explicit `assigneeId` is automatically routed to the least-loaded `ONLINE` agent in
+its category's default department, if one is configured and available - see
+[`ADR 0006`](../adr/0006-hierarchical-ticket-categories.md#category-based-routing).
+
+## Ticket Categories - `/v1/categories`
+
+| Method   | Path    | Role          | Description                                                               |
+|----------|---------|---------------|---------------------------------------------------------------------------|
+| `GET`    | `/`     | Authenticated | Get the full category tree (`?activeOnly=true` to hide deactivated nodes) |
+| `GET`    | `/{id}` | Authenticated | Get a single category by ID                                               |
+| `POST`   | `/`     | `ADMIN`       | Create a top-level category or, with `parentId`, a subcategory            |
+| `PATCH`  | `/{id}` | `ADMIN`       | Rename, re-route (`defaultDepartment`), or (de)activate a category        |
+| `DELETE` | `/{id}` | `ADMIN`       | Soft-deactivate a category (historical tickets keep the label)            |
+
+Categories form a shallow tree capped at three levels (Category → Subcategory → Type). Creating a category past the cap,
+deactivating one with active subcategories, or naming it the same as a sibling all return `422 Unprocessable
+Entity`. See [`docs/database/database.md`](../database/database.md#ticket_categories) for the schema and
+[`ADR 0006`](../adr/0006-hierarchical-ticket-categories.md#category-based-routing) for how `defaultDepartment`
+drives ticket auto-assignment.
 
 ## Comments - `/v1`
 
