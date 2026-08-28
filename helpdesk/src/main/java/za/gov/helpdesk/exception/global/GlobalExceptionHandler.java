@@ -16,6 +16,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import za.gov.helpdesk.category.exception.InvalidCategoryOperationException;
 import za.gov.helpdesk.exception.DuplicateResourceException;
 import za.gov.helpdesk.exception.InvalidTokenException;
 import za.gov.helpdesk.exception.RateLimitExceededException;
@@ -192,6 +193,27 @@ public class GlobalExceptionHandler {
                         error(
                                 HttpStatus.TOO_MANY_REQUESTS.value(),
                                 "RATE_LIMIT_EXCEEDED",
+                                ex.getMessage(),
+                                req));
+    }
+
+    /**
+     * Captures operations that would leave the ticket category tree in an invalid shape - too deep,
+     * a duplicate sibling name, or deactivating a category that still has active subcategories -
+     * translating them into HTTP 422 Unprocessable Entity outcomes.
+     *
+     * @param ex the category tree constraint violation
+     * @param req the active servlet request tracking parameters
+     * @return a structured 422 status error representation
+     */
+    @ExceptionHandler(InvalidCategoryOperationException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidCategoryOperation(
+            final InvalidCategoryOperationException ex, final HttpServletRequest req) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(
+                        error(
+                                HttpStatus.UNPROCESSABLE_ENTITY.value(),
+                                "INVALID_CATEGORY_OPERATION",
                                 ex.getMessage(),
                                 req));
     }

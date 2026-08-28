@@ -9,7 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-import za.gov.helpdesk.ticket.model.Ticket;
+import za.gov.helpdesk.ticket.model.Priority;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -32,7 +32,7 @@ public class SlaPolicy {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, unique = true, length = 20)
-    private Ticket.Priority priority;
+    private Priority priority;
 
     // How many business minutes until first response is due
     @Column(name = "response_minutes", nullable = false)

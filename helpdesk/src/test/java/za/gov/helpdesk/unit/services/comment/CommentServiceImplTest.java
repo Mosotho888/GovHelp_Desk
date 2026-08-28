@@ -25,6 +25,7 @@ import za.gov.helpdesk.comment.repository.CommentRepository;
 import za.gov.helpdesk.comment.service.CommentQueryHelper;
 import za.gov.helpdesk.comment.service.impl.CommentServiceImpl;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
+import za.gov.helpdesk.ticket.model.Status;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
 import za.gov.helpdesk.ticket.service.TicketQueryHelper;
@@ -95,7 +96,7 @@ public class CommentServiceImplTest {
                         .id(10L)
                         .subject("Test ticket")
                         .description("desc")
-                        .status(Ticket.Status.OPEN)
+                        .status(Status.OPEN)
                         .requester(endUser)
                         .assignee(agent)
                         .createdAt(LocalDateTime.now())

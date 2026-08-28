@@ -1,5 +1,6 @@
 package za.gov.helpdesk.agent.repository.jpa;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,4 +18,7 @@ public interface AgentRepository extends JpaRepository<Agent, Long> {
     boolean existsByUserId(Long userId);
 
     long countByAvailability(Agent.Availability availability);
+
+    /** Candidate pool for category-based auto-routing: agents on shift in a given department. */
+    List<Agent> findByDepartmentAndAvailability(String department, Agent.Availability availability);
 }

@@ -13,7 +13,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.agent.repository.jpa.AgentRepository;
 import za.gov.helpdesk.sla.model.SlaPolicy;
-import za.gov.helpdesk.ticket.model.Ticket;
+import za.gov.helpdesk.ticket.model.Priority;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
 import za.gov.helpdesk.users.model.User;
 
@@ -48,13 +48,13 @@ public class TicketIntegrationTest extends BaseIntegrationTest {
         // Extra policies unique to Ticket testing
         slaPolicyRepository.save(
                 SlaPolicy.builder()
-                        .priority(Ticket.Priority.HIGH)
+                        .priority(Priority.HIGH)
                         .resolutionMinutes(120)
                         .responseMinutes(120)
                         .build());
         slaPolicyRepository.save(
                 SlaPolicy.builder()
-                        .priority(Ticket.Priority.URGENT)
+                        .priority(Priority.URGENT)
                         .resolutionMinutes(60)
                         .responseMinutes(60)
                         .build());

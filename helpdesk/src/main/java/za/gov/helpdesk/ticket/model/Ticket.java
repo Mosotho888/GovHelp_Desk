@@ -17,19 +17,20 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 import za.gov.helpdesk.agent.model.Agent;
+import za.gov.helpdesk.category.model.Category;
 import za.gov.helpdesk.users.model.User;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
 @Entity
 @Table(name = "TICKETS")
-@NoArgsConstructor
-@AllArgsConstructor
+@Setter
+@Getter
 @Builder
+@AllArgsConstructor
 public class Ticket {
 
     @Id
@@ -44,16 +45,15 @@ public class Ticket {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    @Builder.Default
     private Status status = Status.OPEN;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    @Builder.Default
     private Priority priority = Priority.MEDIUM;
 
-    @Column(length = 100)
-    private String category;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private Category category;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "requester_id", nullable = false)
@@ -72,6 +72,8 @@ public class Ticket {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    public Ticket() {}
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
@@ -81,20 +83,5 @@ public class Ticket {
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
-    }
-
-    public enum Status {
-        OPEN,
-        IN_PROGRESS,
-        ESCALATED,
-        RESOLVED,
-        CLOSED
-    }
-
-    public enum Priority {
-        LOW,
-        MEDIUM,
-        HIGH,
-        URGENT
     }
 }

@@ -8,7 +8,7 @@ import za.gov.helpdesk.sla.model.SlaPolicy;
 import za.gov.helpdesk.sla.model.TicketSla;
 import za.gov.helpdesk.sla.repository.SlaPolicyRepository;
 import za.gov.helpdesk.sla.repository.TicketSlaRepository;
-import za.gov.helpdesk.ticket.model.Ticket;
+import za.gov.helpdesk.ticket.model.Priority;
 
 import lombok.RequiredArgsConstructor;
 
@@ -47,12 +47,12 @@ public class SlaQueryHelper {
      * importance priority tier. Throws an illegal state runtime variance exception if an
      * administrator has neglected to configure baseline parameters.
      *
-     * @param priority the active {@link Ticket.Priority} level classification to inspect
+     * @param priority the active {@link Priority} level classification to inspect
      * @return the corresponding {@link SlaPolicy} rule configuration definition
      * @throws IllegalStateException if the target classification rules are completely absent from
      *     the database
      */
-    public SlaPolicy getPolicyOrThrow(final Ticket.Priority priority) {
+    public SlaPolicy getPolicyOrThrow(final Priority priority) {
         return slaPolicyRepository
                 .findByPriority(priority)
                 .orElseThrow(

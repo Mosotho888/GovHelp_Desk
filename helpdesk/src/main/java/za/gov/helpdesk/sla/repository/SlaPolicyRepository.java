@@ -5,8 +5,8 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import za.gov.helpdesk.sla.model.SlaPolicy;
-import za.gov.helpdesk.ticket.model.Ticket;
+import za.gov.helpdesk.ticket.model.Priority;
 
 public interface SlaPolicyRepository extends JpaRepository<SlaPolicy, Long> {
-    Optional<SlaPolicy> findByPriority(Ticket.Priority priority);
+    Optional<SlaPolicy> findByPriority(Priority priority);
 }

@@ -1,11 +1,16 @@
 package za.gov.helpdesk.ticket.service;
 
+import java.util.Set;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import za.gov.helpdesk.category.service.CategoryQueryHelper;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
+import za.gov.helpdesk.ticket.model.Priority;
+import za.gov.helpdesk.ticket.model.Status;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
 import za.gov.helpdesk.users.model.User;
@@ -24,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 public class TicketQueryHelper {
 
     private final TicketRepository ticketRepository;
+    private final CategoryQueryHelper categoryQuery;
 
     /**
      * Resolves a single ticket record by its primary key identifier, applying strict role-based
@@ -78,11 +84,13 @@ public class TicketQueryHelper {
      * filtered to unassigned queues or personal workloads, and system administrators bypass
      * filtering rules to view global infrastructure datasets.
      *
-     * @param status the optional lifecycle {@link Ticket.Status} filter criteria parameter, or null
-     * @param priority the optional importance {@link Ticket.Priority} filter criteria parameter, or
-     *     null
+     * @param status the optional lifecycle {@link Status} filter criteria parameter, or null
+     * @param priority the optional importance {@link Priority} filter criteria parameter, or null
      * @param assigneeId the optional primary target identifier key of an assigned agent profile, or
      *     null
+     * @param categoryId optional category id to filter by; when {@code includeDescendants} is true
+     *     this also matches every subcategory beneath it
+     * @param includeDescendants whether {@code categoryId} should be expanded to its full subtree
      * @param pageable pagination layout specifications including sorting variables and chunk
      *     constraints
      * @param actor the security {@link User} execution context requesting the dataset slice
@@ -90,9 +98,11 @@ public class TicketQueryHelper {
      *     ticket records
      */
     public Page<Ticket> findWithFiltersAndSecurity(
-            final Ticket.Status status,
-            final Ticket.Priority priority,
+            final Status status,
+            final Priority priority,
             final Long assigneeId,
+            final Long categoryId,
+            final boolean includeDescendants,
             final Pageable pageable,
             final User actor) {
         // 1. Regular users only get their own tickets
@@ -100,16 +110,36 @@ public class TicketQueryHelper {
             return ticketRepository.findByRequester(actor, pageable);
         }
 
+        final Set<Long> categoryIds = resolveCategoryIds(categoryId, includeDescendants);
+
         // 2. Agents only get unassigned tickets or tickets assigned to them
         if (actor.getRole() == User.Role.AGENT) {
             final String statusStr = status != null ? status.name() : null;
             final String priorityStr = priority != null ? priority.name() : null;
 
             return ticketRepository.findWithFiltersForAgent(
-                    statusStr, priorityStr, assigneeId, actor.getEmail(), pageable);
+                    statusStr, priorityStr, assigneeId, categoryIds, actor.getEmail(), pageable);
         }
 
         // 3. Admins get raw global system access
-        return ticketRepository.findWithFilters(status, priority, assigneeId, pageable);
+        return ticketRepository.findWithFilters(
+                status, priority, assigneeId, categoryIds, pageable);
+    }
+
+    /**
+     * Expands {@code categoryId} to include its descendants when requested, so filtering by a
+     * parent category (e.g. "Hardware") also surfaces tickets filed under its subcategories.
+     */
+    private Set<Long> resolveCategoryIds(final Long categoryId, final boolean includeDescendants) {
+        if (categoryId == null) {
+            return null;
+        }
+        if (!includeDescendants) {
+            // Still validates the id exists via findOrThrow inside resolveWithDescendants would be
+            // overkill for a single id; a plain existence check keeps the 404 behaviour consistent.
+            categoryQuery.findOrThrow(categoryId);
+            return Set.of(categoryId);
+        }
+        return categoryQuery.resolveWithDescendants(categoryId);
     }
 }
