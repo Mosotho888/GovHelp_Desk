@@ -22,6 +22,7 @@ import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.exception.DuplicateResourceException;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
+import za.gov.helpdesk.users.model.Role;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 import za.gov.helpdesk.users.service.UserQueryHelper;
@@ -38,7 +39,7 @@ import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AgentServiceImpl unit tests")
-public class AgentServiceImplTest {
+class AgentServiceImplTest {
 
     @Mock private AgentRepository agentRepository;
     @Mock private UserRepository userRepository;
@@ -62,7 +63,7 @@ public class AgentServiceImplTest {
                         .id(10L)
                         .name("New Agent")
                         .email("newagent@gov.za")
-                        .role(User.Role.USER)
+                        .role(Role.USER)
                         .active(true)
                         .build();
         adminUser =
@@ -70,7 +71,7 @@ public class AgentServiceImplTest {
                         .id(1L)
                         .name("Admin")
                         .email("admin@gov.za")
-                        .role(User.Role.ADMIN)
+                        .role(Role.ADMIN)
                         .active(true)
                         .build();
         agent =
@@ -114,7 +115,7 @@ public class AgentServiceImplTest {
     @Test
     @DisplayName("createAgent() does not re-promote user already in ADMIN role")
     void createAgent_alreadyAdmin_doesNotDowngradeToAgent() {
-        targetUser.setRole(User.Role.ADMIN);
+        targetUser.setRole(Role.ADMIN);
         final CreateAgentRequest req = new CreateAgentRequest();
         req.setUserId(10L);
 
@@ -246,7 +247,7 @@ public class AgentServiceImplTest {
 
     @Test
     @DisplayName("getAgentById() throws ResourceNotFoundException for unknown agent")
-    void getAgentById_unknownId_throwsNotFound() {
+    void fetchAgentById_unknownId_throwsNotFound() {
         given(agentQuery.findOrThrow(999L)).willThrow(new ResourceNotFoundException("Agent", 999L));
 
         assertThatThrownBy(() -> agentService.getAgentById(999L))

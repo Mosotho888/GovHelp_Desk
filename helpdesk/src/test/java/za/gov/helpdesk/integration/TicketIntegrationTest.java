@@ -7,14 +7,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.agent.repository.jpa.AgentRepository;
 import za.gov.helpdesk.sla.model.SlaPolicy;
 import za.gov.helpdesk.ticket.model.Priority;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
+import za.gov.helpdesk.users.model.Role;
 import za.gov.helpdesk.users.model.User;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -24,12 +23,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @DisplayName("Ticket integration tests")
-public class TicketIntegrationTest extends BaseIntegrationTest {
+class TicketIntegrationTest extends BaseIntegrationTest {
 
     @Autowired private AgentRepository agentRepository;
     @Autowired private TicketRepository ticketRepository;
-
-    @MockitoBean private JavaMailSender mailSender;
 
     private String userToken;
     private String agentToken;
@@ -143,7 +140,7 @@ public class TicketIntegrationTest extends BaseIntegrationTest {
 
     @Test
     @DisplayName("GET /tickets returns only own tickets for USER role")
-    void getTickets_userRole_seesOnlyOwnTickets() throws Exception {
+    void fetchTickets_userRole_seesOnlyOwnTickets() throws Exception {
         mvc.perform(
                 post("/v1/tickets")
                         .header("Authorization", "Bearer " + userToken)
@@ -167,17 +164,14 @@ public class TicketIntegrationTest extends BaseIntegrationTest {
 
     @Test
     @DisplayName("GET /tickets/{id} returns 404 for non-existent ticket")
-    void getTicketById_notFound_returns404() throws Exception {
+    void fetchTicketById_notFound_returns404() throws Exception {
         mvc.perform(get("/v1/tickets/99999").header("Authorization", "Bearer " + userToken))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     @DisplayName("GET /tickets/{id} returns 403 when USER requests another user's ticket")
-    void getTicketById_idor_returns403() throws Exception {
-        // Agent creates a ticket for Jane — John should not be able to fetch it
-        final String agentUserToken = agentToken; // Jane is AGENT, cannot create tickets for others
-
+    void fetchTicketById_idor_returns403() throws Exception {
         // Create a ticket as John
         final String johnTicket =
                 mvc.perform(
@@ -203,7 +197,7 @@ public class TicketIntegrationTest extends BaseIntegrationTest {
                         .name("Eve Attacker")
                         .email("eve@citizen.za")
                         .passwordHash(passwordEncoder.encode("EvePass1!"))
-                        .role(User.Role.USER)
+                        .role(Role.USER)
                         .active(true)
                         .loginAttempts(0)
                         .timezone("Africa/Johannesburg")

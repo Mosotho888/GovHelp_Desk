@@ -22,6 +22,7 @@ import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.service.TicketQueryHelper;
+import za.gov.helpdesk.users.model.Role;
 import za.gov.helpdesk.users.model.User;
 
 import lombok.RequiredArgsConstructor;
@@ -150,7 +151,7 @@ public class AttachmentServiceImpl implements AttachmentService {
         final Ticket parentTicket = attachment.getTicket();
 
         // Security Update: Evaluate ownership boundaries across parent ticket context
-        final boolean isAdmin = actor.getRole() == User.Role.ADMIN;
+        final boolean isAdmin = actor.getRole() == Role.ADMIN;
         final boolean isUploader = attachment.getUploader().getId().equals(actor.getId());
         final boolean isTicketRequester = parentTicket.getRequester().getId().equals(actor.getId());
         final boolean isTicketAssignee =

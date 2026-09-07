@@ -11,13 +11,14 @@ import za.gov.helpdesk.comment.model.Comment;
 import za.gov.helpdesk.comment.policy.CommentAccessPolicy;
 import za.gov.helpdesk.ticket.model.Status;
 import za.gov.helpdesk.ticket.model.Ticket;
+import za.gov.helpdesk.users.model.Role;
 import za.gov.helpdesk.users.model.User;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("CommentAccessPolicy unit tests")
-public class CommentAccessPolicyTest {
+class CommentAccessPolicyTest {
 
     private final CommentAccessPolicy policy = new CommentAccessPolicy();
 
@@ -28,9 +29,9 @@ public class CommentAccessPolicyTest {
 
     @BeforeEach
     void setUp() {
-        admin = user(1L, "admin@gov.za", User.Role.ADMIN);
-        agent = user(2L, "agent@gov.za", User.Role.AGENT);
-        otherAgent = user(3L, "other@gov.za", User.Role.AGENT);
+        admin = user(1L, "admin@gov.za", Role.ADMIN);
+        agent = user(2L, "agent@gov.za", Role.AGENT);
+        otherAgent = user(3L, "other@gov.za", Role.AGENT);
 
         ticket =
                 Ticket.builder()
@@ -88,7 +89,7 @@ public class CommentAccessPolicyTest {
         policy.assertCanMutate(admin, fresh);
     }
 
-    private User user(final Long id, final String email, final User.Role role) {
+    private User user(final Long id, final String email, final Role role) {
         return User.builder()
                 .id(id)
                 .name("User " + id)

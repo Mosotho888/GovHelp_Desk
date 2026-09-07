@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import za.gov.helpdesk.exception.ResourceNotFoundException;
+import za.gov.helpdesk.users.model.Role;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 
@@ -74,8 +75,8 @@ public class UserQueryHelper {
                         .orElseThrow(() -> new ResourceNotFoundException("User", userId));
 
         // Promotes USER role to AGENT while safely leaving ADMIN permissions intact
-        if (user.getRole() == User.Role.USER) {
-            user.setRole(User.Role.AGENT);
+        if (user.getRole() == Role.USER) {
+            user.setRole(Role.AGENT);
             return userRepository.save(user);
         }
         return user;

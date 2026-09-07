@@ -6,6 +6,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 
 import za.gov.helpdesk.comment.model.Comment;
+import za.gov.helpdesk.users.model.Role;
 import za.gov.helpdesk.users.model.User;
 
 /**
@@ -33,7 +34,7 @@ public class CommentAccessPolicy {
      * @return true if the access context passes authorization boundaries, false otherwise
      */
     public boolean canMutate(final User user, final Comment comment) {
-        final boolean isAdmin = user.getRole() == User.Role.ADMIN;
+        final boolean isAdmin = user.getRole() == Role.ADMIN;
         final boolean isAuthor = comment.getAuthor().getId().equals(user.getId());
         final boolean withinWindow =
                 comment.getCreatedAt()

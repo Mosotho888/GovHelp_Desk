@@ -18,6 +18,7 @@ import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
 import za.gov.helpdesk.ticket.service.TicketQueryHelper;
 import za.gov.helpdesk.ticket.service.TicketService;
+import za.gov.helpdesk.users.model.Role;
 import za.gov.helpdesk.users.model.User;
 
 import lombok.RequiredArgsConstructor;
@@ -108,7 +109,7 @@ public class TicketServiceImpl implements TicketService {
     @Transactional
     public void deleteTicket(final Long ticketId, final User actor) {
 
-        if (actor.getRole() != User.Role.ADMIN) {
+        if (actor.getRole() != Role.ADMIN) {
             throw new AccessDeniedException(
                     "Administrative privileges are required to purge system tickets");
         }
@@ -119,7 +120,7 @@ public class TicketServiceImpl implements TicketService {
 
     private void processStatusUpdate(
             final Ticket ticket, final UpdateTicketRequest request, final User actor) {
-        if (request.getStatus() != null && !ticket.getStatus().equals(request.getStatus())) {
+        if (request.getStatus() != null && ticket.getStatus() != request.getStatus()) {
             updateCoordinator.applyStatusChange(ticket, request.getStatus(), actor);
         }
     }
@@ -135,7 +136,7 @@ public class TicketServiceImpl implements TicketService {
 
     private void processPriorityUpdate(
             final Ticket ticket, final UpdateTicketRequest request, final User actor) {
-        if (request.getPriority() != null && !ticket.getPriority().equals(request.getPriority())) {
+        if (request.getPriority() != null && ticket.getPriority() != request.getPriority()) {
             updateCoordinator.applyPriorityChange(ticket, request.getPriority(), actor);
         }
     }

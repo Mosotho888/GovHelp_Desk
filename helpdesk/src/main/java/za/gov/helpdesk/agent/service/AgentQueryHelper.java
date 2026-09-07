@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.agent.repository.jpa.AgentRepository;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
+import za.gov.helpdesk.users.model.Role;
 import za.gov.helpdesk.users.model.User;
 
 import lombok.RequiredArgsConstructor;
@@ -49,7 +50,7 @@ public class AgentQueryHelper {
         final Agent agent = findOrThrow(id);
 
         // Secure target access boundaries: 403 if they exist but you aren't allowed to touch them
-        if (actor.getRole() != User.Role.ADMIN && !agent.getUser().getId().equals(actor.getId())) {
+        if (actor.getRole() != Role.ADMIN && !agent.getUser().getId().equals(actor.getId())) {
             throw new AccessDeniedException(
                     "You do not have permission to access this agent profile");
         }

@@ -18,6 +18,7 @@ import za.gov.helpdesk.users.dto.request.CreateUserRequest;
 import za.gov.helpdesk.users.dto.request.UpdateUserRequest;
 import za.gov.helpdesk.users.dto.response.UserResponse;
 import za.gov.helpdesk.users.mapper.UserMapper;
+import za.gov.helpdesk.users.model.Role;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 import za.gov.helpdesk.users.service.PasswordManagementService;
@@ -53,7 +54,7 @@ public class UserServiceImpl implements UserService {
                         .name(request.getName())
                         .email(request.getEmail().toLowerCase().trim())
                         .passwordHash(passwordEncoder.encode(request.getPassword()))
-                        .role(request.getRole() != null ? request.getRole() : User.Role.USER)
+                        .role(request.getRole() != null ? request.getRole() : Role.USER)
                         .phone(request.getPhone())
                         .timezone(
                                 request.getTimezone() != null
@@ -69,7 +70,8 @@ public class UserServiceImpl implements UserService {
         } catch (final DataIntegrityViolationException e) {
             log.error("Data integrity violation while registering email={}", request.getEmail(), e);
             throw new DuplicateResourceException(
-                    "A user with email '" + request.getEmail() + "' was simultaneously registered");
+                    "A user with email '" + request.getEmail() + "' was simultaneously registered",
+                    e);
         }
 
         auditPublisher.publishAudit(

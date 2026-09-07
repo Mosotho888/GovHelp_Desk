@@ -26,6 +26,7 @@ import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
 import za.gov.helpdesk.ticket.service.TicketQueryHelper;
 import za.gov.helpdesk.ticket.service.impl.TicketServiceImpl;
 import za.gov.helpdesk.ticket.service.impl.TicketUpdateCoordinator;
+import za.gov.helpdesk.users.model.Role;
 import za.gov.helpdesk.users.model.User;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -65,7 +66,7 @@ class TicketServiceImplTest {
                         .id(1L)
                         .name("Jane Agent")
                         .email("jane@gov.za")
-                        .role(User.Role.AGENT)
+                        .role(Role.AGENT)
                         .active(true)
                         .build();
 
@@ -74,7 +75,7 @@ class TicketServiceImplTest {
                         .id(2L)
                         .name("John Public")
                         .email("john@citizen.za")
-                        .role(User.Role.USER)
+                        .role(Role.USER)
                         .active(true)
                         .build();
 
@@ -83,7 +84,7 @@ class TicketServiceImplTest {
                         .id(3L)
                         .name("T Mofo")
                         .email("tmofo@citizen.za")
-                        .role(User.Role.ADMIN)
+                        .role(Role.ADMIN)
                         .active(true)
                         .build();
 
@@ -126,8 +127,9 @@ class TicketServiceImplTest {
 
         final TicketResponse response = ticketService.createTicket(req, endUser);
 
-        assertThat(response.getSubject()).isEqualTo("Login broken");
-        assertThat(response.getStatus()).isEqualTo(Status.OPEN);
+        assertThat(response)
+                .extracting(TicketResponse::getSubject, TicketResponse::getStatus)
+                .containsExactly("Login broken", Status.OPEN);
 
         then(ticketRepository).should(times(1)).save(any(Ticket.class));
         then(updateCoordinator).should(times(1)).handlePostCreation(openTicket, endUser);
@@ -217,7 +219,7 @@ class TicketServiceImplTest {
 
     @Test
     @DisplayName("getTicketById() returns response for authorised principal")
-    void getTicketById_authorised_returnsResponse() {
+    void fetchTicketById_authorised_returnsResponse() {
         given(ticketQuery.findOrThrow(100L, endUser)).willReturn(openTicket);
         given(ticketMapper.toTicketResponse(openTicket)).willReturn(responseFor(openTicket));
 
@@ -228,7 +230,7 @@ class TicketServiceImplTest {
 
     @Test
     @DisplayName("getTicketById() throws ResourceNotFoundException for unknown ID")
-    void getTicketById_unknownId_throwsNotFound() {
+    void fetchTicketById_unknownId_throwsNotFound() {
         given(ticketQuery.findOrThrow(999L, endUser))
                 .willThrow(new ResourceNotFoundException("Ticket", 999L));
 
@@ -248,7 +250,7 @@ class TicketServiceImplTest {
         // 1. Simulate the coordinator modifying the state of the ticket object
         doAnswer(
                         invocation -> {
-                            Ticket t = invocation.getArgument(0);
+                            final Ticket t = invocation.getArgument(0);
                             t.setStatus(Status.IN_PROGRESS);
                             return null;
                         })
@@ -321,7 +323,7 @@ class TicketServiceImplTest {
         // 1. Simulate the coordinator modifying the priority state of the ticket object
         doAnswer(
                         invocation -> {
-                            Ticket t = invocation.getArgument(0);
+                            final Ticket t = invocation.getArgument(0);
                             t.setPriority(Priority.URGENT);
                             return null;
                         })

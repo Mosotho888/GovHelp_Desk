@@ -7,6 +7,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
+import za.gov.helpdesk.users.model.Role;
 import za.gov.helpdesk.users.model.User;
 
 import static org.hamcrest.Matchers.hasSize;
@@ -17,7 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @DisplayName("Agent integration tests")
-public class AgentIntegrationTest extends BaseIntegrationTest {
+class AgentIntegrationTest extends BaseIntegrationTest {
 
     private String adminToken;
     private String agentToken;
@@ -68,7 +69,7 @@ public class AgentIntegrationTest extends BaseIntegrationTest {
                                 .name("Bob Agent")
                                 .email("bob@gov.za")
                                 .passwordHash(passwordEncoder.encode("AgentPass1!"))
-                                .role(User.Role.AGENT)
+                                .role(Role.AGENT)
                                 .active(true)
                                 .loginAttempts(0)
                                 .timezone("Africa/Johannesburg")
@@ -119,7 +120,7 @@ public class AgentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     @DisplayName("GET /agents returns paginated list for agent and admin roles")
-    void getAllAgents_agentOrAdmin_returns200() throws Exception {
+    void fetchAllAgents_agentOrAdmin_returns200() throws Exception {
         mvc.perform(get("/v1/agents").header("Authorization", "Bearer " + agentToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(1)))
@@ -132,14 +133,14 @@ public class AgentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     @DisplayName("GET /agents returns 403 for USER role")
-    void getAllAgents_userRole_returns403() throws Exception {
+    void fetchAllAgents_userRole_returns403() throws Exception {
         mvc.perform(get("/v1/agents").header("Authorization", "Bearer " + userToken))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     @DisplayName("GET /agents/{id} returns agent by ID")
-    void getAgentById_existingId_returns200() throws Exception {
+    void fetchAgentById_existingId_returns200() throws Exception {
         mvc.perform(get("/v1/agents/" + agentId).header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(agentId))
@@ -148,7 +149,7 @@ public class AgentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     @DisplayName("GET /agents/{id} returns 404 for non-existent ID")
-    void getAgentById_notFound_returns404() throws Exception {
+    void fetchAgentById_notFound_returns404() throws Exception {
         mvc.perform(get("/v1/agents/99999").header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isNotFound());
     }
@@ -186,7 +187,7 @@ public class AgentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     @DisplayName("GET /agents/{id}/stats returns ticket statistics for admin")
-    void getAgentStats_adminToken_returns200() throws Exception {
+    void fetchAgentStats_adminToken_returns200() throws Exception {
         mvc.perform(
                         get("/v1/agents/" + agentId + "/stats")
                                 .header("Authorization", "Bearer " + adminToken))
@@ -197,7 +198,7 @@ public class AgentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     @DisplayName("GET /agents/{id}/stats returns 403 for non-admin")
-    void getAgentStats_nonAdmin_returns403() throws Exception {
+    void fetchAgentStats_nonAdmin_returns403() throws Exception {
         mvc.perform(
                         get("/v1/agents/" + agentId + "/stats")
                                 .header("Authorization", "Bearer " + agentToken))

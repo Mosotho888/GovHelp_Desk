@@ -17,6 +17,7 @@ import za.gov.helpdesk.outbox.relay.OutboxWriter;
 import za.gov.helpdesk.ticket.model.Priority;
 import za.gov.helpdesk.ticket.model.Status;
 import za.gov.helpdesk.ticket.model.Ticket;
+import za.gov.helpdesk.users.model.Role;
 import za.gov.helpdesk.users.model.User;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -46,14 +47,14 @@ class TicketEmailNotificationPublisherTest {
                         .id(1L)
                         .name("John Public")
                         .email("john@citizen.za")
-                        .role(User.Role.USER)
+                        .role(Role.USER)
                         .build();
         agentUser =
                 User.builder()
                         .id(2L)
                         .name("Jane Agent")
                         .email("jane@gov.za")
-                        .role(User.Role.AGENT)
+                        .role(Role.AGENT)
                         .build();
         final Agent agent = Agent.builder().id(10L).user(agentUser).build();
 
@@ -87,17 +88,21 @@ class TicketEmailNotificationPublisherTest {
                         captor.capture());
 
         final TicketEmailNotificationMessage message = captor.getValue();
-        assertThat(message.getTrigger()).isEqualTo(AuditLog.AuditAction.STATUS_CHANGED);
-        assertThat(message.getTicketId()).isEqualTo(100L);
-        assertThat(message.getTicketNumber()).isEqualTo("TKT-100");
-        assertThat(message.getTicketSubject()).isEqualTo("Login broken");
-        assertThat(message.getTicketStatus()).isEqualTo("IN_PROGRESS");
-        assertThat(message.getTicketPriority()).isEqualTo("HIGH");
-        assertThat(message.getComment()).isEqualTo("Working on it");
-        assertThat(message.getCustomerEmail()).isEqualTo("john@citizen.za");
-        assertThat(message.getCustomerName()).isEqualTo("John Public");
-        assertThat(message.getAgentEmail()).isEqualTo("jane@gov.za");
-        assertThat(message.getAgentName()).isEqualTo("Jane Agent");
+        final TicketEmailNotificationMessage expected =
+                TicketEmailNotificationMessage.builder()
+                        .trigger(AuditLog.AuditAction.STATUS_CHANGED)
+                        .ticketId(100L)
+                        .ticketNumber("TKT-100")
+                        .ticketSubject("Login broken")
+                        .ticketStatus("IN_PROGRESS")
+                        .ticketPriority("HIGH")
+                        .comment("Working on it")
+                        .customerEmail("john@citizen.za")
+                        .customerName("John Public")
+                        .agentEmail("jane@gov.za")
+                        .agentName("Jane Agent")
+                        .build();
+        assertThat(message).usingRecursiveComparison().isEqualTo(expected);
     }
 
     @Test
@@ -117,8 +122,11 @@ class TicketEmailNotificationPublisherTest {
                         captor.capture());
 
         final TicketEmailNotificationMessage msg = captor.getValue();
-        assertThat(msg.getAgentEmail()).isNull();
-        assertThat(msg.getAgentName()).isNull();
+        assertThat(msg)
+                .extracting(
+                        TicketEmailNotificationMessage::getAgentEmail,
+                        TicketEmailNotificationMessage::getAgentName)
+                .containsExactly(null, null);
     }
 
     @Test

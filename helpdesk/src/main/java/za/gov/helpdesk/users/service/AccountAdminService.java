@@ -1,6 +1,7 @@
 package za.gov.helpdesk.users.service;
 
 import za.gov.helpdesk.users.dto.response.UserResponse;
+import za.gov.helpdesk.users.model.Role;
 import za.gov.helpdesk.users.model.User;
 
 public interface AccountAdminService {
@@ -9,5 +10,5 @@ public interface AccountAdminService {
 
     void reactivateUser(Long id, User admin);
 
-    UserResponse changeUserRole(Long id, User.Role newRole, User admin);
+    UserResponse changeUserRole(Long id, Role newRole, User admin);
 }
