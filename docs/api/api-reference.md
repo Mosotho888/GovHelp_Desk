@@ -16,16 +16,16 @@ paths requires a JWT bearer token:
 Authorization: Bearer <access_token>
 ```
 
-Get a token from `POST /v1/auth/login`, and refresh it from `POST /v1/auth/refresh` before it expires — see [
+Get a token from `POST /v1/auth/login`, and refresh it from `POST /v1/auth/refresh` before it expires - see [
 `docs/security/README.md`](../security/security-model.md) for token lifetimes and the full authentication model.
 
 ## Roles
 
-| Role    | Description                                        |
-|---------|----------------------------------------------------|
-| `USER`  | A citizen who submits and tracks their own tickets |
-| `AGENT` | A support agent working assigned/queued tickets    |
-| `ADMIN` | Full administrative access                         |
+| Role    | Description                                         |
+|---------|-----------------------------------------------------|
+| `USER`  | A employee who submits and tracks their own tickets |
+| `AGENT` | A support agent working assigned/queued tickets     |
+| `ADMIN` | Full administrative access                          |
 
 Authorization on each endpoint below is enforced with Spring Security's `@PreAuthorize`
 method security - where a "Role" column says `USER+`, it means any authenticated role (the endpoint has no explicit
@@ -114,6 +114,34 @@ Entity`. See [`docs/database/database.md`](../database/database.md#ticket_catego
 [`ADR 0006`](../adr/0006-hierarchical-ticket-categories.md#category-based-routing) for how `defaultDepartment`
 drives ticket auto-assignment.
 
+## Assets - `/v1/assets`
+
+| Method   | Path            | Role             | Description                                                   |
+|----------|-----------------|------------------|---------------------------------------------------------------|
+| `POST`   | `/`             | `ADMIN`          | Register a new asset                                          |
+| `GET`    | `/`             | `AGENT`, `ADMIN` | List assets, filterable by `type`, `status`, `assignedUserId` |
+| `GET`    | `/{id}`         | `AGENT`, `ADMIN` | Get an asset by ID                                            |
+| `PATCH`  | `/{id}`         | `AGENT`, `ADMIN` | Update an asset's details, status, or assignment              |
+| `DELETE` | `/{id}`         | `ADMIN`          | Retire an asset (soft delete; history is preserved)           |
+| `GET`    | `/{id}/tickets` | `AGENT`, `ADMIN` | Get an asset's device history - every ticket linked to it     |
+
+`asset_tag` is auto-generated (`AST-{id}`) if not supplied at creation. `warrantyStatus` on the response (`ACTIVE`/
+`EXPIRING_SOON`/`EXPIRED`/`NO_WARRANTY_INFO`) is computed at read time from `warrantyExpiryDate` -
+see [ADR 0007](../adr/0007-asset-management.md). To clear an asset's current owner, set
+`clearAssignedUser: true` on the `PATCH` body rather than sending `assignedUserId: null`, since the two are
+indistinguishable over JSON otherwise.
+
+## Ticket Assets - `/v1/tickets/{ticketId}/assets`
+
+| Method   | Path         | Role             | Description                                  |
+|----------|--------------|------------------|----------------------------------------------|
+| `POST`   | `/{assetId}` | `AGENT`, `ADMIN` | Link an asset to a ticket                    |
+| `DELETE` | `/{assetId}` | `AGENT`, `ADMIN` | Unlink an asset from a ticket                |
+| `GET`    | `/`          | `AGENT`, `ADMIN` | List the assets currently linked to a ticket |
+
+Linking or unlinking an asset publishes an audit entry against both the ticket and the asset, so the event is
+discoverable from either `GET /v1/audit/tickets/{id}` or `GET /v1/audit/assets/{id}`.
+
 ## Comments - `/v1`
 
 | Method   | Path                            | Role                              | Description                                                        |
@@ -158,6 +186,7 @@ SLA policies are seeded per priority (response/resolution minutes, warning thres
 | `GET`  | `/tickets/{id}`    | `AGENT`, `ADMIN` | Audit trail for a ticket                                         |
 | `GET`  | `/users/{id}`      | `ADMIN`          | Audit trail for a user                                           |
 | `GET`  | `/agents/{id}`     | `ADMIN`          | Audit trail for an agent                                         |
+| `GET`  | `/assets/{id}`     | `AGENT`, `ADMIN` | Audit trail for an asset                                         |
 | `GET`  | `/auth`            | `ADMIN`          | Paginated authentication-related audit events (logins, lockouts) |
 | `GET`  | `/actor/{actorId}` | `ADMIN`          | Paginated audit events performed by a given actor                |
 | `GET`  | `/action/{action}` | `ADMIN`          | Paginated audit events of a given action type                    |

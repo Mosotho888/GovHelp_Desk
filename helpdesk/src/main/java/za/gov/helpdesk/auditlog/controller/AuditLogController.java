@@ -85,4 +85,11 @@ public class AuditLogController {
                     final Pageable pageable) {
         return ResponseEntity.ok(auditService.getLogsByAction(action, pageable));
     }
+
+    @GetMapping("/assets/{id}")
+    @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
+    @Operation(summary = "Get full audit trail for a specific asset")
+    public ResponseEntity<List<AuditLogResponse>> getAssetAuditLogs(@PathVariable final Long id) {
+        return ResponseEntity.ok(auditService.getLogsForEntity(AuditLog.EntityType.ASSET, id));
+    }
 }

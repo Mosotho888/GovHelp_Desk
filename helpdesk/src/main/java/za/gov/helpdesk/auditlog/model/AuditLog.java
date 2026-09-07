@@ -84,6 +84,7 @@ public class AuditLog {
         AGENT,
         COMMENT,
         ATTACHMENT,
+        ASSET,
         AUTH
     }
 
@@ -113,6 +114,13 @@ public class AuditLog {
         ATTACHMENT_UPLOADED,
         ATTACHMENT_DELETED,
         ATTACHMENT_DOWNLOADED,
+        ASSET_CREATED,
+        ASSET_UPDATED,
+        ASSET_STATUS_CHANGED,
+        ASSET_ASSIGNED,
+        ASSET_RETIRED,
+        ASSET_LINKED_TO_TICKET,
+        ASSET_UNLINKED_FROM_TICKET,
         LOGIN_SUCCESS,
         LOGIN_FAILED,
         ACCOUNT_LOCKED,
