@@ -33,6 +33,26 @@
         <jacoco.version>0.8.11</jacoco.version>
         <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
 
+        <!-- Defaults for the opt-in black-box API test suite (see the api-tests
+            profile below). Override any of these with -D on the command line to point
+            the suite at a different environment or account, e.g.: mvn verify -Papi-tests
+            -Dapi.baseUri=https://staging... The email defaults match the seeded demo
+            accounts in V2__seed_data.sql; the password defaults are intentionally NOT
+            the real seeded password hashes' plaintext (that value isn't committed to
+            source control) - override them with -D or an environment-backed settings.xml
+            <server> profile when actually running the suite. -->
+        <api.baseUri>http://localhost:8080</api.baseUri>
+        <api.admin.email>admin@helpdesk.gov.za</api.admin.email>
+        <api.admin.password>changeme</api.admin.password>
+        <api.agent.email>thabo.m@company.co.za</api.agent.email>
+        <api.agent.password>changeme</api.agent.password>
+        <api.agent2.email>s.jenkins@it.com</api.agent2.email>
+        <api.agent2.password>changeme</api.agent2.password>
+        <api.user.email>lerato.d@client.org</api.user.email>
+        <api.user.password>changeme</api.user.password>
+        <api.user2.email>m.thompson@gmail.com</api.user2.email>
+        <api.user2.password>changeme</api.user2.password>
+
         <spotless.version>2.43.0</spotless.version>
         <google-java-format.version>1.22.0</google-java-format.version>
         <checkstyle.version>13.5.0</checkstyle.version>
@@ -213,6 +233,11 @@
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>json-schema-validator</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -581,4 +606,59 @@
             </plugin>
         </plugins>
     </reporting>
+
+    <!-- Opt-in profile for the black-box API test suite (src/test/java/.../api/*ApiIT.java).
+        These tests are NOT unit or Spring-context integration tests: they are pure
+        HTTP client tests written with REST Assured that exercise a *running* instance
+        of the application as an external black box, the same way a QA engineer would
+        test any deployed API regardless of what it's built with. They are deliberately
+        excluded from the default `mvn test` / `mvn verify` run (via the *ApiIT naming
+        convention, which the default Surefire include pattern does not match) so
+        that CI and local builds never fail just because no server happens to be
+        running. Usage: 1. Start the application (locally via docker compose, or
+        point at any deployed environment - local, staging, the public demo, etc).
+        2. Run: mvn verify -Papi-tests \ -Dapi.baseUri=http://localhost:8080 \ -Dapi.admin.email=admin@helpdesk.gov.za
+        -Dapi.admin.password=... \ -Dapi.agent.email=... -Dapi.agent.password=...
+        \ -Dapi.user.email=... -Dapi.user.password=... All -D properties fall back
+        to sane localhost defaults if omitted; see BaseApiTest. -->
+    <profiles>
+        <profile>
+            <id>api-tests</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <version>3.2.5</version>
+                        <configuration>
+                            <includes>
+                                <include>**/*ApiIT.java</include>
+                            </includes>
+                            <systemPropertyVariables>
+                                <api.baseUri>${api.baseUri}</api.baseUri>
+                                <api.admin.email>${api.admin.email}</api.admin.email>
+                                <api.admin.password>${api.admin.password}</api.admin.password>
+                                <api.agent.email>${api.agent.email}</api.agent.email>
+                                <api.agent.password>${api.agent.password}</api.agent.password>
+                                <api.agent2.email>${api.agent2.email}</api.agent2.email>
+                                <api.agent2.password>${api.agent2.password}</api.agent2.password>
+                                <api.user.email>${api.user.email}</api.user.email>
+                                <api.user.password>${api.user.password}</api.user.password>
+                                <api.user2.email>${api.user2.email}</api.user2.email>
+                                <api.user2.password>${api.user2.password}</api.user2.password>
+                            </systemPropertyVariables>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

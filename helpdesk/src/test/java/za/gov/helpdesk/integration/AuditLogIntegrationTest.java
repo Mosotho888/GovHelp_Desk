@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @DisplayName("Audit Log Integration Tests")
-public class AuditLogIntegrationTest extends BaseIntegrationTest {
+class AuditLogIntegrationTest extends BaseIntegrationTest {
 
     @Autowired private AgentRepository agentRepository;
     @Autowired private TicketRepository ticketRepository;
@@ -95,7 +95,7 @@ public class AuditLogIntegrationTest extends BaseIntegrationTest {
 
     @Test
     @DisplayName("GET /v1/audit/tickets/{id} returns 200 for AGENT and ADMIN")
-    void getTicketAuditLog_agentAndAdmin_returns200() throws Exception {
+    void fetchTicketAuditLog_agentAndAdmin_returns200() throws Exception {
         mvc.perform(
                         get("/v1/audit/tickets/" + ticketId)
                                 .header("Authorization", "Bearer " + agentToken))
@@ -109,7 +109,7 @@ public class AuditLogIntegrationTest extends BaseIntegrationTest {
 
     @Test
     @DisplayName("GET /v1/audit/tickets/{id} returns 403 for USER role")
-    void getTicketAuditLog_userRole_returns403() throws Exception {
+    void fetchTicketAuditLog_userRole_returns403() throws Exception {
         mvc.perform(
                         get("/v1/audit/tickets/" + ticketId)
                                 .header("Authorization", "Bearer " + userToken))
@@ -118,13 +118,13 @@ public class AuditLogIntegrationTest extends BaseIntegrationTest {
 
     @Test
     @DisplayName("GET /v1/audit/tickets/{id} returns 401 without token")
-    void getTicketAuditLog_noToken_returns401() throws Exception {
+    void fetchTicketAuditLog_noToken_returns401() throws Exception {
         mvc.perform(get("/v1/audit/tickets/" + ticketId)).andExpect(status().isUnauthorized());
     }
 
     @Test
     @DisplayName("GET /v1/audit/users/{id} returns 200 for ADMIN only")
-    void getUserAuditLog_adminToken_returns200() throws Exception {
+    void fetchUserAuditLog_adminToken_returns200() throws Exception {
         mvc.perform(
                         get("/v1/audit/users/" + agentUserId)
                                 .header("Authorization", "Bearer " + adminToken))
@@ -133,7 +133,7 @@ public class AuditLogIntegrationTest extends BaseIntegrationTest {
 
     @Test
     @DisplayName("GET /v1/audit/users/{id} returns 403 for AGENT")
-    void getUserAuditLog_agentToken_returns403() throws Exception {
+    void fetchUserAuditLog_agentToken_returns403() throws Exception {
         mvc.perform(
                         get("/v1/audit/users/" + agentUserId)
                                 .header("Authorization", "Bearer " + agentToken))
@@ -142,7 +142,7 @@ public class AuditLogIntegrationTest extends BaseIntegrationTest {
 
     @Test
     @DisplayName("GET /v1/audit/auth returns paginated auth events for ADMIN")
-    void getAuthLogs_adminToken_returnsPaginatedEvents() throws Exception {
+    void fetchAuthLogs_adminToken_returnsPaginatedEvents() throws Exception {
         await().atMost(7, TimeUnit.SECONDS)
                 .pollInterval(200, TimeUnit.MILLISECONDS)
                 .untilAsserted(
@@ -161,14 +161,14 @@ public class AuditLogIntegrationTest extends BaseIntegrationTest {
 
     @Test
     @DisplayName("GET /v1/audit/auth returns 403 for AGENT")
-    void getAuthLogs_agentToken_returns403() throws Exception {
+    void fetchAuthLogs_agentToken_returns403() throws Exception {
         mvc.perform(get("/v1/audit/auth").header("Authorization", "Bearer " + agentToken))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     @DisplayName("GET /v1/audit/tickets/{id} contains TICKET_CREATED entry after ticket creation")
-    void getTicketAuditLog_afterCreation_containsCreatedEntry() throws Exception {
+    void fetchTicketAuditLog_afterCreation_containsCreatedEntry() throws Exception {
         await().atMost(7, TimeUnit.SECONDS)
                 .pollInterval(200, TimeUnit.MILLISECONDS)
                 .untilAsserted(
@@ -186,7 +186,7 @@ public class AuditLogIntegrationTest extends BaseIntegrationTest {
 
     @Test
     @DisplayName("GET /v1/audit/tickets/{id} records STATUS_CHANGED after status change")
-    void getTicketAuditLog_afterStatusChange_containsUpdatedEntry() throws Exception {
+    void fetchTicketAuditLog_afterStatusChange_containsUpdatedEntry() throws Exception {
         // Step 1: Assign ticket using Admin authority layout
 
         mvc.perform(
@@ -232,7 +232,7 @@ public class AuditLogIntegrationTest extends BaseIntegrationTest {
 
     @Test
     @DisplayName("GET /v1/audit/actor/{actorId} returns entries for that actor")
-    void getByActor_adminToken_returnsActorEntries() throws Exception {
+    void fetchByActor_adminToken_returnsActorEntries() throws Exception {
         final String profileBody =
                 mvc.perform(get("/v1/users/me").header("Authorization", "Bearer " + adminToken))
                         .andReturn()

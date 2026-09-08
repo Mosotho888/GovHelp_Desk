@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AuthResponse",
+  "type": "object",
+  "required": [
+    "accessToken",
+    "refreshToken",
+    "tokenType",
+    "expiresIn",
+    "user"
+  ],
+  "properties": {
+    "accessToken": {
+      "type": "string",
+      "minLength": 10
+    },
+    "refreshToken": {
+      "type": "string",
+      "minLength": 10
+    },
+    "tokenType": {
+      "type": "string",
+      "enum": [
+        "Bearer"
+      ]
+    },
+    "expiresIn": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "user": {
+      "type": "object",
+      "required": [
+        "id",
+        "email"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "email": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
