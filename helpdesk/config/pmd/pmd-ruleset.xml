@@ -5,42 +5,6 @@
          xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0
                              https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
 
-    <!--
-      ============================================================
-      GovHelpDesk — PMD Ruleset
-      Version   : 2.0.0  (PMD 7.x compatible)
-      Toolchain : PMD 7.25.0 / maven-pmd-plugin 3.23.0
-      Standard  : Enterprise Spring Boot 3.5 / Java 17
-      ============================================================
-      CHANGES FROM v1.0.0 (all driven by PMD 7.x breaking changes):
-
-      REMOVED excludes (rules no longer exist in PMD 7):
-        bestpractices : JUnitAssertionsShouldIncludeMessage
-                        JUnitTestContainsTooManyAsserts
-                        JUnitTestsShouldIncludeAssert
-        codestyle     : DefaultPackage
-        errorprone    : BeanMembersShouldSerialize
-                        DataflowAnomalyAnalysis
-        performance   : AvoidInstantiatingObjectsJustToGetClass
-
-      FIXED FieldNamingConventions properties (PMD 7 renamed them):
-        staticPattern       → REMOVED (no longer a property)
-        finalFieldPattern   → REMOVED (no longer a property)
-        defaultPattern      → REMOVED (no longer a property)
-        PMD 7 properties    : enumConstantPattern, constantPattern,
-                              publicConstantPattern (kept)
-
-      FIXED duplicate rule references (PMD 7 warns on these):
-        design.xml/NPathComplexity        → override only, no full-set ref
-        design.xml/TooManyFields          → override only
-        design.xml/CouplingBetweenObjects → override only
-
-      REMOVED rules not in PMD 7 design.xml:
-        ExcessiveClassLength  → replaced by NcssCount
-        ExcessiveMethodLength → replaced by NcssCount
-      ============================================================
-    -->
-
     <description>
         PMD 7.x-compatible rule configuration for the GovHelpDesk Spring Boot 3.5 API.
         Covers security, best practices, error-prone patterns,
@@ -56,6 +20,8 @@
           JUnit 5 / AssertJ / MockMvc patterns make them obsolete.
           Only exclude rules that still EXIST in PMD 7.
         -->
+        <exclude name="UnitTestShouldIncludeAssert"/>
+        <exclude name="UnitTestContainsTooManyAsserts"/>
         <exclude name="GuardLogStatement"/>                   <!-- SLF4J lazy eval handles this -->
         <exclude name="UseVarargs"/>                          <!-- Prefer explicit array params in REST APIs -->
         <!-- Excluded so it can be re-referenced once below with a custom priority -->
@@ -90,6 +56,7 @@
         <exclude name="FieldNamingConventions"/>
         <!-- Excluded so test methods can use underscore naming (method_state_expected) -->
         <exclude name="MethodNamingConventions"/>
+        <exclude name="LinguisticNaming"/>
     </rule>
 
     <!--
@@ -100,9 +67,9 @@
     -->
     <rule ref="category/java/codestyle.xml/FieldNamingConventions">
         <properties>
-            <property name="enumConstantPattern"    value="[A-Z][A-Z_0-9]*"/>
-            <property name="constantPattern"        value="[A-Z][A-Z_0-9]*"/>
-            <property name="publicConstantPattern"  value="[A-Z][A-Z_0-9]*"/>
+            <property name="enumConstantPattern" value="[A-Z][A-Z_0-9]*"/>
+            <property name="constantPattern" value="[A-Z][A-Z_0-9]*"/>
+            <property name="publicConstantPattern" value="[A-Z][A-Z_0-9]*"/>
         </properties>
     </rule>
 
@@ -118,7 +85,7 @@
     <rule ref="category/java/codestyle.xml/MethodNamingConventions">
         <properties>
             <!-- Standard camelCase for all production methods -->
-            <property name="methodPattern"     value="[a-z][a-zA-Z0-9]*"/>
+            <property name="methodPattern" value="[a-z][a-zA-Z0-9]*"/>
             <!-- method_condition_expectedOutcome pattern for JUnit 5 tests -->
             <property name="junit5TestPattern" value="[a-z][a-zA-Z0-9_]*"/>
         </properties>
@@ -163,7 +130,7 @@
 
     <rule ref="category/java/design.xml/CyclomaticComplexity">
         <properties>
-            <property name="classReportLevel"  value="80"/>
+            <property name="classReportLevel" value="80"/>
             <property name="methodReportLevel" value="15"/>
         </properties>
     </rule>
@@ -205,7 +172,7 @@
     <rule ref="category/java/design.xml/NcssCount">
         <properties>
             <property name="methodReportLevel" value="60"/>
-            <property name="classReportLevel"  value="400"/>
+            <property name="classReportLevel" value="400"/>
         </properties>
     </rule>
 
@@ -295,23 +262,23 @@
       Rule 2: Empty catch blocks silently swallow exceptions.
       Always log, rethrow, or wrap into a domain exception.
     -->
-<!--    <rule name="SilentCatchBlock"-->
-<!--          language="java"-->
-<!--          message="Catch block is empty. Log, rethrow, or wrap the exception — never swallow it silently."-->
-<!--          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">-->
-<!--        <description>-->
-<!--            Silent catch blocks hide bugs and make diagnostics impossible.-->
-<!--            Always log at minimum, or convert to a domain-specific exception.-->
-<!--        </description>-->
-<!--        <priority>2</priority>-->
-<!--        <properties>-->
-<!--            <property name="xpath">-->
-<!--                <value><![CDATA[-->
-<!--//CatchClause/Block[count(BlockStatement) = 0]-->
-<!--                ]]></value>-->
-<!--            </property>-->
-<!--        </properties>-->
-<!--    </rule>-->
+    <!--    <rule name="SilentCatchBlock"-->
+    <!--          language="java"-->
+    <!--          message="Catch block is empty. Log, rethrow, or wrap the exception — never swallow it silently."-->
+    <!--          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">-->
+    <!--        <description>-->
+    <!--            Silent catch blocks hide bugs and make diagnostics impossible.-->
+    <!--            Always log at minimum, or convert to a domain-specific exception.-->
+    <!--        </description>-->
+    <!--        <priority>2</priority>-->
+    <!--        <properties>-->
+    <!--            <property name="xpath">-->
+    <!--                <value><![CDATA[-->
+    <!--//CatchClause/Block[count(BlockStatement) = 0]-->
+    <!--                ]]></value>-->
+    <!--            </property>-->
+    <!--        </properties>-->
+    <!--    </rule>-->
 
     <!--
       Rule 3: REST controllers must not return raw JPA entities.

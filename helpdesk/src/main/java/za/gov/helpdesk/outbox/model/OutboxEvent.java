@@ -63,6 +63,7 @@ public class OutboxEvent {
     private LocalDateTime processedAt;
 
     @PrePersist
+    @SuppressWarnings("PMD.UnusedPrivateMethod")
     private void onCreate() {
 
         if (createdAt == null) {

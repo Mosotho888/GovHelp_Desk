@@ -1,5 +1,6 @@
 package za.gov.helpdesk.unit.services.attachment;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -31,6 +32,7 @@ import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
 import za.gov.helpdesk.ticket.service.TicketQueryHelper;
 import za.gov.helpdesk.users.dto.response.UserResponse;
+import za.gov.helpdesk.users.model.Role;
 import za.gov.helpdesk.users.model.User;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,7 +48,7 @@ import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AttachmentService unit tests")
-public class AttachmentServiceImplTest {
+class AttachmentServiceImplTest {
 
     @Mock private AttachmentRepository attachmentRepository;
     @Mock private TicketRepository ticketRepository;
@@ -73,7 +75,7 @@ public class AttachmentServiceImplTest {
                         .id(1L)
                         .name("Jane Agent")
                         .email("jane@gov.za")
-                        .role(User.Role.AGENT)
+                        .role(Role.AGENT)
                         .active(true)
                         .build();
         adminUser =
@@ -81,7 +83,7 @@ public class AttachmentServiceImplTest {
                         .id(3L)
                         .name("Admin User")
                         .email("admin@gov.za")
-                        .role(User.Role.ADMIN)
+                        .role(Role.ADMIN)
                         .active(true)
                         .build();
         ticket =
@@ -155,7 +157,10 @@ public class AttachmentServiceImplTest {
     void upload_delegatesFileValidationToValidator() {
         final MockMultipartFile exeFile =
                 new MockMultipartFile(
-                        "file", "malware.exe", "application/x-msdownload", "fake".getBytes());
+                        "file",
+                        "malware.exe",
+                        "application/x-msdownload",
+                        "fake".getBytes(StandardCharsets.UTF_8));
 
         given(ticketQuery.findOrThrow(10L, uploader)).willReturn(ticket);
         willThrow(
@@ -188,13 +193,14 @@ public class AttachmentServiceImplTest {
 
     @Test
     @DisplayName("getAttachmentById() returns attachment and publishes ATTACHMENT_DOWNLOADED audit")
-    void getAttachmentById_valid_returnsAndPublishesAudit() {
+    void fetchAttachmentById_valid_returnsAndPublishesAudit() {
         given(attachmentQuery.findOrThrow(50L, uploader)).willReturn(attachment);
 
         final Attachment result = attachmentService.getAttachmentById(50L, uploader);
 
-        assertThat(result.getId()).isEqualTo(50L);
-        assertThat(result.getFilename()).isEqualTo("report.pdf");
+        assertThat(result)
+                .extracting(Attachment::getId, Attachment::getFilename)
+                .containsExactly(50L, "report.pdf");
 
         then(attachmentMetrics).should(times(1)).incrementDownloaded();
         then(auditPublisher)
@@ -211,7 +217,7 @@ public class AttachmentServiceImplTest {
 
     @Test
     @DisplayName("getAttachmentById() throws ResourceNotFoundException for unknown attachment")
-    void getAttachmentById_unknownId_throwsNotFound() {
+    void fetchAttachmentById_unknownId_throwsNotFound() {
         given(attachmentQuery.findOrThrow(999L, uploader))
                 .willThrow(new ResourceNotFoundException("Attachment", 999L));
 
@@ -275,7 +281,7 @@ public class AttachmentServiceImplTest {
                         .id(99L)
                         .name("Other")
                         .email("other@gov.za")
-                        .role(User.Role.AGENT)
+                        .role(Role.AGENT)
                         .active(true)
                         .build();
 
@@ -302,7 +308,7 @@ public class AttachmentServiceImplTest {
 
     @Test
     @DisplayName("getAttachments() throws ResourceNotFoundException for unknown ticket")
-    void getAttachments_unknownTicket_throwsNotFound() {
+    void fetchAttachments_unknownTicket_throwsNotFound() {
         given(attachmentQuery.findByTicketIdSecurely(999L, uploader))
                 .willThrow(new ResourceNotFoundException("Ticket", 999L));
 
@@ -311,7 +317,11 @@ public class AttachmentServiceImplTest {
     }
 
     private MockMultipartFile pdfFile(final String filename) {
-        return new MockMultipartFile("file", filename, "application/pdf", "pdf content".getBytes());
+        return new MockMultipartFile(
+                "file",
+                filename,
+                "application/pdf",
+                "pdf content".getBytes(StandardCharsets.UTF_8));
     }
 
     private AttachmentResponse mockAttachmentResponse() {
@@ -320,7 +330,7 @@ public class AttachmentServiceImplTest {
                         .id(1L)
                         .name("Jane Agent")
                         .email("jane@gov.za")
-                        .role(User.Role.AGENT)
+                        .role(Role.AGENT)
                         .active(true)
                         .build();
 

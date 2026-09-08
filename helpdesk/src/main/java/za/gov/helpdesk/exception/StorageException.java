@@ -11,7 +11,7 @@ public class StorageException extends RuntimeException {
      *
      * @final final string message detailing the failure context.
      */
-    public StorageException(String message) {
+    public StorageException(final String message) {
         super(message);
     }
 

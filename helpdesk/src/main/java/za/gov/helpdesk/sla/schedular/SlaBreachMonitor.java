@@ -10,6 +10,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import za.gov.helpdesk.notification.dto.SlaEmailNotificationMessage;
 import za.gov.helpdesk.notification.messaging.SlaEmailNotificationPublisher;
 import za.gov.helpdesk.sla.metrics.SlaMetrics;
 import za.gov.helpdesk.sla.model.SlaPolicy;
@@ -181,14 +182,17 @@ public class SlaBreachMonitor {
                         ? sla.getResponseDueAt()
                         : sla.getResolutionDueAt();
 
-        slaEmailPublisher.publishWarning(
-                ticket.getAssignee().getUser().getEmail(),
-                ticket.getAssignee().getUser().getName(),
-                "TKT-" + ticket.getId(),
-                ticket.getId(),
-                ticket.getSubject(),
-                deadlineType,
-                dueAt);
+        slaEmailPublisher.publish(
+                SlaEmailNotificationMessage.builder()
+                        .agentEmail(ticket.getAssignee().getUser().getEmail())
+                        .agentName(ticket.getAssignee().getUser().getName())
+                        .ticketNumber("TKT-" + ticket.getId())
+                        .ticketId(ticket.getId())
+                        .ticketSubject(ticket.getSubject())
+                        .deadlineType(deadlineType)
+                        .dueAt(dueAt)
+                        .isWarning(true)
+                        .build());
     }
 
     /**
@@ -206,12 +210,15 @@ public class SlaBreachMonitor {
             return;
         }
 
-        slaEmailPublisher.publishBreach(
-                ticket.getAssignee().getUser().getEmail(),
-                ticket.getAssignee().getUser().getName(),
-                "TKT-" + ticket.getId(),
-                ticket.getId(),
-                ticket.getSubject(),
-                deadlineType);
+        slaEmailPublisher.publish(
+                SlaEmailNotificationMessage.builder()
+                        .agentEmail(ticket.getAssignee().getUser().getEmail())
+                        .agentName(ticket.getAssignee().getUser().getName())
+                        .ticketNumber("TKT-" + ticket.getId())
+                        .ticketId(ticket.getId())
+                        .ticketSubject(ticket.getSubject())
+                        .deadlineType(deadlineType)
+                        .isWarning(false)
+                        .build());
     }
 }

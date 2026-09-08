@@ -7,6 +7,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 
+import za.gov.helpdesk.exception.EmailDeliveryException;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -45,7 +47,7 @@ public class MailSenderHelper {
         } catch (final MessagingException e) {
             log.error(
                     "Failed to send email: to={} subject={} error={}", to, subject, e.getMessage());
-            throw new RuntimeException("Email send failed", e);
+            throw new EmailDeliveryException("Email send failed", e);
         }
     }
 }

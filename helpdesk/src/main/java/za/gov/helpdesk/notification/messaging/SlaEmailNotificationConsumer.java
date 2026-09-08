@@ -64,20 +64,9 @@ public class SlaEmailNotificationConsumer {
 
         try {
             if (message.isWarning()) {
-                slaEmailService.sendSlaWarning(
-                        message.getAgentEmail(),
-                        message.getAgentName(),
-                        message.getTicketNumber(),
-                        message.getTicketSubject(),
-                        message.getDeadlineType(),
-                        message.getDueAt());
+                slaEmailService.sendSlaWarning(message);
             } else {
-                slaEmailService.sendSlaBreach(
-                        message.getAgentEmail(),
-                        message.getAgentName(),
-                        message.getTicketNumber(),
-                        message.getTicketSubject(),
-                        message.getDeadlineType());
+                slaEmailService.sendSlaBreach(message);
             }
 
             channel.basicAck(tag, false);

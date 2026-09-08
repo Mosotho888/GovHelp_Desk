@@ -1,8 +1,10 @@
 package za.gov.helpdesk.config.messaging;
 
+import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@SuppressWarnings("PMD.DataClass")
 public final class RabbitMQConstants {
 
     public static final String EXCHANGE = "helpdesk.exchange";

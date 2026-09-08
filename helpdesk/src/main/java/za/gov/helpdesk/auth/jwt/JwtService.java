@@ -1,5 +1,6 @@
 package za.gov.helpdesk.auth.jwt;
 
+import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -15,6 +16,7 @@ import za.gov.helpdesk.exception.InvalidTokenException;
 import za.gov.helpdesk.users.model.User;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -81,12 +83,13 @@ public class JwtService {
      */
     private String buildToken(
             final Map<String, Object> claims, final String subject, final Long expiryMs) {
+        final Instant now = Instant.now();
         return Jwts.builder()
                 .id(UUID.randomUUID().toString())
                 .claims(claims)
                 .subject(subject)
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + expiryMs))
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plusMillis(expiryMs)))
                 .signWith(getSigningKey())
                 .compact();
     }
@@ -126,7 +129,7 @@ public class JwtService {
      * @return true if the token window expiration has lapsed, false otherwise
      */
     public boolean isTokenExpired(final String token) {
-        return extractExpiration(token).before(new Date());
+        return extractExpiration(token).toInstant().isBefore(Instant.now());
     }
 
     /**
@@ -177,7 +180,9 @@ public class JwtService {
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
-        } catch (final JwtException | IllegalArgumentException e) {
+        } catch (final ExpiredJwtException e) {
+            return e.getClaims();
+        } catch (final JwtException e) {
             throw new InvalidTokenException("Invalid or malformed refresh token structure", e);
         }
     }

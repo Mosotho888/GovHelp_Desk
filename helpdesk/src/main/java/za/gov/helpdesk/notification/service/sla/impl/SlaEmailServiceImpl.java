@@ -1,10 +1,10 @@
 package za.gov.helpdesk.notification.service.sla.impl;
 
-import java.time.LocalDateTime;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
+import za.gov.helpdesk.notification.dto.SlaEmailNotificationMessage;
 import za.gov.helpdesk.notification.service.EmailTemplateRenderer;
 import za.gov.helpdesk.notification.service.MailSenderHelper;
 import za.gov.helpdesk.notification.service.sla.SlaEmailService;
@@ -21,53 +21,45 @@ public class SlaEmailServiceImpl implements SlaEmailService {
     private final MailSenderHelper mailer;
 
     @Override
-    public void sendSlaWarning(
-            final String to,
-            final String agentName,
-            final String ticketNumber,
-            final String subject,
-            final String deadlineType,
-            final LocalDateTime dueAt) {
+    public void sendSlaWarning(final SlaEmailNotificationMessage message) {
         final Map<String, Object> model =
                 Map.of(
                         "agentName",
-                        agentName,
+                        message.getAgentName(),
                         "ticketNumber",
-                        ticketNumber,
+                        message.getTicketNumber(),
                         "subject",
-                        subject,
+                        message.getTicketSubject(),
                         "deadlineType",
-                        deadlineType,
+                        message.getDeadlineType(),
                         "dueAt",
-                        dueAt);
+                        message.getDueAt());
 
         mailer.send(
-                to,
-                "SLA Warning - " + deadlineType + " deadline approaching: " + ticketNumber,
+                message.getAgentEmail(),
+                "SLA Warning - "
+                        + message.getDeadlineType()
+                        + " deadline approaching: "
+                        + message.getTicketNumber(),
                 renderer.render(PREFIX + "sla-warning", model));
     }
 
     @Override
-    public void sendSlaBreach(
-            final String to,
-            final String agentName,
-            final String ticketNumber,
-            final String subject,
-            final String deadlineType) {
+    public void sendSlaBreach(final SlaEmailNotificationMessage message) {
         final Map<String, Object> model =
                 Map.of(
                         "agentName",
-                        agentName,
+                        message.getAgentName(),
                         "ticketNumber",
-                        ticketNumber,
+                        message.getTicketNumber(),
                         "subject",
-                        subject,
+                        message.getTicketSubject(),
                         "deadlineType",
-                        deadlineType);
+                        message.getDeadlineType());
 
         mailer.send(
-                to,
-                "SLA Breached - " + deadlineType + ": " + ticketNumber,
+                message.getAgentEmail(),
+                "SLA Breached - " + message.getDeadlineType() + ": " + message.getTicketNumber(),
                 renderer.render(PREFIX + "sla-breach", model));
     }
 }

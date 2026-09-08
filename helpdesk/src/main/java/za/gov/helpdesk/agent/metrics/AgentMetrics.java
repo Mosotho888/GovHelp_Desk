@@ -67,7 +67,7 @@ public class AgentMetrics {
         this.departmentChanged.increment();
     }
 
-    @Scheduled(fixedRate = 30000)
+    @Scheduled(fixedRate = 30_000)
     public void refreshActiveAgentGauge() {
         activeAgents.set((int) agentRepository.countByAvailability(Agent.Availability.ONLINE));
     }

@@ -10,6 +10,7 @@ import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.category.model.Category;
 import za.gov.helpdesk.category.service.CategoryQueryHelper;
 import za.gov.helpdesk.sla.service.SlaService;
+import za.gov.helpdesk.ticket.event.TicketChangeEvent;
 import za.gov.helpdesk.ticket.event.TicketEventDispatcher;
 import za.gov.helpdesk.ticket.metrics.TicketMetrics;
 import za.gov.helpdesk.ticket.model.Priority;
@@ -52,13 +53,14 @@ public class TicketUpdateCoordinator {
         ticketMetrics.incrementCreated();
 
         eventDispatcher.publish(
-                ticket,
-                actor,
-                AuditLog.AuditAction.TICKET_CREATED,
-                null,
-                Status.OPEN.name(),
-                "Ticket created: " + ticket.getSubject(),
-                null);
+                new TicketChangeEvent(
+                        ticket,
+                        actor,
+                        AuditLog.AuditAction.TICKET_CREATED,
+                        null,
+                        Status.OPEN.name(),
+                        "Ticket created: " + ticket.getSubject(),
+                        null));
 
         if (ticket.getAssignee() == null) {
             autoRouteByCategory(ticket, actor);
@@ -82,13 +84,14 @@ public class TicketUpdateCoordinator {
         ticketRepository.save(ticket);
 
         eventDispatcher.publish(
-                ticket,
-                actor,
-                AuditLog.AuditAction.ASSIGNED_TO_AGENT,
-                "Unassigned",
-                agent.getUser().getName(),
-                "Auto-routed via category '" + ticket.getCategory().getName() + "'",
-                null);
+                new TicketChangeEvent(
+                        ticket,
+                        actor,
+                        AuditLog.AuditAction.ASSIGNED_TO_AGENT,
+                        "Unassigned",
+                        agent.getUser().getName(),
+                        "Auto-routed via category '" + ticket.getCategory().getName() + "'",
+                        null));
     }
 
     /**
@@ -100,13 +103,14 @@ public class TicketUpdateCoordinator {
      */
     public void handleDeletion(final Ticket ticket, final User actor) {
         eventDispatcher.publish(
-                ticket,
-                actor,
-                AuditLog.AuditAction.TICKET_DELETED,
-                ticket.getStatus().name(),
-                "DELETED",
-                "Ticket deleted by " + actor.getName(),
-                null);
+                new TicketChangeEvent(
+                        ticket,
+                        actor,
+                        AuditLog.AuditAction.TICKET_DELETED,
+                        ticket.getStatus().name(),
+                        "DELETED",
+                        "Ticket deleted by " + actor.getName(),
+                        null));
 
         ticketRepository.delete(ticket);
     }
@@ -151,7 +155,8 @@ public class TicketUpdateCoordinator {
                         : AuditLog.AuditAction.STATUS_CHANGED;
 
         eventDispatcher.publish(
-                ticket, actor, action, oldStatus.name(), newStatus.name(), null, null);
+                new TicketChangeEvent(
+                        ticket, actor, action, oldStatus.name(), newStatus.name(), null, null));
     }
 
     /**
@@ -176,13 +181,14 @@ public class TicketUpdateCoordinator {
 
         ticket.setAssignee(newAgent);
         eventDispatcher.publish(
-                ticket,
-                actor,
-                AuditLog.AuditAction.ASSIGNED_TO_AGENT,
-                oldAssignee,
-                newAgent.getUser().getName(),
-                null,
-                null);
+                new TicketChangeEvent(
+                        ticket,
+                        actor,
+                        AuditLog.AuditAction.ASSIGNED_TO_AGENT,
+                        oldAssignee,
+                        newAgent.getUser().getName(),
+                        null,
+                        null));
     }
 
     /**
@@ -199,13 +205,14 @@ public class TicketUpdateCoordinator {
         ticket.setPriority(newPriority);
 
         eventDispatcher.publish(
-                ticket,
-                actor,
-                AuditLog.AuditAction.PRIORITY_CHANGED,
-                oldPriority.name(),
-                newPriority.name(),
-                null,
-                null);
+                new TicketChangeEvent(
+                        ticket,
+                        actor,
+                        AuditLog.AuditAction.PRIORITY_CHANGED,
+                        oldPriority.name(),
+                        newPriority.name(),
+                        null,
+                        null));
     }
 
     /**
@@ -230,13 +237,14 @@ public class TicketUpdateCoordinator {
 
         ticket.setCategory(newCategory);
         eventDispatcher.publish(
-                ticket,
-                actor,
-                AuditLog.AuditAction.CATEGORY_CHANGED,
-                oldCategoryName,
-                newCategory.getName(),
-                null,
-                null);
+                new TicketChangeEvent(
+                        ticket,
+                        actor,
+                        AuditLog.AuditAction.CATEGORY_CHANGED,
+                        oldCategoryName,
+                        newCategory.getName(),
+                        null,
+                        null));
     }
 
     /**
@@ -251,6 +259,13 @@ public class TicketUpdateCoordinator {
         ticket.setEscalated(true);
         applyStatusChange(ticket, Status.ESCALATED, actor);
         eventDispatcher.publish(
-                ticket, actor, AuditLog.AuditAction.ESCALATED, "false", "true", reason, reason);
+                new TicketChangeEvent(
+                        ticket,
+                        actor,
+                        AuditLog.AuditAction.ESCALATED,
+                        "false",
+                        "true",
+                        reason,
+                        reason));
     }
 }

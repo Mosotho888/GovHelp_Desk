@@ -49,10 +49,10 @@ public class RateLimitingFilter extends OncePerRequestFilter {
                     .build();
 
     public RateLimitingFilter(
-            RateLimitPolicyProvider policyProvider,
-            AuthMetrics authMetrics,
-            Environment environment,
-            @Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver) {
+            final RateLimitPolicyProvider policyProvider,
+            final AuthMetrics authMetrics,
+            final Environment environment,
+            @Qualifier("handlerExceptionResolver") final HandlerExceptionResolver resolver) {
         this.policyProvider = policyProvider;
         this.authMetrics = authMetrics;
         this.environment = environment;
@@ -72,7 +72,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         }
 
         final String key = resolveKey(request);
-        final Bucket bucket = buckets.get(key, k -> createBucket(request));
+        final Bucket bucket = buckets.get(key, k -> createBucket());
 
         if (bucket.tryConsume(NUM_TOKENS)) {
 
@@ -117,7 +117,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
                         : request.getRemoteAddr());
     }
 
-    private Bucket createBucket(final HttpServletRequest request) {
+    private Bucket createBucket() {
         final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         final long capacity = policyProvider.capacityFor(auth);
 

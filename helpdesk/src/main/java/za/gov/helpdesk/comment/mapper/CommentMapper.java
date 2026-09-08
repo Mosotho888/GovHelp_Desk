@@ -8,6 +8,7 @@ import za.gov.helpdesk.comment.model.Comment;
 import za.gov.helpdesk.users.mapper.UserMapper;
 
 @Mapper(componentModel = "spring", uses = UserMapper.class)
+@SuppressWarnings("PMD.ImplicitFunctionalInterface")
 public interface CommentMapper {
 
     @Mapping(source = "ticket.id", target = "ticketId")

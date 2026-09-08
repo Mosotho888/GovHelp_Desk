@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
 public class InvalidCategoryOperationException extends RuntimeException {
 
-    public InvalidCategoryOperationException(String message) {
+    public InvalidCategoryOperationException(final String message) {
         super(message);
     }
 }
