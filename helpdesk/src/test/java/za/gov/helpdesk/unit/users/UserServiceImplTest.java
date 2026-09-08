@@ -39,11 +39,17 @@ import static org.mockito.Mockito.times;
 class UserServiceImplTest {
 
     @Mock private UserRepository userRepository;
+
     @Mock private UserQueryHelper userQuery;
+
     @Mock private UserMapper userMapper;
+
     @Mock private PasswordEncoder passwordEncoder;
+
     @Mock private AuditEventPublisher auditPublisher;
+
     @Mock private PasswordManagementService passwordManagementService;
+
     @Captor private ArgumentCaptor<User> userCaptor;
 
     private UserServiceImpl service;
@@ -59,7 +65,34 @@ class UserServiceImplTest {
                         passwordEncoder,
                         auditPublisher,
                         passwordManagementService);
+
         actor = User.builder().id(1L).name("Admin").email("admin@gov.za").role(Role.ADMIN).build();
+    }
+
+    // ---- Test helpers ----
+
+    private CreateUserRequest createUserRequest(
+            final String name, final String email, final String password) {
+
+        final CreateUserRequest request = new CreateUserRequest();
+        request.setName(name);
+        request.setEmail(email);
+        request.setPassword(password);
+
+        return request;
+    }
+
+    private void stubSuccessfulUserCreation(final String email, final String password) {
+
+        given(userRepository.existsByEmail(email)).willReturn(false);
+
+        given(passwordEncoder.encode(password)).willReturn("hashed");
+
+        given(userRepository.save(any(User.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+
+        given(userMapper.toUserResponse(any(User.class)))
+                .willReturn(UserResponse.builder().build());
     }
 
     // ---- createUser ----
@@ -68,21 +101,18 @@ class UserServiceImplTest {
     @DisplayName(
             "createUser() normalises the email, encodes the password, and defaults role/timezone")
     void createUser_minimalRequest_appliesDefaults() {
-        final CreateUserRequest request = new CreateUserRequest();
-        request.setName("John Public");
-        request.setEmail("  John@Citizen.ZA  ");
-        request.setPassword("plainPass1");
 
-        given(userRepository.existsByEmail("  John@Citizen.ZA  ")).willReturn(false);
-        given(passwordEncoder.encode("plainPass1")).willReturn("hashed");
-        given(userRepository.save(any(User.class))).willAnswer(inv -> inv.getArgument(0));
-        given(userMapper.toUserResponse(any(User.class)))
-                .willReturn(UserResponse.builder().build());
+        final CreateUserRequest request =
+                createUserRequest("John Public", "  John@Citizen.ZA  ", "plainPass1");
+
+        stubSuccessfulUserCreation("  John@Citizen.ZA  ", "plainPass1");
 
         service.createUser(request, actor);
 
         then(userRepository).should(times(1)).save(userCaptor.capture());
+
         final User saved = userCaptor.getValue();
+
         assertThat(saved.getEmail()).isEqualTo("john@citizen.za");
         assertThat(saved.getPasswordHash()).isEqualTo("hashed");
         assertThat(saved.getRole()).isEqualTo(Role.USER);
@@ -93,35 +123,37 @@ class UserServiceImplTest {
     @Test
     @DisplayName("createUser() honours an explicitly requested role and timezone")
     void createUser_explicitRoleAndTimezone_respectsRequest() {
-        final CreateUserRequest request = new CreateUserRequest();
-        request.setName("Jane Agent");
-        request.setEmail("jane@gov.za");
-        request.setPassword("plainPass1");
+
+        final CreateUserRequest request =
+                createUserRequest("Jane Agent", "jane@gov.za", "plainPass1");
+
         request.setRole(Role.AGENT);
         request.setTimezone("UTC");
 
-        given(userRepository.existsByEmail("jane@gov.za")).willReturn(false);
-        given(passwordEncoder.encode("plainPass1")).willReturn("hashed");
-        given(userRepository.save(any(User.class))).willAnswer(inv -> inv.getArgument(0));
-        given(userMapper.toUserResponse(any(User.class)))
-                .willReturn(UserResponse.builder().build());
+        stubSuccessfulUserCreation("jane@gov.za", "plainPass1");
 
         service.createUser(request, actor);
 
         then(userRepository).should(times(1)).save(userCaptor.capture());
-        assertThat(userCaptor.getValue().getRole()).isEqualTo(Role.AGENT);
-        assertThat(userCaptor.getValue().getTimezone()).isEqualTo("UTC");
+
+        final User saved = userCaptor.getValue();
+
+        assertThat(saved.getRole()).isEqualTo(Role.AGENT);
+        assertThat(saved.getTimezone()).isEqualTo("UTC");
     }
 
     @Test
     @DisplayName("createUser() rejects an email that is already registered")
     void createUser_duplicateEmail_throws() {
+
         final CreateUserRequest request = new CreateUserRequest();
         request.setEmail("john@citizen.za");
+
         given(userRepository.existsByEmail("john@citizen.za")).willReturn(true);
 
         assertThatThrownBy(() -> service.createUser(request, actor))
                 .isInstanceOf(DuplicateResourceException.class);
+
         then(userRepository).should(never()).save(any());
     }
 
@@ -130,13 +162,16 @@ class UserServiceImplTest {
             "createUser() converts a race-condition constraint violation into a friendly duplicate"
                     + " error")
     void createUser_concurrentDuplicateInsert_translatesException() {
+
         final CreateUserRequest request = new CreateUserRequest();
         request.setName("John Public");
         request.setEmail("john@citizen.za");
         request.setPassword("plainPass1");
 
         given(userRepository.existsByEmail("john@citizen.za")).willReturn(false);
+
         given(passwordEncoder.encode("plainPass1")).willReturn("hashed");
+
         given(userRepository.save(any(User.class)))
                 .willThrow(new DataIntegrityViolationException("unique constraint"));
 
@@ -149,9 +184,13 @@ class UserServiceImplTest {
     @Test
     @DisplayName("getUserById() delegates lookup and mapping")
     void fetchUserById_existingId_returnsMappedResponse() {
+
         final User user = User.builder().id(2L).name("John Public").build();
+
         given(userQuery.findOrThrow(2L)).willReturn(user);
+
         final UserResponse response = UserResponse.builder().id(2L).build();
+
         given(userMapper.toUserResponse(user)).willReturn(response);
 
         assertThat(service.getUserById(2L)).isEqualTo(response);
@@ -160,6 +199,7 @@ class UserServiceImplTest {
     @Test
     @DisplayName("getUserById() propagates ResourceNotFoundException for an unknown id")
     void fetchUserById_unknownId_throws() {
+
         given(userQuery.findOrThrow(999L)).willThrow(new ResourceNotFoundException("User", 999L));
 
         assertThatThrownBy(() -> service.getUserById(999L))
@@ -169,9 +209,13 @@ class UserServiceImplTest {
     @Test
     @DisplayName("getUserByEmail() delegates lookup and mapping")
     void fetchUserByEmail_existingEmail_returnsMappedResponse() {
+
         final User user = User.builder().id(2L).email("john@citizen.za").build();
+
         given(userQuery.findByEmailOrThrow("john@citizen.za")).willReturn(user);
+
         final UserResponse response = UserResponse.builder().id(2L).build();
+
         given(userMapper.toUserResponse(user)).willReturn(response);
 
         assertThat(service.getUserByEmail("john@citizen.za")).isEqualTo(response);
@@ -182,17 +226,23 @@ class UserServiceImplTest {
     @Test
     @DisplayName("updateUser() applies a name change and publishes an audit entry describing it")
     void updateUser_nameChanged_updatesAndAudits() {
+
         final User user = User.builder().id(2L).name("Old Name").build();
+
         given(userQuery.findOrThrow(2L)).willReturn(user);
+
         given(userRepository.save(user)).willReturn(user);
+
         given(userMapper.toUserResponse(user)).willReturn(UserResponse.builder().build());
 
         final UpdateUserRequest request = new UpdateUserRequest();
+
         request.setName("New Name");
 
         service.updateUser(2L, request, actor);
 
         assertThat(user.getName()).isEqualTo("New Name");
+
         then(auditPublisher)
                 .should(times(1))
                 .publishAudit(any(), any(), any(), any(), any(), any(), any());
@@ -201,12 +251,17 @@ class UserServiceImplTest {
     @Test
     @DisplayName("updateUser() skips auditing when no fields actually changed")
     void updateUser_noActualChanges_skipsAudit() {
+
         final User user = User.builder().id(2L).name("Same Name").build();
+
         given(userQuery.findOrThrow(2L)).willReturn(user);
+
         given(userRepository.save(user)).willReturn(user);
+
         given(userMapper.toUserResponse(user)).willReturn(UserResponse.builder().build());
 
         final UpdateUserRequest request = new UpdateUserRequest();
+
         request.setName("Same Name");
 
         service.updateUser(2L, request, actor);
@@ -220,9 +275,13 @@ class UserServiceImplTest {
     @DisplayName(
             "updateUser() saves the entity via the repository regardless of whether fields changed")
     void updateUser_anyRequest_alwaysSaves() {
+
         final User user = User.builder().id(2L).name("Old Name").build();
+
         given(userQuery.findOrThrow(2L)).willReturn(user);
+
         given(userRepository.save(user)).willReturn(user);
+
         given(userMapper.toUserResponse(user)).willReturn(UserResponse.builder().build());
 
         service.updateUser(2L, new UpdateUserRequest(), actor);
@@ -235,7 +294,9 @@ class UserServiceImplTest {
     @Test
     @DisplayName("saveUser() delegates directly to the repository")
     void saveUser_anyUser_delegatesToRepository() {
+
         final User user = User.builder().id(2L).build();
+
         given(userRepository.save(user)).willReturn(user);
 
         assertThat(service.saveUser(user)).isEqualTo(user);
@@ -244,6 +305,7 @@ class UserServiceImplTest {
     @Test
     @DisplayName("changeOwnPassword() delegates to the PasswordManagementService")
     void changeOwnPassword_anyRequest_delegatesToPasswordManagementService() {
+
         final ChangePasswordRequest request = new ChangePasswordRequest();
 
         service.changeOwnPassword(request, actor);
