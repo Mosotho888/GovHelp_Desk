@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-import za.gov.helpdesk.users.model.User;
+import za.gov.helpdesk.users.model.Role;
 
 import lombok.Data;
 
@@ -26,7 +26,7 @@ public class CreateUserRequest {
             message = "Password must contain at least one uppercase letter and one number")
     private String password;
 
-    private User.Role role = User.Role.USER;
+    private Role role = Role.USER;
 
     @Pattern(regexp = "^\\+?[1-9]\\d{1,14}$", message = "Phone must be in R.164 format")
     private String phone;

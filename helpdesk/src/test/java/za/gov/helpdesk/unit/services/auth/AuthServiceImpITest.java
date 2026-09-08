@@ -24,6 +24,7 @@ import za.gov.helpdesk.auth.service.AuthResponseFactory;
 import za.gov.helpdesk.auth.service.RefreshTokenService;
 import za.gov.helpdesk.auth.service.impl.AuthServiceImpl;
 import za.gov.helpdesk.users.dto.response.UserResponse;
+import za.gov.helpdesk.users.model.Role;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 import za.gov.helpdesk.users.security.CustomUserDetails;
@@ -38,7 +39,7 @@ import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AuthService unit tests")
-public class AuthServiceImpITest {
+class AuthServiceImpITest {
 
     @Mock private AuthenticationManager authManager;
     @Mock private UserRepository userRepository;
@@ -62,7 +63,7 @@ public class AuthServiceImpITest {
                         .email("agent@gov.za")
                         .passwordHash(
                                 "$2a$12$xUDVJeAkGqB7hUk0je5oZe2s569JMXdQXU.bIyViyZrF2SBxWtuei")
-                        .role(User.Role.AGENT)
+                        .role(Role.AGENT)
                         .active(true)
                         .loginAttempts(0)
                         .timezone("Africa/Johannesburg")

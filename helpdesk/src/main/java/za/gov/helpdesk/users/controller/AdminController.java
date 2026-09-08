@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import za.gov.helpdesk.users.dto.request.AdminPasswordResetRequest;
 import za.gov.helpdesk.users.dto.response.UserResponse;
-import za.gov.helpdesk.users.model.User;
+import za.gov.helpdesk.users.model.Role;
 import za.gov.helpdesk.users.security.CustomUserDetails;
 import za.gov.helpdesk.users.service.AccountAdminService;
 import za.gov.helpdesk.users.service.PasswordManagementService;
@@ -76,7 +76,7 @@ public class AdminController {
                             + "sessions. Admin cannot change their own role.")
     public ResponseEntity<UserResponse> changeRole(
             @PathVariable final Long id,
-            @RequestParam final User.Role role,
+            @RequestParam final Role role,
             @AuthenticationPrincipal final CustomUserDetails principal) {
 
         return ResponseEntity.ok(accountAdminService.changeUserRole(id, role, principal.getUser()));

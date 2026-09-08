@@ -22,6 +22,7 @@ import za.gov.helpdesk.comment.service.CommentQueryHelper;
 import za.gov.helpdesk.comment.service.CommentService;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.service.TicketQueryHelper;
+import za.gov.helpdesk.users.model.Role;
 import za.gov.helpdesk.users.model.User;
 
 import lombok.RequiredArgsConstructor;
@@ -47,7 +48,7 @@ public class CommentServiceImpl implements CommentService {
             final Long ticketId, final CreateCommentRequest request, final User actor) {
         final Ticket ticket = ticketQuery.findOrThrow(ticketId, actor);
 
-        if (request.isInternal() && actor.getRole() == User.Role.USER) {
+        if (request.isInternal() && actor.getRole() == Role.USER) {
             throw new AccessDeniedException("Only agents and admins can post internal notes");
         }
 
@@ -94,7 +95,7 @@ public class CommentServiceImpl implements CommentService {
             final Long parentCommentId, final CreateCommentRequest request, final User actor) {
         final Comment parent = commentQuery.findOrThrow(parentCommentId, actor);
 
-        if (request.isInternal() && actor.getRole() == User.Role.USER) {
+        if (request.isInternal() && actor.getRole() == Role.USER) {
             throw new AccessDeniedException("Only agents and admins can post internal notes");
         }
 

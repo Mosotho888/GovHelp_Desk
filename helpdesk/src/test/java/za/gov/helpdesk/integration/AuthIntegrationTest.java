@@ -7,14 +7,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import za.gov.helpdesk.auth.repository.RefreshTokenRepository;
+import za.gov.helpdesk.users.model.Role;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 
@@ -23,15 +22,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @DisplayName("Auth integration tests")
-public class AuthIntegrationTest extends BaseIntegrationTest {
+class AuthIntegrationTest extends BaseIntegrationTest {
 
     @Autowired private MockMvc mvc;
     @Autowired private ObjectMapper mapper;
     @Autowired private UserRepository userRepository;
     @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private RefreshTokenRepository refreshTokenRepository;
-
-    @MockitoBean private JavaMailSender mailSender;
 
     @BeforeEach
     void setUp() {
@@ -43,7 +40,7 @@ public class AuthIntegrationTest extends BaseIntegrationTest {
                         .name("Test Agent")
                         .email("agent@gov.za")
                         .passwordHash(passwordEncoder.encode("ValidPass1!"))
-                        .role(User.Role.AGENT)
+                        .role(Role.AGENT)
                         .active(true)
                         .loginAttempts(0)
                         .timezone("Africa/Johannesburg")
@@ -142,7 +139,7 @@ public class AuthIntegrationTest extends BaseIntegrationTest {
                         .name("Inactive User")
                         .email("inactive@gov.za")
                         .passwordHash(passwordEncoder.encode("ValidPass1!"))
-                        .role(User.Role.USER)
+                        .role(Role.USER)
                         .active(false)
                         .loginAttempts(0)
                         .timezone("Africa/Johannesburg")

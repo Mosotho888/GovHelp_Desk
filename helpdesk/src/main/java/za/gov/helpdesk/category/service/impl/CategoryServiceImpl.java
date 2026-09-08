@@ -172,7 +172,8 @@ public class CategoryServiceImpl implements CategoryService {
         String candidate = base;
         int suffix = 2;
         while (categoryRepository.existsBySlug(candidate)) {
-            candidate = base + "-" + suffix++;
+            candidate = base + "-" + suffix;
+            suffix++;
         }
         return candidate;
     }

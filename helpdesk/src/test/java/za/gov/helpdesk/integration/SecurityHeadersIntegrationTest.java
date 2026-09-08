@@ -13,7 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @DisplayName("Security headers integration tests")
-public class SecurityHeadersIntegrationTest extends BaseIntegrationTest {
+class SecurityHeadersIntegrationTest extends BaseIntegrationTest {
     @Autowired private MockMvc mvc;
 
     @Test

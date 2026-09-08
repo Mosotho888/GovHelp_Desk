@@ -148,7 +148,7 @@ decision - lives under [`docs/architecture/`](docs/architecture):
 | Framework        | Spring Boot 3.5                                |
 | Security         | Spring Security 6, JWT (JJWT 0.12.6)           |
 | Persistence      | Spring Data JPA, Hibernate 6, PostgreSQL 18    |
-| Migrations       | Flyway (7 migration scripts)                   |
+| Migrations       | Flyway (9 migration scripts)                   |
 | Messaging        | Spring AMQP, RabbitMQ 3                        |
 | Email            | Spring Mail + Thymeleaf templates              |
 | API Docs         | SpringDoc OpenAPI 3 (Swagger UI)               |
@@ -177,6 +177,9 @@ erDiagram
     tickets ||--o| ticket_sla: "has"
     tickets ||--o{ audit_logs: "logs"
     users ||--o{ outbox_events: "triggers (via services)"
+    users ||--o{ assets: "is assigned"
+    tickets ||--o{ ticket_assets: "concerns"
+    assets ||--o{ ticket_assets: "has history"
 
     users {
         string role "USER | AGENT | ADMIN"
@@ -190,6 +193,10 @@ erDiagram
     tickets {
         string status "OPEN to IN_PROGRESS to RESOLVED to CLOSED"
         string priority "LOW | MEDIUM | HIGH | URGENT"
+    }
+    assets {
+        string type "LAPTOP | DESKTOP | PRINTER | MONITOR | ..."
+        string status "IN_USE | IN_STORAGE | UNDER_REPAIR | RETIRED | LOST"
     }
 ```
 
@@ -249,6 +256,25 @@ source-verified reference (kept in sync with the controllers directly), see
 | `POST`   | `/`     | ADMIN  | Create a category or subcategory (max 3 levels deep)        |
 | `PATCH`  | `/{id}` | ADMIN  | Rename, re-route (default department), or (de)activate     |
 | `DELETE` | `/{id}` | ADMIN  | Soft-deactivate a category                                  |
+
+### Assets - `/v1/assets`
+
+| Method   | Path            | Role   | Description                                          |
+|----------|-----------------|--------|--------------------------------------------------------|
+| `POST`   | `/`             | ADMIN  | Register a new asset                                 |
+| `GET`    | `/`             | AGENT+ | List assets (filter by type, status, assigned user)  |
+| `GET`    | `/{id}`         | AGENT+ | Get an asset by ID                                    |
+| `PATCH`  | `/{id}`         | AGENT+ | Update an asset's details, status, or assignment      |
+| `DELETE` | `/{id}`         | ADMIN  | Retire an asset (soft delete; history preserved)      |
+| `GET`    | `/{id}/tickets` | AGENT+ | Device history - every ticket linked to this asset    |
+
+### Ticket Assets - `/v1/tickets/{ticketId}/assets`
+
+| Method   | Path         | Role   | Description                                |
+|----------|--------------|--------|-----------------------------------------------|
+| `POST`   | `/{assetId}` | AGENT+ | Link an asset to a ticket                     |
+| `DELETE` | `/{assetId}` | AGENT+ | Unlink an asset from a ticket                 |
+| `GET`    | `/`          | AGENT+ | List assets currently linked to a ticket      |
 
 ### Comments - `/v1`
 
@@ -618,10 +644,10 @@ src/
 │   ├── java/za/gov/helpdesk/
 │   │   ├── HelpdeskApplication.java
 │   │   ├── agent/              # Agent profiles and availability
+|   |   ├── asset/              # IT assets inventory
 │   │   ├── attachment/         # File upload/download
 │   │   ├── auditlog/           # Audit trail (consumer + query API)
 │   │   ├── auth/               # JWT auth, refresh tokens, password reset
-|   |   |── category/           # Threaded categories (Level 2)
 │   │   ├── comment/            # Threaded comments and internal notes
 │   │   ├── config/
 │   │   │   ├── metrics/        # Per-domain Micrometer beans
@@ -669,12 +695,6 @@ supports secure authentication, ticket lifecycle management, SLA monitoring, aud
 observability, several enterprise features are intentionally reserved for future releases.
 
 ### Planned Enhancements
-
-- **Asset Management**
-    - Register and manage IT assets (laptops, desktops, printers, monitors, networking equipment, and software
-      licenses).
-    - Associate support tickets with specific assets to provide technicians with device history, warranty information,
-      and ownership details.
 
 - **Operational Dashboards**
     - Provide dashboards for agents and administrators showing ticket volumes, SLA compliance, workload distribution,

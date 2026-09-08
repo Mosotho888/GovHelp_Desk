@@ -9,6 +9,7 @@ import za.gov.helpdesk.agent.service.AgentRoleLifecycleService;
 import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
+import za.gov.helpdesk.users.model.Role;
 import za.gov.helpdesk.users.model.User;
 
 import lombok.RequiredArgsConstructor;
@@ -26,15 +27,15 @@ public class AgentRoleLifecycleServiceImpl implements AgentRoleLifecycleService 
     @Override
     @Transactional
     public void handleRoleChange(
-            final User target, final User.Role oldRole, final User.Role newRole, final User admin) {
-        if (newRole == User.Role.AGENT) {
+            final User target, final Role oldRole, final Role newRole, final User admin) {
+        if (newRole == Role.AGENT) {
             handlePromotion(target, oldRole, admin);
-        } else if (oldRole == User.Role.AGENT) {
+        } else if (oldRole == Role.AGENT) {
             handleDemotion(target, admin);
         }
     }
 
-    private void handlePromotion(final User target, final User.Role oldRole, final User admin) {
+    private void handlePromotion(final User target, final Role oldRole, final User admin) {
         if (agentRepository.existsByUserId(target.getId())) {
 
             agentRepository

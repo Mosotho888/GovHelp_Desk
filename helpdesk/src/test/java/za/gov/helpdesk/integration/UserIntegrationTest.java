@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import za.gov.helpdesk.users.model.Role;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 
@@ -24,7 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @DisplayName("User management integration tests")
-public class UserIntegrationTest extends BaseIntegrationTest {
+class UserIntegrationTest extends BaseIntegrationTest {
 
     @Autowired private MockMvc mvc;
     @Autowired private ObjectMapper mapper;
@@ -42,7 +43,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                         .name("System Admin")
                         .email("admin@gov.za")
                         .passwordHash(passwordEncoder.encode("AdminPass1!"))
-                        .role(User.Role.ADMIN)
+                        .role(Role.ADMIN)
                         .active(true)
                         .loginAttempts(0)
                         .timezone("Africa/Johannesburg")
@@ -54,7 +55,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
                                 .name("John Public")
                                 .email("john@citizen.za")
                                 .passwordHash(passwordEncoder.encode("UserPass1!"))
-                                .role(User.Role.USER)
+                                .role(Role.USER)
                                 .active(true)
                                 .loginAttempts(0)
                                 .timezone("Africa/Johannesburg")
@@ -165,7 +166,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
     @Test
     @DisplayName("GET /users/me returns current user profile")
-    void getMyProfile_authenticated_returnsOwnProfile() throws Exception {
+    void fetchMyProfile_authenticated_returnsOwnProfile() throws Exception {
         mvc.perform(get("/v1/users/me").header("Authorization", "Bearer " + userToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("john@citizen.za"));
@@ -173,7 +174,7 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
     @Test
     @DisplayName("GET /users/{id} allows admin to fetch any user")
-    void getUserById_adminFetchesOtherUser_returns200() throws Exception {
+    void fetchUserById_adminFetchesOtherUser_returns200() throws Exception {
         mvc.perform(get("/v1/users/" + johnId).header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("john@citizen.za"));
@@ -181,14 +182,14 @@ public class UserIntegrationTest extends BaseIntegrationTest {
 
     @Test
     @DisplayName("GET /users/{id} returns 403 when user tries to fetch another user's profile")
-    void getUserById_idor_returns403() throws Exception {
+    void fetchUserById_idor_returns403() throws Exception {
         // john tries to fetch admin's profile — admin id is different from john's
         userRepository.save(
                 User.builder()
                         .name("Another Citizen")
                         .email("another@citizen.za")
                         .passwordHash(passwordEncoder.encode("AnotherPass1!"))
-                        .role(User.Role.USER)
+                        .role(Role.USER)
                         .active(true)
                         .loginAttempts(0)
                         .timezone("Africa/Johannesburg")

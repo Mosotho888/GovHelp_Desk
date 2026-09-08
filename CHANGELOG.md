@@ -27,6 +27,18 @@ them rather than a strict semver cadence.
 - Frontend: `features/categories` module (tree fetch, admin management screen, reusable `CategorySelect` picker), wired
   into ticket creation, ticket detail/actions, and the ticket table's filters and columns.
 - Line-ending normalisation (`.gitattributes`) to keep LF consistent across contributors.
+- Asset management (`assets`, `ticket_assets`, `V9__create_assets.sql`): register and track IT assets (laptops,
+  desktops, printers, monitors, networking equipment, software licenses) with ownership, location, vendor, purchase, and
+  warranty details.
+- `Asset` CRUD API (`/v1/assets`) with filtering by type/status/assigned user, auto-generated `assetTag`
+  (`AST-{id}`) when not supplied, and computed `warrantyStatus` (`ACTIVE`/`EXPIRING_SOON`/`EXPIRED`/`NO_WARRANTY_INFO`).
+- Ticket-asset linking (`/v1/tickets/{ticketId}/assets`): associate one or more assets with a ticket so technicians get
+  device history, warranty, and ownership context; `GET /v1/assets/{id}/tickets` returns an asset's full ticket history.
+- `ASSET_CREATED`, `ASSET_UPDATED`, `ASSET_STATUS_CHANGED`, `ASSET_ASSIGNED`, `ASSET_RETIRED`,
+  `ASSET_LINKED_TO_TICKET`, and `ASSET_UNLINKED_FROM_TICKET` audit actions, plus `GET /v1/audit/assets/{id}`; link and
+  unlink events are logged against both the ticket and the asset.
+- `ADR 0007` documenting the asset/ticket-asset join design, the auto-generated tag scheme, and the explicit
+  `clearAssignedUser` flag adopted to avoid the null-vs-omitted ambiguity flagged in ADR 0006's follow-up work.
 
 ### Changed
 

@@ -12,6 +12,7 @@ one-line summary of each.
 | [0004](../adr/0004-oci-arm-free-tier-deployment.md)   | Oracle Cloud Free Tier ARM VM deployment                                                   | Accepted | Single-VM Docker Compose deployment on OCI's Ampere ARM Free Tier, fronted by Cloudflare, chosen for zero hosting cost at portfolio stage                                             |
 | [0005](../adr/0005-static-analysis-tooling.md)        | Multi-tool static analysis pipeline                                                        | Accepted | Checkstyle + PMD 7.x + SpotBugs/FindSecBugs + Spotless, enforced in CI as a dedicated `static-analysis` job                                                                           |
 | [0006](../adr/0006-hierarchical-ticket-categories.md) | Hierarchical ticket categories with in-memory tree resolution and department-based routing | Accepted | Replace free-text `category` with a self-referencing `TicketCategory` (max 3 levels), resolved in memory rather than recursive SQL, driving automated routing by department           |
+| [0007](../adr/0007-asset-management.md)               | Asset management as an explicit join entity, not a ticket field                            | Accepted | `Asset` as its own aggregate with an explicit `TicketAsset` join table (not `@ManyToMany`), auto-generated asset tags, and computed warranty status                                   |
 
 ## Why ADRs
 

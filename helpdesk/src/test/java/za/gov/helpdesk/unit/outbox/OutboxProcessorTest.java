@@ -32,7 +32,7 @@ import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("OutboxRelay unit tests")
-public class OutboxProcessorTest {
+class OutboxProcessorTest {
 
     // Real ObjectMapper so JSON round-trip works
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -65,8 +65,11 @@ public class OutboxProcessorTest {
 
         processor.processOneSecurely(event.getId());
 
-        assertThat(event.getStatus()).isEqualTo(OutboxEvent.Status.PROCESSED);
-        assertThat(event.getProcessedAt()).isNotNull();
+        assertThat(
+                        event.getStatus() == OutboxEvent.Status.PROCESSED
+                                && event.getProcessedAt() != null)
+                .as("event should be marked PROCESSED with a processedAt timestamp set")
+                .isTrue();
 
         then(outboxRepository).should(times(1)).flush();
         then(outboxMetrics).should(times(1)).incrementPublished();
@@ -102,8 +105,9 @@ public class OutboxProcessorTest {
         // bad JSON forces exception
         processor.processOneSecurely(event.getId());
 
-        assertThat(event.getStatus()).isEqualTo(OutboxEvent.Status.FAILED);
-        assertThat(event.getLastError()).isNotNull();
+        assertThat(event.getStatus() == OutboxEvent.Status.FAILED && event.getLastError() != null)
+                .as("event should be marked FAILED with a lastError message recorded")
+                .isTrue();
 
         then(outboxMetrics).should(times(1)).incrementFailed();
         then(outboxMetrics).should(times(1)).incrementDeadLetter();
@@ -132,8 +136,12 @@ public class OutboxProcessorTest {
 
         processor.processOneSecurely(event.getId());
 
-        assertThat(event.getStatus()).isEqualTo(OutboxEvent.Status.PENDING);
-        assertThat(event.getLastError()).contains("broker unavailable");
+        assertThat(
+                        event.getStatus() == OutboxEvent.Status.PENDING
+                                && event.getLastError() != null
+                                && event.getLastError().contains("broker unavailable"))
+                .as("event should remain PENDING with the broker error recorded in lastError")
+                .isTrue();
 
         then(outboxMetrics).should(times(1)).incrementFailed();
         then(outboxMetrics).should(never()).incrementDeadLetter();
@@ -148,9 +156,15 @@ public class OutboxProcessorTest {
 
         processor.processOneSecurely(event.getId());
 
-        assertThat(event.getStatus()).isEqualTo(OutboxEvent.Status.FAILED);
-        assertThat(event.getLastError())
-                .contains("Unknown domain outbox event destination type signature mapping");
+        assertThat(
+                        event.getStatus() == OutboxEvent.Status.FAILED
+                                && event.getLastError() != null
+                                && event.getLastError()
+                                        .contains(
+                                                "Unknown domain outbox event destination type"
+                                                        + " signature mapping"))
+                .as("event should be marked FAILED with the unknown-type error recorded")
+                .isTrue();
 
         then(outboxMetrics).should(times(1)).incrementDeadLetter();
     }

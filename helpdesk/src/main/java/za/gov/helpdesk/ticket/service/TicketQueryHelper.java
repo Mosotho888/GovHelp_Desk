@@ -13,6 +13,7 @@ import za.gov.helpdesk.ticket.model.Priority;
 import za.gov.helpdesk.ticket.model.Status;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
+import za.gov.helpdesk.users.model.Role;
 import za.gov.helpdesk.users.model.User;
 
 import lombok.RequiredArgsConstructor;
@@ -106,14 +107,14 @@ public class TicketQueryHelper {
             final Pageable pageable,
             final User actor) {
         // 1. Regular users only get their own tickets
-        if (actor.getRole() == User.Role.USER) {
+        if (actor.getRole() == Role.USER) {
             return ticketRepository.findByRequester(actor, pageable);
         }
 
         final Set<Long> categoryIds = resolveCategoryIds(categoryId, includeDescendants);
 
         // 2. Agents only get unassigned tickets or tickets assigned to them
-        if (actor.getRole() == User.Role.AGENT) {
+        if (actor.getRole() == Role.AGENT) {
             final String statusStr = status != null ? status.name() : null;
             final String priorityStr = priority != null ? priority.name() : null;
 
@@ -130,6 +131,7 @@ public class TicketQueryHelper {
      * Expands {@code categoryId} to include its descendants when requested, so filtering by a
      * parent category (e.g. "Hardware") also surfaces tickets filed under its subcategories.
      */
+    @SuppressWarnings("PMD.ReturnEmptyCollectionRatherThanNull")
     private Set<Long> resolveCategoryIds(final Long categoryId, final boolean includeDescendants) {
         if (categoryId == null) {
             return null;

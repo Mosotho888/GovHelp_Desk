@@ -29,6 +29,7 @@ import za.gov.helpdesk.ticket.model.Status;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.repository.jpa.TicketRepository;
 import za.gov.helpdesk.ticket.service.TicketQueryHelper;
+import za.gov.helpdesk.users.model.Role;
 import za.gov.helpdesk.users.model.User;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -46,7 +47,7 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("CommentService unit tests")
-public class CommentServiceImplTest {
+class CommentServiceImplTest {
 
     @Mock private CommentRepository commentRepository;
     @Mock private CommentMapper commentMapper;
@@ -60,7 +61,6 @@ public class CommentServiceImplTest {
     @InjectMocks private CommentServiceImpl commentService;
 
     private User agentUser;
-    private Agent agent;
     private User endUser;
     private Ticket ticket;
     private Comment comment;
@@ -72,10 +72,10 @@ public class CommentServiceImplTest {
                         .id(1L)
                         .name("Jane Agent")
                         .email("jane@gov.za")
-                        .role(User.Role.AGENT)
+                        .role(Role.AGENT)
                         .active(true)
                         .build();
-        agent =
+        final Agent agent =
                 Agent.builder()
                         .id(1L)
                         .user(agentUser)
@@ -87,7 +87,7 @@ public class CommentServiceImplTest {
                         .id(2L)
                         .name("John Public")
                         .email("john@citizen.za")
-                        .role(User.Role.USER)
+                        .role(Role.USER)
                         .active(true)
                         .build();
 
@@ -131,8 +131,9 @@ public class CommentServiceImplTest {
         then(commentMetrics).should(times(1)).incrementAdded();
         then(commentMetrics).should(never()).incrementInternalNoteAdded();
 
-        assertThat(response.getBody()).isEqualTo("This is a test comment");
-        assertThat(response.isInternal()).isFalse();
+        assertThat(response)
+                .extracting(CommentResponse::getBody, CommentResponse::isInternal)
+                .containsExactly("This is a test comment", false);
         then(commentRepository).should(times(1)).save(any(Comment.class));
         then(auditPublisher)
                 .should(times(1))
@@ -241,8 +242,9 @@ public class CommentServiceImplTest {
 
         final CommentResponse response = commentService.addReply(100L, req, endUser);
 
-        assertThat(response.getParentId()).isEqualTo(100L);
-        assertThat(response.getBody()).isEqualTo("Thanks for the update!");
+        assertThat(response)
+                .extracting(CommentResponse::getParentId, CommentResponse::getBody)
+                .containsExactly(100L, "Thanks for the update!");
         verify(commentRepository, times(1))
                 .save(
                         argThat(
@@ -250,8 +252,8 @@ public class CommentServiceImplTest {
                                         saved.getParent().equals(comment)
                                                 && saved.getTicket().equals(ticket)
                                                 && saved.getAuthor().equals(endUser)
-                                                && saved.getBody()
-                                                        .equals("Thanks for the update!")));
+                                                && "Thanks for the update!"
+                                                        .equals(saved.getBody())));
         then(auditPublisher)
                 .should(times(1))
                 .publishAudit(

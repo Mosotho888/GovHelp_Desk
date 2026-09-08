@@ -3,30 +3,17 @@
         "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
         "https://checkstyle.org/dtds/configuration_1_3.dtd">
 
-<!--
-  ============================================================
-  GovHelpDesk — Checkstyle Configuration
-  Version   : 1.0.0
-  Toolchain : Checkstyle 10.x
-  Standard  : Google Java Style Guide (adapted for Spring Boot enterprise)
-  ============================================================
-  Severity legend:
-    error   → build-breaking violation
-    warning → reported but non-blocking (use sparingly)
-    ignore  → rule present but disabled intentionally
-  ============================================================
--->
 <module name="Checker">
 
     <!-- ── Global properties ─────────────────────────────────────────── -->
-    <property name="severity"        value="error"/>
-    <property name="fileExtensions"  value="java"/>
-    <property name="charset"         value="UTF-8"/>
+    <property name="severity" value="error"/>
+    <property name="fileExtensions" value="java"/>
+    <property name="charset" value="UTF-8"/>
 
     <!-- Suppress specific violations via suppression file -->
     <module name="SuppressionFilter">
-        <property name="file"                value="${config_loc}/checkstyle-suppressions.xml"/>
-        <property name="optional"            value="true"/>
+        <property name="file" value="${config_loc}/checkstyle-suppressions.xml"/>
+        <property name="optional" value="true"/>
     </module>
 
     <!-- Suppress via @SuppressWarnings annotation in source -->
@@ -46,14 +33,14 @@
 
     <!-- No trailing whitespace -->
     <module name="RegexpSingleline">
-        <property name="format"  value="\s+$"/>
+        <property name="format" value="\s+$"/>
         <property name="message" value="Line has trailing whitespace."/>
     </module>
 
     <!-- Max line length: 120 chars (relaxed from Google's 100 for Spring verbosity) -->
     <module name="LineLength">
-        <property name="max"            value="120"/>
-        <property name="ignorePattern"  value="^package.*|^import.*|a href|href|http://|https://|ftp://"/>
+        <property name="max" value="120"/>
+        <property name="ignorePattern" value="^package.*|^import.*|a href|href|http://|https://|ftp://"/>
     </module>
 
     <!-- ── Per-file / Tree walker checks ─────────────────────────────── -->
@@ -85,9 +72,9 @@
         <module name="ImportOrder">
             <property name="groups"
                       value="/^java\./,/^javax\./,/^jakarta\./,/^org\./,/^com\./,za.gov.helpdesk"/>
-            <property name="ordered"        value="true"/>
-            <property name="separated"      value="true"/>
-            <property name="option"         value="above"/>
+            <property name="ordered" value="true"/>
+            <property name="separated" value="true"/>
+            <property name="option" value="above"/>
             <property name="sortStaticImportsAlphabetically" value="true"/>
         </module>
 
@@ -106,7 +93,7 @@
             <property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
         </module>
         <module name="LocalVariableName">
-            <property name="format"        value="^[a-z][a-zA-Z0-9]*$"/>
+            <property name="format" value="^[a-z][a-zA-Z0-9]*$"/>
             <property name="allowOneCharVarInForLoop" value="true"/>
         </module>
         <module name="MemberName">
@@ -129,25 +116,26 @@
         <!-- ── Javadoc ───────────────────────────────────────────────── -->
         <!-- Public API must be documented -->
         <module name="MissingJavadocMethod">
-            <property name="scope"                      value="public"/>
-            <property name="minLineCount"               value="2"/>
+            <property name="scope" value="public"/>
+            <property name="minLineCount" value="2"/>
             <property name="allowMissingPropertyJavadoc" value="true"/>
-            <property name="ignoreMethodNamesRegex"     value="^(get|set|is|has|equals|hashCode|toString|builder|of|from).*$"/>
-            <property name="tokens"                     value="METHOD_DEF,ANNOTATION_FIELD_DEF"/>
+            <property name="ignoreMethodNamesRegex"
+                      value="^(get|set|is|has|equals|hashCode|toString|builder|of|from).*$"/>
+            <property name="tokens" value="METHOD_DEF,ANNOTATION_FIELD_DEF"/>
         </module>
         <module name="MissingJavadocType">
-            <property name="scope"          value="public"/>
+            <property name="scope" value="public"/>
             <!-- Skip generated, test, config classes -->
-            <property name="excludeScope"   value="private"/>
+            <property name="excludeScope" value="private"/>
         </module>
         <module name="JavadocStyle">
             <property name="checkFirstSentence" value="true"/>
-            <property name="checkEmptyJavadoc"  value="true"/>
+            <property name="checkEmptyJavadoc" value="true"/>
         </module>
         <module name="JavadocMethod">
-            <property name="validateThrows"             value="false"/>
-            <property name="allowMissingParamTags"      value="true"/>
-            <property name="allowMissingReturnTag"      value="true"/>
+            <property name="validateThrows" value="false"/>
+            <property name="allowMissingParamTags" value="true"/>
+            <property name="allowMissingReturnTag" value="true"/>
         </module>
         <module name="NonEmptyAtclauseDescription"/>
         <module name="AtclauseOrder">
@@ -180,13 +168,13 @@
 
         <!-- Indentation: 4 spaces -->
         <module name="Indentation">
-            <property name="basicOffset"           value="4"/>
-            <property name="braceAdjustment"       value="0"/>
-            <property name="caseIndent"            value="4"/>
-            <property name="throwsIndent"          value="8"/>
+            <property name="basicOffset" value="4"/>
+            <property name="braceAdjustment" value="0"/>
+            <property name="caseIndent" value="4"/>
+            <property name="throwsIndent" value="8"/>
             <property name="lineWrappingIndentation" value="8"/>
-            <property name="arrayInitIndent"       value="4"/>
-            <property name="forceStrictCondition"  value="false"/>
+            <property name="arrayInitIndent" value="4"/>
+            <property name="forceStrictCondition" value="false"/>
         </module>
 
         <!-- Modifier order: public protected private abstract default static … -->
@@ -206,11 +194,11 @@
                                            LITERAL_WHILE,LITERAL_DO,LITERAL_FOR,LITERAL_RETURN"/>
         </module>
         <module name="WhitespaceAround">
-            <property name="allowEmptyConstructors"  value="true"/>
-            <property name="allowEmptyLambdas"       value="true"/>
-            <property name="allowEmptyMethods"       value="true"/>
-            <property name="allowEmptyTypes"         value="true"/>
-            <property name="allowEmptyLoops"         value="true"/>
+            <property name="allowEmptyConstructors" value="true"/>
+            <property name="allowEmptyLambdas" value="true"/>
+            <property name="allowEmptyMethods" value="true"/>
+            <property name="allowEmptyTypes" value="true"/>
+            <property name="allowEmptyLoops" value="true"/>
         </module>
         <module name="OperatorWrap">
             <property name="option" value="NL"/>
@@ -219,12 +207,12 @@
                              LOR,LT,MINUS,MOD,NOT_EQUAL,PLUS,QUESTION,SL,SR,STAR,METHOD_REF"/>
         </module>
         <module name="SeparatorWrap">
-            <property name="id"     value="SeparatorWrapDot"/>
+            <property name="id" value="SeparatorWrapDot"/>
             <property name="tokens" value="DOT"/>
             <property name="option" value="nl"/>
         </module>
         <module name="SeparatorWrap">
-            <property name="id"     value="SeparatorWrapComma"/>
+            <property name="id" value="SeparatorWrapComma"/>
             <property name="tokens" value="COMMA"/>
             <property name="option" value="EOL"/>
         </module>
@@ -236,26 +224,26 @@
                       value="PACKAGE_DEF,IMPORT,STATIC_IMPORT,CLASS_DEF,INTERFACE_DEF,
                              ENUM_DEF,STATIC_INIT,INSTANCE_INIT,METHOD_DEF,CTOR_DEF,
                              VARIABLE_DEF,RECORD_DEF,COMPACT_CTOR_DEF"/>
-            <property name="allowNoEmptyLineBetweenFields"    value="true"/>
-            <property name="allowMultipleEmptyLines"          value="false"/>
+            <property name="allowNoEmptyLineBetweenFields" value="true"/>
+            <property name="allowMultipleEmptyLines" value="false"/>
             <property name="allowMultipleEmptyLinesInsideClassMembers" value="false"/>
         </module>
 
         <!-- ── Complexity ────────────────────────────────────────────── -->
         <module name="CyclomaticComplexity">
             <!-- Spring services can get complex; warn above 10, error above 15 -->
-            <property name="max"      value="15"/>
+            <property name="max" value="15"/>
             <property name="severity" value="error"/>
         </module>
         <module name="NPathComplexity">
             <property name="max" value="200"/>
         </module>
         <module name="MethodLength">
-            <property name="max"            value="80"/>
-            <property name="countEmpty"     value="false"/>
+            <property name="max" value="80"/>
+            <property name="countEmpty" value="false"/>
         </module>
         <module name="ParameterNumber">
-            <property name="max"            value="7"/>
+            <property name="max" value="7"/>
             <property name="ignoreOverriddenMethods" value="true"/>
         </module>
         <module name="ClassFanOutComplexity">
@@ -288,7 +276,7 @@
         <module name="SimplifyBooleanExpression"/>
         <module name="SimplifyBooleanReturn"/>
         <module name="HiddenField">
-            <property name="ignoreSetter"          value="true"/>
+            <property name="ignoreSetter" value="true"/>
             <property name="ignoreConstructorParameter" value="true"/>
             <property name="ignoreAbstractMethods" value="true"/>
             <property name="setterCanReturnItsClass" value="true"/>
@@ -299,14 +287,14 @@
         </module>
         <module name="InnerAssignment"/>
         <module name="MagicNumber">
-            <property name="ignoreNumbers"          value="-1,0,1,2,3,4,8,16,100,200,400,404,500"/>
-            <property name="ignoreHashCodeMethod"   value="true"/>
-            <property name="ignoreAnnotation"       value="true"/>
+            <property name="ignoreNumbers" value="-1,0,1,2,3,4,8,16,100,200,400,404,500"/>
+            <property name="ignoreHashCodeMethod" value="true"/>
+            <property name="ignoreAnnotation" value="true"/>
             <property name="ignoreFieldDeclaration" value="true"/>
         </module>
         <module name="AvoidNestedBlocks"/>
         <module name="ReturnCount">
-            <property name="max"       value="4"/>
+            <property name="max" value="4"/>
             <property name="maxForVoid" value="3"/>
         </module>
         <module name="NestedIfDepth">
@@ -322,8 +310,8 @@
         <!-- ── Class design ──────────────────────────────────────────── -->
         <module name="VisibilityModifier">
             <!-- Spring allows package-private for test collaboration -->
-            <property name="packageAllowed"             value="true"/>
-            <property name="protectedAllowed"           value="true"/>
+            <property name="packageAllowed" value="true"/>
+            <property name="protectedAllowed" value="true"/>
             <!-- Immutable fields and Spring @Value fields may be package-private -->
             <property name="allowPublicImmutableFields" value="true"/>
             <property name="ignoreAnnotationCanonicalNames"
@@ -338,7 +326,7 @@
         <module name="MissingOverride"/>
         <module name="PackageAnnotation"/>
         <module name="AnnotationLocation">
-            <property name="id"     value="AnnotationLocationMostCases"/>
+            <property name="id" value="AnnotationLocationMostCases"/>
             <property name="tokens" value="CLASS_DEF,INTERFACE_DEF,ENUM_DEF,
                                            METHOD_DEF,CTOR_DEF,RECORD_DEF,
                                            COMPACT_CTOR_DEF"/>

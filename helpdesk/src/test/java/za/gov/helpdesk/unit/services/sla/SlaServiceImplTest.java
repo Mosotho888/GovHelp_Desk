@@ -23,6 +23,7 @@ import za.gov.helpdesk.sla.service.SlaQueryHelper;
 import za.gov.helpdesk.sla.service.impl.SlaServiceImpl;
 import za.gov.helpdesk.ticket.model.Priority;
 import za.gov.helpdesk.ticket.model.Ticket;
+import za.gov.helpdesk.users.model.Role;
 import za.gov.helpdesk.users.model.User;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -45,30 +46,27 @@ class SlaServiceImplTest {
 
     @InjectMocks private SlaServiceImpl slaService;
 
-    private User requester;
-    private User agentUser;
-    private Agent agent;
     private Ticket ticket;
 
     @BeforeEach
     void setUp() {
-        requester =
+        final User requester =
                 User.builder()
                         .id(1L)
                         .name("John Public")
                         .email("john@citizen.za")
-                        .role(User.Role.USER)
+                        .role(Role.USER)
                         .active(true)
                         .build();
-        agentUser =
+        final User agentUser =
                 User.builder()
                         .id(2L)
                         .name("Jane Agent")
                         .email("jane@gov.za")
-                        .role(User.Role.AGENT)
+                        .role(Role.AGENT)
                         .active(true)
                         .build();
-        agent = Agent.builder().id(10L).user(agentUser).build();
+        final Agent agent = Agent.builder().id(10L).user(agentUser).build();
         ticket =
                 Ticket.builder()
                         .id(100L)
@@ -101,9 +99,12 @@ class SlaServiceImplTest {
 
         final TicketSla result = slaService.initializeSla(ticket);
 
-        assertThat(result.getTicket()).isEqualTo(ticket);
-        assertThat(result.getResponseDueAt()).isEqualTo(responseDue);
-        assertThat(result.getResolutionDueAt()).isEqualTo(resolutionDue);
+        assertThat(result)
+                .extracting(
+                        TicketSla::getTicket,
+                        TicketSla::getResponseDueAt,
+                        TicketSla::getResolutionDueAt)
+                .containsExactly(ticket, responseDue, resolutionDue);
         then(ticketSlaRepository).should(times(1)).save(any(TicketSla.class));
     }
 
@@ -136,8 +137,9 @@ class SlaServiceImplTest {
 
         slaService.recordFirstResponse(100L);
 
-        assertThat(sla.getFirstResponseAt()).isNotNull();
-        assertThat(sla.isResponseBreached()).isTrue();
+        assertThat(sla.getFirstResponseAt() != null && sla.isResponseBreached())
+                .as("sla should have firstResponseAt set and be marked response-breached")
+                .isTrue();
         then(ticketSlaRepository).should(times(1)).save(sla);
     }
 
@@ -155,8 +157,9 @@ class SlaServiceImplTest {
 
         slaService.recordFirstResponse(100L);
 
-        assertThat(sla.getFirstResponseAt()).isNotNull();
-        assertThat(sla.isResponseBreached()).isFalse();
+        assertThat(sla.getFirstResponseAt() != null && !sla.isResponseBreached())
+                .as("sla should have firstResponseAt set and not be marked response-breached")
+                .isTrue();
         then(ticketSlaRepository).should(times(1)).save(sla);
     }
 
@@ -202,8 +205,9 @@ class SlaServiceImplTest {
 
         slaService.recordResolution(100L);
 
-        assertThat(sla.getResolvedAt()).isNotNull();
-        assertThat(sla.isResolutionBreached()).isTrue();
+        assertThat(sla.getResolvedAt() != null && sla.isResolutionBreached())
+                .as("sla should have resolvedAt set and be marked resolution-breached")
+                .isTrue();
         then(ticketSlaRepository).should(times(1)).save(sla);
     }
 
@@ -221,8 +225,9 @@ class SlaServiceImplTest {
 
         slaService.recordResolution(100L);
 
-        assertThat(sla.getResolvedAt()).isNotNull();
-        assertThat(sla.isResolutionBreached()).isFalse();
+        assertThat(sla.getResolvedAt() != null && !sla.isResolutionBreached())
+                .as("sla should have resolvedAt set and not be marked resolution-breached")
+                .isTrue();
         then(ticketSlaRepository).should(times(1)).save(sla);
     }
 
@@ -246,7 +251,7 @@ class SlaServiceImplTest {
 
     @Test
     @DisplayName("getSlaStatus() returns ON_TRACK when well within deadline")
-    void getSlaStatus_onTrack_returnsOnTrack() {
+    void fetchSlaStatus_onTrack_returnsOnTrack() {
         final SlaPolicy policy =
                 SlaPolicy.builder()
                         .priority(Priority.HIGH)
@@ -266,14 +271,17 @@ class SlaServiceImplTest {
 
         final TicketSlaResponse response = slaService.getSlaStatus(100L);
 
-        assertThat(response.getStatus()).isEqualTo("ON_TRACK");
-        assertThat(response.isResponseBreached()).isFalse();
-        assertThat(response.isResolutionBreached()).isFalse();
+        assertThat(response)
+                .extracting(
+                        TicketSlaResponse::getStatus,
+                        TicketSlaResponse::isResponseBreached,
+                        TicketSlaResponse::isResolutionBreached)
+                .containsExactly("ON_TRACK", false, false);
     }
 
     @Test
     @DisplayName("getSlaStatus() returns AT_RISK when inside warning threshold")
-    void getSlaStatus_withinWarningThreshold_returnsAtRisk() {
+    void fetchSlaStatus_withinWarningThreshold_returnsAtRisk() {
         final SlaPolicy policy =
                 SlaPolicy.builder()
                         .priority(Priority.HIGH)
@@ -299,7 +307,7 @@ class SlaServiceImplTest {
 
     @Test
     @DisplayName("getSlaStatus() throws ResourceNotFoundException when no SLA record exists")
-    void getSlaStatus_noSlaRecord_throwsNotFound() {
+    void fetchSlaStatus_noSlaRecord_throwsNotFound() {
         given(slaQuery.findByTicketOrThrow(999L))
                 .willThrow(new ResourceNotFoundException("SLA metadata for ticket", 999L));
 

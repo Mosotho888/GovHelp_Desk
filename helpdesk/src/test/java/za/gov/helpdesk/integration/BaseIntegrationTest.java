@@ -2,16 +2,21 @@ package za.gov.helpdesk.integration;
 
 import java.util.Map;
 
+import jakarta.mail.Session;
+import jakarta.mail.internet.MimeMessage;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -22,9 +27,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import za.gov.helpdesk.sla.model.SlaPolicy;
 import za.gov.helpdesk.sla.repository.SlaPolicyRepository;
 import za.gov.helpdesk.ticket.model.Priority;
+import za.gov.helpdesk.users.model.Role;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 
+import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -53,6 +60,8 @@ public abstract class BaseIntegrationTest {
     @Autowired protected SlaPolicyRepository slaPolicyRepository;
     @Autowired private JdbcTemplate jdbcTemplate;
 
+    @MockitoBean private JavaMailSender mailSender;
+
     @DynamicPropertySource
     static void configureProperties(final DynamicPropertyRegistry registry) {
 
@@ -79,6 +88,11 @@ public abstract class BaseIntegrationTest {
                         + " IDENTITY CASCADE;");
     }
 
+    @BeforeEach
+    void stubMailSender() {
+        given(mailSender.createMimeMessage()).willReturn(new MimeMessage((Session) null));
+    }
+
     protected String login(final String email, final String password) throws Exception {
         final MvcResult result =
                 mvc.perform(
@@ -103,7 +117,7 @@ public abstract class BaseIntegrationTest {
                         .name("System Admin")
                         .email("admin@gov.za")
                         .passwordHash(passwordEncoder.encode("AdminPass1!"))
-                        .role(User.Role.ADMIN)
+                        .role(Role.ADMIN)
                         .active(true)
                         .loginAttempts(0)
                         .timezone("Africa/Johannesburg")
@@ -114,7 +128,7 @@ public abstract class BaseIntegrationTest {
                         .name("John Public")
                         .email("john@citizen.za")
                         .passwordHash(passwordEncoder.encode("UserPass1!"))
-                        .role(User.Role.USER)
+                        .role(Role.USER)
                         .active(true)
                         .loginAttempts(0)
                         .timezone("Africa/Johannesburg")
@@ -127,7 +141,7 @@ public abstract class BaseIntegrationTest {
                         .name(name)
                         .email(email)
                         .passwordHash(passwordEncoder.encode(password))
-                        .role(User.Role.AGENT)
+                        .role(Role.AGENT)
                         .active(true)
                         .loginAttempts(0)
                         .timezone("Africa/Johannesburg")
@@ -147,7 +161,7 @@ public abstract class BaseIntegrationTest {
                         .name("John Public")
                         .email("john@citizen.za")
                         .passwordHash(passwordEncoder.encode("UserPass1!"))
-                        .role(User.Role.USER)
+                        .role(Role.USER)
                         .active(true)
                         .loginAttempts(0)
                         .timezone("Africa/Johannesburg")
@@ -160,7 +174,7 @@ public abstract class BaseIntegrationTest {
                         .name("Jane Agent")
                         .email("jane@gov.za")
                         .passwordHash(passwordEncoder.encode("AgentPass1!"))
-                        .role(User.Role.AGENT)
+                        .role(Role.AGENT)
                         .active(true)
                         .loginAttempts(0)
                         .timezone("Africa/Johannesburg")

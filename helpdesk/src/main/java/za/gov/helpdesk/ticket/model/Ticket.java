@@ -23,14 +23,17 @@ import za.gov.helpdesk.users.model.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+@SuppressWarnings("checkstyle:ClassFanOutComplexity")
 @Entity
 @Table(name = "TICKETS")
 @Setter
 @Getter
 @Builder
 @AllArgsConstructor
+@NoArgsConstructor
 public class Ticket {
 
     @Id
@@ -71,8 +74,6 @@ public class Ticket {
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-
-    public Ticket() {}
 
     @PrePersist
     protected void onCreate() {

@@ -1,17 +1,10 @@
 package za.gov.helpdesk.notification.service.sla;
 
-import java.time.LocalDateTime;
+import za.gov.helpdesk.notification.dto.SlaEmailNotificationMessage;
 
 public interface SlaEmailService {
 
-    void sendSlaWarning(
-            String to,
-            String agentName,
-            String ticketNumber,
-            String subject,
-            String deadlineType,
-            LocalDateTime dueAt);
+    void sendSlaWarning(SlaEmailNotificationMessage message);
 
-    void sendSlaBreach(
-            String to, String agentName, String ticketNumber, String subject, String deadlineType);
+    void sendSlaBreach(SlaEmailNotificationMessage message);
 }

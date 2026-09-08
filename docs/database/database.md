@@ -21,6 +21,9 @@ erDiagram
     tickets ||--o| ticket_sla: "has"
     users ||--o{ audit_log: "acts as"
     users ||--o{ refresh_tokens: "owns"
+    users ||--o{ assets: "is assigned"
+    tickets ||--o{ ticket_assets: "concerns"
+    assets ||--o{ ticket_assets: "has history"
 
     users {
         bigint id PK
@@ -89,6 +92,35 @@ erDiagram
         bigint size_bytes
         varchar storage_path
         timestamp created_at
+    }
+
+    assets {
+        bigint id PK
+        varchar asset_tag UK
+        varchar name
+        varchar type "LAPTOP|DESKTOP|PRINTER|MONITOR|NETWORKING_EQUIPMENT|SOFTWARE_LICENSE|OTHER"
+        varchar status "IN_USE|IN_STORAGE|UNDER_REPAIR|RETIRED|LOST"
+        varchar serial_number UK
+        varchar manufacturer
+        varchar model
+        bigint assigned_user_id FK "nullable"
+        varchar location
+        varchar vendor
+        date purchase_date
+        numeric purchase_cost
+        date warranty_expiry_date
+        text notes
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    ticket_assets {
+        bigint id PK
+        bigint ticket_id FK
+        bigint asset_id FK
+        bigint linked_by_id FK
+        varchar linked_by_name
+        timestamp linked_at
     }
 
     audit_log {
@@ -168,7 +200,7 @@ erDiagram
 System-wide identity table for all three roles. `role` is constrained to
 `USER | AGENT | ADMIN` at the database level (`CHECK` constraint), not just in application code. `login_attempts` backs
 the account-lockout mechanism - see
-[`docs/security/README.md`](../security/security-model.md#account-lockout).
+[`docs/security/security-model.md`](../security/security-model.md#account-lockout).
 
 ### `agents`
 
@@ -209,6 +241,23 @@ under `storage_path`, keyed per ticket. See
 [`docs/security/README.md`](../security/security-model.md#file-upload-safety) for how `storage_path`
 is validated to prevent path traversal.
 
+### `assets`
+
+IT inventory: laptops, desktops, printers, monitors, networking equipment, and software licenses. `asset_tag` is a
+unique human-readable identifier, auto-generated as `AST-{zero-padded id}` when not supplied by the caller (so it can
+alternatively be set to match a pre-existing physical barcode scheme). `assigned_user_id` records current ownership for
+reporting; `warranty_expiry_date` and `purchase_cost` support the warranty/ownership lookups technicians need when
+triaging a ticket - see [ADR 0007](../adr/0007-asset-management.md). Assets are soft-retired via
+`status = 'RETIRED'` rather than deleted, so historical ticket links remain meaningful.
+
+### `ticket_assets`
+
+Join table linking a ticket to the asset (s) it concerns, modelled as its own table (rather than a bare many-to-many)
+so each link carries `linked_by_id`/`linked_by_name` for accountability, mirroring `audit_log`'s denormalised actor
+fields. `uq_ticket_assets_ticket_asset` prevents linking the same asset to the same ticket twice.
+`idx_ticket_assets_asset` (on `asset_id, linked_at DESC`) is what makes an asset's device history
+(`GET /v1/assets/{id}/tickets`) fast to page through.
+
 ### `audit_log`
 
 Originally a ticket-only log; refactored in `V3__refactor_audit_log.sql` into a generic entity audit trail
@@ -248,6 +297,7 @@ raw OTP) for password reset.
 | V6      | `V6__create_sla_tables.sql`            | Added `sla_policies` (seeded) and `ticket_sla`                                                                                     |
 | V7      | `V7__create_outbox_events.sql`         | Added `outbox_events` for the transactional outbox pattern                                                                         |
 | V8      | `V8__create_ticket_categories.sql`     | Added hierarchical `ticket_categories`, seeded default tree, migrated `tickets.category` (free text) to `tickets.category_id` (FK) |
+| V9      | `V9__create_assets.sql`                | Added `assets` and `ticket_assets` (join table), seeded demo inventory                                                             |
 
 New migrations should always be additive and forward-only (Flyway's model) - never edit a committed migration file once
 it has run against any shared environment.

@@ -2,8 +2,7 @@ package za.gov.helpdesk.config.messaging;
 
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.Declarables;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
@@ -37,258 +36,116 @@ public class RabbitMQConfig {
     private int maxConcurrentConsumers;
 
     /**
-     * Declares the main {@link TopicExchange} where all operational and system notifications are
-     * initially dispatched by publisher components.
+     * Declares the primary business topic exchange and the Dead Letter Exchange (DLX) used to trap
+     * messages that fail transactional verification constraints.
      *
-     * @return the primary business message topic exchange
+     * @return the {@link Declarables} wrapper bundling both topic exchanges
      */
     @Bean
-    public TopicExchange helpdeskExchange() {
-        return new TopicExchange(RabbitMQConstants.EXCHANGE);
+    public Declarables topicExchanges() {
+        return new Declarables(
+                new TopicExchange(RabbitMQConstants.EXCHANGE),
+                new TopicExchange(RabbitMQConstants.DLX));
     }
 
     /**
-     * Declares the dedicated Dead Letter {@link TopicExchange} (DLX) used to trap, aggregate, and
-     * route discarded messages that fail transactional verification constraints.
+     * Establishes the durable dead-letter queues that retain unrecoverable audit, ticket, password
+     * reset, and SLA notification messages.
      *
-     * @return the secondary error recovery dead letter exchange
+     * @return the {@link Declarables} wrapper bundling every dead letter queue
      */
     @Bean
-    public TopicExchange deadLetterExchange() {
-        return new TopicExchange(RabbitMQConstants.DLX);
+    public Declarables deadLetterQueues() {
+        return new Declarables(
+                QueueBuilder.durable(RabbitMQConstants.AUDIT_DLQ).build(),
+                QueueBuilder.durable(RabbitMQConstants.PASSWORD_RESET_EMAIL_DLQ).build(),
+                QueueBuilder.durable(RabbitMQConstants.TICKET_EMAIL_DLQ).build(),
+                QueueBuilder.durable(RabbitMQConstants.SLA_EMAIL_DLQ).build());
     }
 
     /**
-     * Establishes a durable tracking queue to retain unrecoverable audit trail logging event
-     * messages.
+     * Establishes the durable worker queues for audit, ticket, password reset, and SLA
+     * notifications, each wired with dead-letter parameters so toxic messages fall back seamlessly
+     * to the DLX.
      *
-     * @return a durable audit log dead letter queue wrapper
+     * @return the {@link Declarables} wrapper bundling every worker queue
      */
     @Bean
-    public Queue auditDlq() {
-        return QueueBuilder.durable(RabbitMQConstants.AUDIT_DLQ).build();
+    public Declarables workerQueues() {
+        return new Declarables(
+                QueueBuilder.durable(RabbitMQConstants.AUDIT_QUEUE)
+                        .withArgument("x-dead-letter-exchange", RabbitMQConstants.DLX)
+                        .withArgument(
+                                "x-dead-letter-routing-key",
+                                RabbitMQConstants.AUDIT_DLQ_ROUTING_KEY)
+                        .build(),
+                QueueBuilder.durable(RabbitMQConstants.PASSWORD_RESET_EMAIL_QUEUE)
+                        .withArgument("x-dead-letter-exchange", RabbitMQConstants.DLX)
+                        .withArgument(
+                                "x-dead-letter-routing-key",
+                                RabbitMQConstants.PASSWORD_RESET_EMAIL_DLQ_ROUTING_KEY)
+                        .build(),
+                QueueBuilder.durable(RabbitMQConstants.TICKET_EMAIL_QUEUE)
+                        .withArgument("x-dead-letter-exchange", RabbitMQConstants.DLX)
+                        .withArgument(
+                                "x-dead-letter-routing-key",
+                                RabbitMQConstants.TICKET_EMAIL_DLQ_ROUTING_KEY)
+                        .build(),
+                QueueBuilder.durable(RabbitMQConstants.SLA_EMAIL_QUEUE)
+                        .withArgument("x-dead-letter-exchange", RabbitMQConstants.DLX)
+                        .withArgument(
+                                "x-dead-letter-routing-key",
+                                RabbitMQConstants.SLA_EMAIL_DLQ_ROUTING_KEY)
+                        .build());
     }
 
     /**
-     * Establishes a durable tracking queue to retain unrecoverable password reset notification
-     * messages.
+     * Binds every worker queue to the main topic exchange and every dead letter queue to the DLX,
+     * each using its dedicated routing key.
      *
-     * @return a durable password reset email dead letter queue wrapper
+     * @return the {@link Declarables} wrapper bundling every binding in the topology
      */
     @Bean
-    public Queue passwordResetEmailDlq() {
-        return QueueBuilder.durable(RabbitMQConstants.PASSWORD_RESET_EMAIL_DLQ).build();
+    public Declarables bindings() {
+        return new Declarables(
+                bindingOf(
+                        RabbitMQConstants.AUDIT_QUEUE,
+                        RabbitMQConstants.EXCHANGE,
+                        RabbitMQConstants.AUDIT_ROUTING_KEY),
+                bindingOf(
+                        RabbitMQConstants.TICKET_EMAIL_QUEUE,
+                        RabbitMQConstants.EXCHANGE,
+                        RabbitMQConstants.TICKET_EMAIL_ROUTING_KEY),
+                bindingOf(
+                        RabbitMQConstants.SLA_EMAIL_QUEUE,
+                        RabbitMQConstants.EXCHANGE,
+                        RabbitMQConstants.SLA_EMAIL_ROUTING_KEY),
+                bindingOf(
+                        RabbitMQConstants.PASSWORD_RESET_EMAIL_QUEUE,
+                        RabbitMQConstants.EXCHANGE,
+                        RabbitMQConstants.PASSWORD_RESET_EMAIL_ROUTING_KEY),
+                bindingOf(
+                        RabbitMQConstants.AUDIT_DLQ,
+                        RabbitMQConstants.DLX,
+                        RabbitMQConstants.AUDIT_DLQ_ROUTING_KEY),
+                bindingOf(
+                        RabbitMQConstants.TICKET_EMAIL_DLQ,
+                        RabbitMQConstants.DLX,
+                        RabbitMQConstants.TICKET_EMAIL_DLQ_ROUTING_KEY),
+                bindingOf(
+                        RabbitMQConstants.SLA_EMAIL_DLQ,
+                        RabbitMQConstants.DLX,
+                        RabbitMQConstants.SLA_EMAIL_DLQ_ROUTING_KEY),
+                bindingOf(
+                        RabbitMQConstants.PASSWORD_RESET_EMAIL_DLQ,
+                        RabbitMQConstants.DLX,
+                        RabbitMQConstants.PASSWORD_RESET_EMAIL_DLQ_ROUTING_KEY));
     }
 
-    /**
-     * Establishes a durable tracking queue to retain unrecoverable ticket notification messages.
-     *
-     * @return a durable ticket email dead letter queue wrapper
-     */
-    @Bean
-    public Queue ticketEmailDlq() {
-        return QueueBuilder.durable(RabbitMQConstants.TICKET_EMAIL_DLQ).build();
-    }
-
-    /**
-     * Establishes a durable tracking queue to retain unrecoverable SLA escalation alert messages.
-     *
-     * @return a durable SLA email dead letter queue wrapper
-     */
-    @Bean
-    public Queue slaEmailDlq() {
-        return QueueBuilder.durable(RabbitMQConstants.SLA_EMAIL_DLQ).build();
-    }
-
-    /**
-     * Establishes a durable worker queue dedicated to picking up operational auditing messages.
-     * Hooks up dead-letter parameters to guarantee toxic messages fall back seamlessly to the DLX.
-     *
-     * @return a pre-configured durable audit worker queue
-     */
-    @Bean
-    public Queue auditQueue() {
-
-        return QueueBuilder.durable(RabbitMQConstants.AUDIT_QUEUE)
-                .withArgument("x-dead-letter-exchange", RabbitMQConstants.DLX)
-                .withArgument("x-dead-letter-routing-key", RabbitMQConstants.AUDIT_DLQ_ROUTING_KEY)
-                .build();
-    }
-
-    /**
-     * Establishes a durable worker queue dedicated to processing outbound security password reset
-     * notifications. Hooks up dead-letter parameters to guarantee toxic messages fall back
-     * seamlessly to the DLX.
-     *
-     * @return a pre-configured durable password reset worker queue
-     */
-    @Bean
-    public Queue passwordResetEmailQueue() {
-
-        return QueueBuilder.durable(RabbitMQConstants.PASSWORD_RESET_EMAIL_QUEUE)
-                .withArgument("x-dead-letter-exchange", RabbitMQConstants.DLX)
-                .withArgument(
-                        "x-dead-letter-routing-key",
-                        RabbitMQConstants.PASSWORD_RESET_EMAIL_DLQ_ROUTING_KEY)
-                .build();
-    }
-
-    /**
-     * Establishes a durable worker queue dedicated to processing standard outbound ticket lifecycle
-     * notifications. Hooks up dead-letter parameters to guarantee toxic messages fall back
-     * seamlessly to the DLX.
-     *
-     * @return a pre-configured durable ticket notification worker queue
-     */
-    @Bean
-    public Queue ticketEmailQueue() {
-
-        return QueueBuilder.durable(RabbitMQConstants.TICKET_EMAIL_QUEUE)
-                .withArgument("x-dead-letter-exchange", RabbitMQConstants.DLX)
-                .withArgument(
-                        "x-dead-letter-routing-key", RabbitMQConstants.TICKET_EMAIL_DLQ_ROUTING_KEY)
-                .build();
-    }
-
-    /**
-     * Establishes a durable worker queue dedicated to processing critical time-sensitive SLA
-     * escalation notifications. Hooks up dead-letter parameters to guarantee toxic messages fall
-     * back seamlessly to the DLX.
-     *
-     * @return a pre-configured durable SLA notification worker queue
-     */
-    @Bean
-    public Queue slaEmailQueue() {
-
-        return QueueBuilder.durable(RabbitMQConstants.SLA_EMAIL_QUEUE)
-                .withArgument("x-dead-letter-exchange", RabbitMQConstants.DLX)
-                .withArgument(
-                        "x-dead-letter-routing-key", RabbitMQConstants.SLA_EMAIL_DLQ_ROUTING_KEY)
-                .build();
-    }
-
-    /**
-     * Interconnects the main audit logging queue to the central topic exchange using an exclusive
-     * routing pattern key.
-     *
-     * @param auditQueue the targeted worker destination queue
-     * @param helpdeskExchange the central dispatching exchange source
-     * @return a fully populated network communication routing {@link Binding} link
-     */
-    @Bean
-    public Binding bindAuditQueue(final Queue auditQueue, final TopicExchange helpdeskExchange) {
-        return BindingBuilder.bind(auditQueue)
-                .to(helpdeskExchange)
-                .with(RabbitMQConstants.AUDIT_ROUTING_KEY);
-    }
-
-    /**
-     * Interconnects the ticket notification queue to the central topic exchange using an exclusive
-     * routing pattern key.
-     *
-     * @param ticketEmailQueue the targeted worker destination queue
-     * @param helpdeskExchange the central dispatching exchange source
-     * @return a fully populated network communication routing {@link Binding} link
-     */
-    @Bean
-    public Binding bindTicketEmailQueue(
-            final Queue ticketEmailQueue, final TopicExchange helpdeskExchange) {
-        return BindingBuilder.bind(ticketEmailQueue)
-                .to(helpdeskExchange)
-                .with(RabbitMQConstants.TICKET_EMAIL_ROUTING_KEY);
-    }
-
-    /**
-     * Interconnects the SLA alert queue to the central topic exchange using an exclusive routing
-     * pattern key.
-     *
-     * @param slaEmailQueue the targeted worker destination queue
-     * @param helpdeskExchange the central dispatching exchange source
-     * @return a fully populated network communication routing {@link Binding} link
-     */
-    @Bean
-    public Binding bindSlaEmailQueue(
-            final Queue slaEmailQueue, final TopicExchange helpdeskExchange) {
-        return BindingBuilder.bind(slaEmailQueue)
-                .to(helpdeskExchange)
-                .with(RabbitMQConstants.SLA_EMAIL_ROUTING_KEY);
-    }
-
-    /**
-     * Interconnects the security password reset queue to the central topic exchange using an
-     * exclusive routing pattern key.
-     *
-     * @param passwordResetEmailQueue the targeted worker destination queue
-     * @param helpdeskExchange the central dispatching exchange source
-     * @return a fully populated network communication routing {@link Binding} link
-     */
-    @Bean
-    public Binding bindPasswordResetEmailQueue(
-            final Queue passwordResetEmailQueue, final TopicExchange helpdeskExchange) {
-        return BindingBuilder.bind(passwordResetEmailQueue)
-                .to(helpdeskExchange)
-                .with(RabbitMQConstants.PASSWORD_RESET_EMAIL_ROUTING_KEY);
-    }
-
-    /**
-     * Maps the dedicated error-handling audit log DLQ directly into the Dead Letter Exchange
-     * topology.
-     *
-     * @param auditDlq the error aggregation container queue
-     * @param deadLetterExchange the isolation fallback exchange source
-     * @return a fully populated fault-tolerance routing {@link Binding} link
-     */
-    @Bean
-    public Binding bindAuditDlq(final Queue auditDlq, final TopicExchange deadLetterExchange) {
-        return BindingBuilder.bind(auditDlq)
-                .to(deadLetterExchange)
-                .with(RabbitMQConstants.AUDIT_DLQ_ROUTING_KEY);
-    }
-
-    /**
-     * Maps the error-handling ticket notification DLQ directly into the Dead Letter Exchange
-     * topology.
-     *
-     * @param ticketEmailDlq the error aggregation container queue
-     * @param deadLetterExchange the isolation fallback exchange source
-     * @return a fully populated fault-tolerance routing {@link Binding} link
-     */
-    @Bean
-    public Binding bindTicketEmailDlq(
-            final Queue ticketEmailDlq, final TopicExchange deadLetterExchange) {
-        return BindingBuilder.bind(ticketEmailDlq)
-                .to(deadLetterExchange)
-                .with(RabbitMQConstants.TICKET_EMAIL_DLQ_ROUTING_KEY);
-    }
-
-    /**
-     * Maps the error-handling SLA alert DLQ directly into the Dead Letter Exchange topology.
-     *
-     * @param slaEmailDlq the error aggregation container queue
-     * @param deadLetterExchange the isolation fallback exchange source
-     * @return a fully populated fault-tolerance routing {@link Binding} link
-     */
-    @Bean
-    public Binding bindSlaEmailDlq(
-            final Queue slaEmailDlq, final TopicExchange deadLetterExchange) {
-        return BindingBuilder.bind(slaEmailDlq)
-                .to(deadLetterExchange)
-                .with(RabbitMQConstants.SLA_EMAIL_DLQ_ROUTING_KEY);
-    }
-
-    /**
-     * Maps the error-handling password reset DLQ directly into the Dead Letter Exchange topology.
-     *
-     * @param passwordResetEmailDlq the error aggregation container queue
-     * @param deadLetterExchange the isolation fallback exchange source
-     * @return a fully populated fault-tolerance routing {@link Binding} link
-     */
-    @Bean
-    public Binding bindPasswordResetEmailDlq(
-            final Queue passwordResetEmailDlq, final TopicExchange deadLetterExchange) {
-        return BindingBuilder.bind(passwordResetEmailDlq)
-                .to(deadLetterExchange)
-                .with(RabbitMQConstants.PASSWORD_RESET_EMAIL_DLQ_ROUTING_KEY);
+    private static Binding bindingOf(
+            final String queueName, final String exchangeName, final String routingKey) {
+        return new Binding(
+                queueName, Binding.DestinationType.QUEUE, exchangeName, routingKey, null);
     }
 
     /**

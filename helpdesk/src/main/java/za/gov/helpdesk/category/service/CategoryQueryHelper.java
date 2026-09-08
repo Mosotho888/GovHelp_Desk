@@ -88,6 +88,7 @@ public class CategoryQueryHelper {
      * @return null if categoryId is null (meaning "no filter"), otherwise the category id and all
      *     of its descendant ids
      */
+    @SuppressWarnings("PMD.ReturnEmptyCollectionRatherThanNull")
     public Set<Long> resolveWithDescendants(final Long categoryId) {
         if (categoryId == null) {
             return null;

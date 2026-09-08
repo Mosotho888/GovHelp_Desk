@@ -106,8 +106,10 @@ class TicketEmailNotificationConsumerTest {
 
     @Test
     @DisplayName("handle() NACKs when channel ACK fails")
+    @SuppressWarnings("PMD.CloseResource")
     void handle_channelAckFailure_nacksAndRequeues() throws Exception {
         final TicketEmailNotificationMessage message = message(AuditLog.AuditAction.TICKET_CREATED);
+        // Mockito mock, not a live AMQP channel - there is no real resource to close here.
         final Channel failingChannel = mock(Channel.class);
         doThrow(new java.io.IOException("ack failed")).when(failingChannel).basicAck(42L, false);
 

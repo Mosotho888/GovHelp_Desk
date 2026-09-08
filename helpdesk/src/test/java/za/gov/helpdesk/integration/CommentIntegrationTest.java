@@ -7,8 +7,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.agent.repository.jpa.AgentRepository;
@@ -30,13 +28,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @DisplayName("Comment integration tests")
-public class CommentIntegrationTest extends BaseIntegrationTest {
+class CommentIntegrationTest extends BaseIntegrationTest {
 
     @Autowired private UserRepository userRepository;
     @Autowired private AgentRepository agentRepository;
     @Autowired private TicketRepository ticketRepository;
-
-    @MockitoBean private JavaMailSender mailSender;
 
     private String userToken;
     private String agentToken;
@@ -179,7 +175,7 @@ public class CommentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     @DisplayName("GET /tickets/{id}/comments returns paginated comments in order")
-    void getComments_multiplePosts_returnsPaginatedAscending() throws Exception {
+    void fetchComments_multiplePosts_returnsPaginatedAscending() throws Exception {
         final Ticket ticket = ticketRepository.findById(ticketId).orElseThrow();
         ticket.setAssignee(agent);
         ticketRepository.saveAndFlush(ticket);
@@ -240,7 +236,7 @@ public class CommentIntegrationTest extends BaseIntegrationTest {
 
     @Test
     @DisplayName("GET /comments/{id}/replies returns 200 with all replies")
-    void getReplies_hasReplies_returnsAll() throws Exception {
+    void fetchReplies_hasReplies_returnsAll() throws Exception {
         final String commentBody =
                 mvc.perform(
                                 post("/v1/tickets/" + ticketId + "/comments")

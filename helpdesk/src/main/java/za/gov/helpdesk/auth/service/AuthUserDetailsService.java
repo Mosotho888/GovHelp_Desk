@@ -20,7 +20,7 @@ public class AuthUserDetailsService implements UserDetailsService {
     private final UserRepository userRepository;
 
     @Override
-    public UserDetails loadUserByUsername(final String email) throws UsernameNotFoundException {
+    public UserDetails loadUserByUsername(final String email) {
         final User user =
                 userRepository
                         .findByEmail(email)

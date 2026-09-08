@@ -11,6 +11,7 @@ import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auth.service.RefreshTokenService;
 import za.gov.helpdesk.users.dto.response.UserResponse;
 import za.gov.helpdesk.users.mapper.UserMapper;
+import za.gov.helpdesk.users.model.Role;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 import za.gov.helpdesk.users.service.AccountAdminService;
@@ -87,7 +88,7 @@ public class AccountAdminServiceImpl implements AccountAdminService {
 
     @Override
     @Transactional
-    public UserResponse changeUserRole(final Long id, final User.Role newRole, final User admin) {
+    public UserResponse changeUserRole(final Long id, final Role newRole, final User admin) {
         final User target = userQuery.findOrThrow(id);
 
         if (Objects.equals(target.getRole(), newRole)) {
@@ -97,7 +98,7 @@ public class AccountAdminServiceImpl implements AccountAdminService {
             throw new IllegalStateException("Admin cannot change their own role");
         }
 
-        final User.Role oldRole = target.getRole();
+        final Role oldRole = target.getRole();
         target.setRole(newRole);
         userRepository.save(target);
 
