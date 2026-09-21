@@ -12,12 +12,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
 import za.gov.helpdesk.auth.dto.request.PasswordResetConfirmRequest;
 import za.gov.helpdesk.auth.dto.request.PasswordResetRequest;
 import za.gov.helpdesk.auth.metrics.AuthMetrics;
 import za.gov.helpdesk.auth.model.PasswordResetToken;
 import za.gov.helpdesk.auth.repository.PasswordResetTokenRepository;
+import za.gov.helpdesk.auth.service.AuthAuditService;
 import za.gov.helpdesk.auth.service.OtpGeneratorService;
 import za.gov.helpdesk.auth.service.RefreshTokenService;
 import za.gov.helpdesk.auth.service.impl.PasswordResetServiceImpl;
@@ -46,7 +46,7 @@ class PasswordResetServiceImplTest {
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private RefreshTokenService refreshTokenService;
     @Mock private OtpGeneratorService otpGeneratorService;
-    @Mock private AuditEventPublisher auditPublisher;
+    @Mock private AuthAuditService authAuditService;
     @Mock private PasswordResetEmailNotificationPublisher emailPublisher;
     @Mock private AuthMetrics authMetrics;
 
@@ -63,7 +63,7 @@ class PasswordResetServiceImplTest {
                         passwordEncoder,
                         refreshTokenService,
                         otpGeneratorService,
-                        auditPublisher,
+                        authAuditService,
                         emailPublisher,
                         authMetrics);
 

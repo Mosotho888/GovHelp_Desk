@@ -16,10 +16,9 @@ import za.gov.helpdesk.agent.metrics.AgentMetrics;
 import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.agent.repository.jdbc.ReportJdbcRepository;
 import za.gov.helpdesk.agent.repository.jpa.AgentRepository;
+import za.gov.helpdesk.agent.service.AgentAuditService;
 import za.gov.helpdesk.agent.service.AgentQueryHelper;
 import za.gov.helpdesk.agent.service.impl.AgentServiceImpl;
-import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
-import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.exception.DuplicateResourceException;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
 import za.gov.helpdesk.users.model.Role;
@@ -31,7 +30,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
@@ -47,7 +45,7 @@ class AgentServiceImplTest {
     @Mock private AgentQueryHelper agentQuery;
     @Mock private ReportJdbcRepository reportJdbcRepository;
     @Mock private AgentMapper agentMapper;
-    @Mock private AuditEventPublisher auditPublisher;
+    @Mock private AgentAuditService agentAuditService;
     @Mock private AgentMetrics agentMetrics;
 
     @InjectMocks private AgentServiceImpl agentService;
@@ -100,16 +98,7 @@ class AgentServiceImplTest {
 
         then(agentMetrics).should(times(1)).incrementRegistered();
 
-        then(auditPublisher)
-                .should(times(1))
-                .publishAudit(
-                        eq(AuditLog.EntityType.AGENT),
-                        eq(5L),
-                        eq(adminUser),
-                        eq(AuditLog.AuditAction.AGENT_REGISTERED),
-                        isNull(),
-                        any(),
-                        any());
+        then(agentAuditService).should(times(1)).agentCreated(eq(agent), eq(adminUser), any());
     }
 
     @Test
@@ -145,9 +134,7 @@ class AgentServiceImplTest {
 
         then(agentRepository).should(never()).save(any(Agent.class));
         then(agentMetrics).should(never()).incrementRegistered();
-        then(auditPublisher)
-                .should(never())
-                .publishAudit(any(), any(), any(), any(), any(), any(), any());
+        then(agentAuditService).should(never()).agentCreated(any(), any(), any());
     }
 
     @Test
@@ -179,16 +166,9 @@ class AgentServiceImplTest {
         assertThat(agent.getAvailability()).isEqualTo(Agent.Availability.ONLINE);
 
         then(agentMetrics).should(times(1)).incrementAvailabilityChanged(agent.getAvailability());
-        then(auditPublisher)
+        then(agentAuditService)
                 .should(times(1))
-                .publishAudit(
-                        eq(AuditLog.EntityType.AGENT),
-                        eq(5L),
-                        eq(adminUser),
-                        eq(AuditLog.AuditAction.AVAILABILITY_CHANGED),
-                        eq("OFFLINE"),
-                        eq("ONLINE"),
-                        eq(null));
+                .agentUpdatedAvailability(eq(agent), eq(adminUser), eq("ONLINE"));
     }
 
     @Test
@@ -203,7 +183,7 @@ class AgentServiceImplTest {
 
         agentService.updateAgent(5L, req, adminUser);
 
-        then(auditPublisher).shouldHaveNoInteractions();
+        then(agentAuditService).shouldHaveNoInteractions();
     }
 
     @Test
@@ -222,16 +202,9 @@ class AgentServiceImplTest {
         assertThat(agent.getDepartment()).isEqualTo("Finance");
 
         then(agentMetrics).should(times(1)).incrementDepartmentChanged();
-        then(auditPublisher)
+        then(agentAuditService)
                 .should(times(1))
-                .publishAudit(
-                        eq(AuditLog.EntityType.AGENT),
-                        eq(5L),
-                        eq(adminUser),
-                        eq(AuditLog.AuditAction.DEPARTMENT_CHANGED),
-                        eq("HR"),
-                        eq("Finance"),
-                        eq(null));
+                .agentUpdatedDepartment(eq(agent), eq(adminUser), eq("Finance"));
     }
 
     @Test

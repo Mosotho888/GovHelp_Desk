@@ -15,11 +15,10 @@ import za.gov.helpdesk.attachment.metrics.AttachmentMetrics;
 import za.gov.helpdesk.attachment.model.Attachment;
 import za.gov.helpdesk.attachment.policy.AttachmentValidator;
 import za.gov.helpdesk.attachment.repository.AttachmentRepository;
+import za.gov.helpdesk.attachment.service.AttachmentAuditService;
 import za.gov.helpdesk.attachment.service.AttachmentQueryHelper;
 import za.gov.helpdesk.attachment.service.AttachmentService;
 import za.gov.helpdesk.attachment.service.storage.FileStorageService;
-import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
-import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.ticket.model.Ticket;
 import za.gov.helpdesk.ticket.service.TicketQueryHelper;
 import za.gov.helpdesk.users.model.Role;
@@ -33,13 +32,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AttachmentServiceImpl implements AttachmentService {
 
-    public static final long KB = 1024L;
-
     private final AttachmentRepository attachmentRepository;
     private final AttachmentMapper attachmentMapper;
     private final TicketQueryHelper ticketQuery;
     private final AttachmentQueryHelper attachmentQuery;
-    private final AuditEventPublisher auditPublisher;
+    private final AttachmentAuditService attachmentAuditService;
     private final FileStorageService fileStorageService;
     private final AttachmentValidator validator;
     private final AttachmentMetrics attachmentMetrics;
@@ -78,18 +75,7 @@ public class AttachmentServiceImpl implements AttachmentService {
                 attachmentMetrics.incrementUploaded();
                 attachmentMetrics.recordUploadedSize(savedAttachment.getSizeBytes());
 
-                auditPublisher.publishAudit(
-                        AuditLog.EntityType.ATTACHMENT,
-                        savedAttachment.getId(),
-                        actor,
-                        AuditLog.AuditAction.ATTACHMENT_UPLOADED,
-                        null,
-                        savedAttachment.getFilename(),
-                        "Uploaded to ticket #"
-                                + ticketId
-                                + " ("
-                                + (savedAttachment.getSizeBytes() / KB)
-                                + " KB)");
+                attachmentAuditService.uploadedAttachment(savedAttachment, actor, ticketId);
 
                 responses.add(attachmentMapper.toAttachmentResponse(savedAttachment));
             }
@@ -132,14 +118,7 @@ public class AttachmentServiceImpl implements AttachmentService {
 
         attachmentMetrics.incrementDownloaded();
 
-        auditPublisher.publishAudit(
-                AuditLog.EntityType.ATTACHMENT,
-                attachment.getId(),
-                actor,
-                AuditLog.AuditAction.ATTACHMENT_DOWNLOADED,
-                null,
-                attachment.getFilename(),
-                "Downloaded to ticket #" + attachment.getTicket().getId());
+        attachmentAuditService.downloadedAttachment(attachment, actor);
 
         return attachment;
     }
@@ -164,14 +143,7 @@ public class AttachmentServiceImpl implements AttachmentService {
                             + "drop this attachment");
         }
 
-        auditPublisher.publishAudit(
-                AuditLog.EntityType.ATTACHMENT,
-                attachment.getId(),
-                actor,
-                AuditLog.AuditAction.ATTACHMENT_DELETED,
-                attachment.getFilename(),
-                null,
-                "Deleted from ticket #" + attachment.getTicket().getId());
+        attachmentAuditService.deleteAttachment(attachment, actor);
 
         fileStorageService.delete(attachment.getStoragePath());
         attachmentRepository.delete(attachment);

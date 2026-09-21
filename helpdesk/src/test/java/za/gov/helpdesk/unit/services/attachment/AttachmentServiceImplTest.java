@@ -21,11 +21,10 @@ import za.gov.helpdesk.attachment.metrics.AttachmentMetrics;
 import za.gov.helpdesk.attachment.model.Attachment;
 import za.gov.helpdesk.attachment.policy.AttachmentValidator;
 import za.gov.helpdesk.attachment.repository.AttachmentRepository;
+import za.gov.helpdesk.attachment.service.AttachmentAuditService;
 import za.gov.helpdesk.attachment.service.AttachmentQueryHelper;
 import za.gov.helpdesk.attachment.service.impl.AttachmentServiceImpl;
 import za.gov.helpdesk.attachment.service.storage.FileStorageService;
-import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
-import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.exception.ResourceNotFoundException;
 import za.gov.helpdesk.ticket.model.Status;
 import za.gov.helpdesk.ticket.model.Ticket;
@@ -39,7 +38,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
@@ -54,7 +52,7 @@ class AttachmentServiceImplTest {
     @Mock private TicketRepository ticketRepository;
     @Mock private TicketQueryHelper ticketQuery;
     @Mock private AttachmentQueryHelper attachmentQuery;
-    @Mock private AuditEventPublisher auditPublisher;
+    @Mock private AttachmentAuditService attachmentAuditService;
     @Mock private FileStorageService fileStorageService;
     @Mock private AttachmentValidator validator;
     @Mock private AttachmentMetrics attachmentMetrics;
@@ -124,16 +122,9 @@ class AttachmentServiceImplTest {
         then(attachmentMetrics).should(times(1)).incrementUploaded();
         then(attachmentMetrics).should(times(1)).recordUploadedSize(attachment.getSizeBytes());
         then(attachmentRepository).should(times(1)).save(any(Attachment.class));
-        then(auditPublisher)
+        then(attachmentAuditService)
                 .should(times(1))
-                .publishAudit(
-                        eq(AuditLog.EntityType.ATTACHMENT),
-                        eq(attachment.getId()),
-                        eq(uploader),
-                        eq(AuditLog.AuditAction.ATTACHMENT_UPLOADED),
-                        isNull(),
-                        eq("report.pdf"),
-                        any());
+                .uploadedAttachment(eq(attachment), eq(uploader), eq(ticket.getId()));
     }
 
     @Test
@@ -203,16 +194,9 @@ class AttachmentServiceImplTest {
                 .containsExactly(50L, "report.pdf");
 
         then(attachmentMetrics).should(times(1)).incrementDownloaded();
-        then(auditPublisher)
+        then(attachmentAuditService)
                 .should(times(1))
-                .publishAudit(
-                        eq(AuditLog.EntityType.ATTACHMENT),
-                        eq(50L),
-                        eq(uploader),
-                        eq(AuditLog.AuditAction.ATTACHMENT_DOWNLOADED),
-                        isNull(),
-                        eq("report.pdf"),
-                        any());
+                .downloadedAttachment(eq(result), eq(uploader));
     }
 
     @Test
@@ -236,16 +220,9 @@ class AttachmentServiceImplTest {
         then(attachmentMetrics).should(times(1)).incrementDeleted();
         then(fileStorageService).should(times(1)).delete(attachment.getStoragePath());
         then(attachmentRepository).should(times(1)).delete(attachment);
-        then(auditPublisher)
+        then(attachmentAuditService)
                 .should(times(1))
-                .publishAudit(
-                        eq(AuditLog.EntityType.ATTACHMENT),
-                        eq(50L),
-                        eq(uploader),
-                        eq(AuditLog.AuditAction.ATTACHMENT_DELETED),
-                        eq("report.pdf"),
-                        isNull(),
-                        any());
+                .deleteAttachment(eq(attachment), eq(uploader));
     }
 
     @Test

@@ -92,4 +92,12 @@ public class AuditLogController {
     public ResponseEntity<List<AuditLogResponse>> getAssetAuditLogs(@PathVariable final Long id) {
         return ResponseEntity.ok(auditService.getLogsForEntity(AuditLog.EntityType.ASSET, id));
     }
+
+    @GetMapping("/knowledge-articles/{id}")
+    @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
+    @Operation(summary = "Get full audit trail for a specific knowledge base article")
+    public ResponseEntity<List<AuditLogResponse>> getArticleAuditLogs(@PathVariable final Long id) {
+        return ResponseEntity.ok(
+                auditService.getLogsForEntity(AuditLog.EntityType.KNOWLEDGE_ARTICLE, id));
+    }
 }

@@ -7,13 +7,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
-import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auth.dto.request.PasswordResetConfirmRequest;
 import za.gov.helpdesk.auth.dto.request.PasswordResetRequest;
 import za.gov.helpdesk.auth.metrics.AuthMetrics;
 import za.gov.helpdesk.auth.model.PasswordResetToken;
 import za.gov.helpdesk.auth.repository.PasswordResetTokenRepository;
+import za.gov.helpdesk.auth.service.AuthAuditService;
 import za.gov.helpdesk.auth.service.OtpGeneratorService;
 import za.gov.helpdesk.auth.service.PasswordResetService;
 import za.gov.helpdesk.auth.service.RefreshTokenService;
@@ -38,7 +37,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
     private final OtpGeneratorService otpGeneratorService;
-    private final AuditEventPublisher auditPublisher;
+    private final AuthAuditService authAuditService;
     private final PasswordResetEmailNotificationPublisher emailPublisher;
     private final AuthMetrics authMetrics;
 
@@ -105,12 +104,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
         refreshTokenService.revokeAll(user);
 
-        auditPublisher.publishAuthAudit(
-                AuditLog.AuditAction.PASSWORD_RESET,
-                user.getId(),
-                user.getName(),
-                user.getRole().name(),
-                "Password reset via OTP");
+        authAuditService.passwordReset(user);
 
         authMetrics.incrementPasswordResetConfirmed();
 

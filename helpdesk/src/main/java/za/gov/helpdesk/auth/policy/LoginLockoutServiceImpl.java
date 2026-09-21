@@ -4,8 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
-import za.gov.helpdesk.auditlog.model.AuditLog;
+import za.gov.helpdesk.auth.service.AuthAuditService;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 
@@ -18,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 public class LoginLockoutServiceImpl implements LoginLockoutService {
 
     private final UserRepository userRepository;
-    private final AuditEventPublisher auditPublisher;
+    private final AuthAuditService authAuditService;
 
     @Value("${app.security.max-login-attempts}")
     private int maxLoginAttempts;
@@ -37,12 +36,7 @@ public class LoginLockoutServiceImpl implements LoginLockoutService {
                             if (attempts >= maxLoginAttempts) {
                                 user.setActive(false);
 
-                                auditPublisher.publishAuthAudit(
-                                        AuditLog.AuditAction.ACCOUNT_LOCKED,
-                                        user.getId(),
-                                        user.getName(),
-                                        user.getRole().name(),
-                                        attempts + " consecutive failed login attempts");
+                                authAuditService.accountLocked(user, attempts);
 
                                 log.warn(
                                         "Account locked after {} failed attempts: email={}",

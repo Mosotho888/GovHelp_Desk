@@ -85,6 +85,7 @@ public class AuditLog {
         COMMENT,
         ATTACHMENT,
         ASSET,
+        KNOWLEDGE_ARTICLE,
         AUTH
     }
 
@@ -121,6 +122,13 @@ public class AuditLog {
         ASSET_RETIRED,
         ASSET_LINKED_TO_TICKET,
         ASSET_UNLINKED_FROM_TICKET,
+        KB_ARTICLE_CREATED,
+        KB_ARTICLE_UPDATED,
+        KB_ARTICLE_PUBLISHED,
+        KB_ARTICLE_ARCHIVED,
+        KB_ARTICLE_DELETED,
+        KB_ARTICLE_LINKED_TO_TICKET,
+        KB_ARTICLE_UNLINKED_FROM_TICKET,
         LOGIN_SUCCESS,
         LOGIN_FAILED,
         ACCOUNT_LOCKED,

@@ -11,8 +11,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
-import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
-import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auth.dto.request.LoginRequest;
 import za.gov.helpdesk.auth.dto.request.RefreshTokenRequest;
 import za.gov.helpdesk.auth.dto.response.AuthResponse;
@@ -20,6 +18,7 @@ import za.gov.helpdesk.auth.jwt.JwtService;
 import za.gov.helpdesk.auth.metrics.AuthMetrics;
 import za.gov.helpdesk.auth.model.RefreshToken;
 import za.gov.helpdesk.auth.policy.LoginLockoutService;
+import za.gov.helpdesk.auth.service.AuthAuditService;
 import za.gov.helpdesk.auth.service.AuthResponseFactory;
 import za.gov.helpdesk.auth.service.RefreshTokenService;
 import za.gov.helpdesk.auth.service.impl.AuthServiceImpl;
@@ -44,7 +43,7 @@ class AuthServiceImpITest {
     @Mock private AuthenticationManager authManager;
     @Mock private UserRepository userRepository;
     @Mock private JwtService jwtService;
-    @Mock private AuditEventPublisher auditPublisher;
+    @Mock private AuthAuditService authAuditService;
     @Mock private RefreshTokenService refreshTokenService;
     @Mock private LoginLockoutService lockoutService;
     @Mock private AuthResponseFactory authResponseFactory;
@@ -93,14 +92,7 @@ class AuthServiceImpITest {
 
         then(authMetrics).should(times(1)).incrementLoginSuccess();
 
-        then(auditPublisher)
-                .should(times(1))
-                .publishAuthAudit(
-                        eq(AuditLog.AuditAction.LOGIN_SUCCESS),
-                        eq(testUser.getId()),
-                        eq(testUser.getName()),
-                        eq(testUser.getRole().name()),
-                        any());
+        then(authAuditService).should(times(1)).loggedInSuccessful(eq(testUser));
     }
 
     @Test
@@ -213,14 +205,7 @@ class AuthServiceImpITest {
 
         then(authMetrics).should(times(1)).incrementLogout();
         then(refreshTokenService).should(times(1)).revokeAll(testUser);
-        then(auditPublisher)
-                .should(times(1))
-                .publishAuthAudit(
-                        eq(AuditLog.AuditAction.FORCED_LOGOUT),
-                        eq(testUser.getId()),
-                        eq(testUser.getName()),
-                        eq(testUser.getRole().name()),
-                        any());
+        then(authAuditService).should(times(1)).loggedOut(eq(testUser));
     }
 
     private LoginRequest loginRequest(final String email, final String password) {
