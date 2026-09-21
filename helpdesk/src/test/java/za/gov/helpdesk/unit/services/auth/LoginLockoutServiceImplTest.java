@@ -10,15 +10,15 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
-import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.auth.policy.LoginLockoutServiceImpl;
+import za.gov.helpdesk.auth.service.AuthAuditService;
 import za.gov.helpdesk.users.model.Role;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.repository.UserRepository;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -32,7 +32,7 @@ class LoginLockoutServiceImplTest {
     private static final int MAX_ATTEMPTS = 5;
 
     @Mock private UserRepository userRepository;
-    @Mock private AuditEventPublisher auditPublisher;
+    @Mock private AuthAuditService authAuditService;
 
     private LoginLockoutServiceImpl service;
 
@@ -40,7 +40,7 @@ class LoginLockoutServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new LoginLockoutServiceImpl(userRepository, auditPublisher);
+        service = new LoginLockoutServiceImpl(userRepository, authAuditService);
         ReflectionTestUtils.setField(service, "maxLoginAttempts", MAX_ATTEMPTS);
 
         user =
@@ -64,7 +64,7 @@ class LoginLockoutServiceImplTest {
 
         assertThat(user.getLoginAttempts()).isEqualTo(MAX_ATTEMPTS - 1);
         assertThat(user.getActive()).isTrue();
-        then(auditPublisher).should(never()).publishAuthAudit(any(), any(), any(), any(), any());
+        then(authAuditService).should(never()).accountLocked(any(), anyInt());
         then(userRepository).should(times(1)).save(user);
     }
 
@@ -78,14 +78,9 @@ class LoginLockoutServiceImplTest {
 
         assertThat(user.getLoginAttempts()).isEqualTo(MAX_ATTEMPTS);
         assertThat(user.getActive()).isFalse();
-        then(auditPublisher)
+        then(authAuditService)
                 .should(times(1))
-                .publishAuthAudit(
-                        eq(AuditLog.AuditAction.ACCOUNT_LOCKED),
-                        eq(user.getId()),
-                        eq(user.getName()),
-                        eq(user.getRole().name()),
-                        any());
+                .accountLocked(eq(user), eq(user.getLoginAttempts()));
         then(userRepository).should(times(1)).save(user);
     }
 
@@ -97,7 +92,7 @@ class LoginLockoutServiceImplTest {
         service.recordFailedAttempt("ghost@nowhere.za");
 
         then(userRepository).should(never()).save(any());
-        then(auditPublisher).should(never()).publishAuthAudit(any(), any(), any(), any(), any());
+        then(authAuditService).should(never()).accountLocked(any(), anyInt());
     }
 
     @Test

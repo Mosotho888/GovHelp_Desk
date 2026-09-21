@@ -1,176 +1,769 @@
-# Changelog
+# GovHelpDesk
 
-All notable changes to GovHelpDesk are documented in this file.
+A production-ready REST API for government support ticket management, built with Spring Boot 3.5 and Java 21.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows its own
-pragmatic versioning during pre-1.0 development: each entry groups changes by the migration or milestone that introduced
-them rather than a strict semver cadence.
+[![CI](https://github.com/Mosotho888/GovHelp_Desk/actions/workflows/ci.yml/badge.svg)](https://github.com/Mosotho888/GovHelp_Desk/actions/workflows/ci.yml)
+[![Java](https://img.shields.io/badge/Java-21-orange)](https://adoptium.net)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-brightgreen)](https://spring.io/projects/spring-boot)
+[![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-govhelpdesk.sothoman.com-blueviolet)](https://govhelpdesk.sothoman.com)
+[![API](https://img.shields.io/badge/API-api.sothoman.com-informational)](https://api.sothoman.com/swagger-ui.html)
 
-## [Unreleased]
+**🔗 Live app:** [govhelpdesk.sothoman.com](https://govhelpdesk.sothoman.com) · **📘 API docs:**
+[api.sothoman.com/swagger-ui.html](https://api.sothoman.com/swagger-ui.html)
 
-### Added
-
-- Hierarchical ticket categories (`ticket_categories`, `V8__create_ticket_categories.sql`): self-referencing tree capped
-  at three levels (Category → Subcategory → Type), seeded with Hardware, Software, Network, Accounts, and Security plus
-  realistic subcategories.
-- `TicketCategory` CRUD API (`/v1/categories`) with tree retrieval, admin-gated create/update/deactivate, sibling name
-  uniqueness, and max-depth enforcement (`InvalidCategoryOperationException`, HTTP 422).
-- Category-based ticket filtering: `GET /v1/tickets` accepts `categoryId` and `includeDescendants`, so filtering by a
-  parent category also matches its subcategories.
-- Automated category-based routing (`CategoryRoutingService`): a ticket created without an explicit assignee is routed
-  to the least-loaded `ONLINE` agent in its category's configured `defaultDepartment`, falling back to the shared queue
-  when nobody is available.
-- `CATEGORY_CHANGED` audit action, published via `TicketUpdateCoordinator.applyCategoryChange` whenever a ticket is
-  recategorised.
-- `ADR 0006` documenting the category/routing design and its trade-offs (in-memory tree resolution over recursive SQL,
-  three-level depth cap, department-based routing over a full rules engine).
-- Frontend: `features/categories` module (tree fetch, admin management screen, reusable `CategorySelect` picker), wired
-  into ticket creation, ticket detail/actions, and the ticket table's filters and columns.
-- Line-ending normalisation (`.gitattributes`) to keep LF consistent across contributors.
-- Asset management (`assets`, `ticket_assets`, `V9__create_assets.sql`): register and track IT assets (laptops,
-  desktops, printers, monitors, networking equipment, software licenses) with ownership, location, vendor, purchase, and
-  warranty details.
-- `Asset` CRUD API (`/v1/assets`) with filtering by type/status/assigned user, auto-generated `assetTag`
-  (`AST-{id}`) when not supplied, and computed `warrantyStatus` (`ACTIVE`/`EXPIRING_SOON`/`EXPIRED`/`NO_WARRANTY_INFO`).
-- Ticket-asset linking (`/v1/tickets/{ticketId}/assets`): associate one or more assets with a ticket so technicians get
-  device history, warranty, and ownership context; `GET /v1/assets/{id}/tickets` returns an asset's full ticket history.
-- `ASSET_CREATED`, `ASSET_UPDATED`, `ASSET_STATUS_CHANGED`, `ASSET_ASSIGNED`, `ASSET_RETIRED`,
-  `ASSET_LINKED_TO_TICKET`, and `ASSET_UNLINKED_FROM_TICKET` audit actions, plus `GET /v1/audit/assets/{id}`; link and
-  unlink events are logged against both the ticket and the asset.
-- `ADR 0007` documenting the asset/ticket-asset join design, the auto-generated tag scheme, and the explicit
-  `clearAssignedUser` flag adopted to avoid the null-vs-omitted ambiguity flagged in ADR 0006's follow-up work.
-
-### Changed
-
-- `Ticket.category` changed from a free-text `String` to a `@ManyToOne TicketCategory` (`tickets.category_id`); existing
-  seeded free-text values (`Hardware`, `Access`, `Maintenance`, `Infrastructure`) are backfilled onto the closest
-  matching seeded category by the migration.
-- `CreateTicketRequest` / `UpdateTicketRequest` now take `categoryId` instead of a free-text `category` string;
-  `TicketResponse.category` is now a `CategorySummaryResponse` (id, name, and a breadcrumb `path`) instead of a plain
-  string.
-
-### Fixed
-
-- Swagger UI CORS/server resolution issue in `OpenApiConfig` by explicitly registering the production and local server
-  entries via `addServersItem()`.
+This repository contains the **backend API** only. The production UI is built and deployed from a companion repository -
+see [Frontend](#frontend).
 
 ---
 
-## [1.0.0] - Production release
+## Table of Contents
 
-### Added
-
-- Full production deployment to an Oracle Cloud Infrastructure Free Tier ARM VM (Ubuntu 22.04, Johannesburg region),
-  fronted by Cloudflare DNS with Full (Strict) SSL, serving the API at `api.sothoman.com`.
-- Docker Compose stack: Spring Boot API, PostgreSQL 18, RabbitMQ 3 (with management UI), Prometheus, and Grafana, wired
-  on a shared bridge network with health-check gated startup.
-- GitHub Actions CD workflow (`cd.yml`) that deploys to the OCI VM over SSH via
-  `appleboy/ssh-action` once CI succeeds on `main`, pulling the new image and restarting only the `app` service.
-
-### Changed
-
-- Rebuilt the CI Docker image target platform from `amd64` to `arm64` to match the OCI Ampere ARM VM architecture.
-
----
-
-## [0.6.0] - Test suite rewrite
-
-### Added
-
-- `CommentIntegrationTest`, `AgentIntegrationTest`, and `AuditLogIntegrationTest` integration test classes.
-- Full rewrite of the unit and integration test suite following the SRP refactor, bringing coverage from 58 broken tests
-  to 94 passing tests across 11 test files.
-
-### Fixed
-
-- Test suite breakage caused by the SRP extraction of collaborator classes (services now depend on
-  `TicketEventDispatcher`, `CommentAccessPolicy`, `AttachmentValidator`, etc., which needed to be mocked explicitly
-  instead of relying on monolithic service behaviour).
+- [Overview](#overview)
+- [Frontend](#frontend)
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Domain Model](#domain-model)
+- [API Reference](#api-reference)
+- [Getting Started](#getting-started)
+- [Configuration](#configuration)
+- [Running with Docker](#running-with-docker)
+- [Running Tests](#running-tests)
+- [Monitoring](#monitoring)
+- [CI/CD Pipeline](#cicd-pipeline)
+- [Static Analysis](#static-analysis)
+- [Project Structure](#project-structure)
 
 ---
 
-## [0.5.0] - Static analysis hardening
+## Overview
 
-### Added
+GovHelpDesk is a multi-role support ticketing system designed for government departments. Citizens submit tickets,
+agents work them, and administrators oversee the operation. It's a full-stack, production-deployed portfolio project:
+this Spring Boot API on the backend, paired with a dedicated React frontend (see [Frontend](#frontend) below).
 
-- Checkstyle, PMD 7.x, SpotBugs/FindSecBugs, and Spotless configured with production-grade rulesets
-  (`config/checkstyle`, `config/pmd`, `config/spotbugs`).
-- `static-analysis` job in the CI pipeline, run after `build-and-test`.
+### Why this exists
 
-### Changed
+The idea came out of an IT Support Internship at a South African local municipality. There was no system for logging
+support calls: when someone called in, the request was captured verbally and tracked informally rather than through a
+proper ticketing workflow. GovHelpDesk started as a way to solve that specific, real problem - a structured way to log a
+call as a ticket, route it to an agent, and track it through to resolution - and grew into a full production build:
+a complete SDLC process, a hardened Spring Boot backend, a React frontend, and a real deployment, built to demonstrate
+the same engineering rigor a government IT department's ticketing system would actually need.
 
-- Preferred global ruleset exclusions over scattering `@SuppressWarnings` annotations through the codebase.
-- Corrected `SuppressionSingleFilter` placement to be a direct `Checker` child rather than nested inside `TreeWalker`,
-  per Checkstyle's XML schema.
+Key capabilities:
 
-### Fixed
-
-- PMD 7 breaking changes and rule category conflicts surfaced by the new ruleset.
-- JUnit 5 test method naming violations flagged by the new Checkstyle rules.
-
----
-
-## [0.4.0] - Security hardening
-
-### Fixed
-
-- **IDOR vulnerabilities**: repository queries across tickets, comments, and attachments made actor-aware so users can
-  only read/mutate records they are entitled to.
-- **Path traversal** in file uploads: `FileStorageServiceImpl` now normalizes and validates that the resolved
-  destination path stays within the configured upload root before writing or deleting a file, and strips unsafe
-  characters from filenames.
-- Refresh token guard logic corrected so revoked/expired tokens are rejected consistently.
-
-### Added
-
-- Account lockout after `APP_SECURITY_MAX_LOGIN_ATTEMPTS` (default 5) consecutive failed logins, published to the audit
-  trail as `ACCOUNT_LOCKED`.
-- Per-role rate limiting (`RateLimitingFilter` + `RateLimitPolicyProvider`) with distinct token bucket capacities for
-  unauthenticated, `USER`, `AGENT`, and `ADMIN` callers.
+- **Ticket lifecycle management** - create, assign, update, escalate, resolve, close
+- **SLA enforcement** - per-priority deadlines, automated warning and breach detection
+- **Role-based access control** - `USER`, `AGENT`, and `ADMIN` roles with endpoint-level enforcement
+- **Async notifications** - email notifications via RabbitMQ + transactional outbox pattern
+- **Audit trail** - every state change recorded to a queryable audit log
+- **Observability** - Prometheus metrics per domain, Grafana dashboards, structured logging
 
 ---
 
-## [0.3.0] - Messaging and outbox pattern
+## Frontend
 
-### Added
+The production UI lives in a separate repository:
+**[Mosotho888/Helpdesk_Frontend](https://github.com/Mosotho888/Helpdesk_Frontend)** - deployed at
+[govhelpdesk.sothoman.com](https://govhelpdesk.sothoman.com).
 
-- Transactional outbox pattern (`outbox_events` table, `OutboxRelay`, `OutboxWriter`,
-  `OutboxProcessor`) guaranteeing at-least-once delivery of audit, ticket email, password-reset email, and SLA email
-  events to RabbitMQ without distributed transactions.
-- `TYPE_MAP`-based deserialisation so RabbitMQ consumers receive fully-typed DTOs instead of generic payloads.
-- Four RabbitMQ queues (`audit.queue`, `ticket.email.queue`, `password.reset.email.queue`,
-  `sla.email.queue`) each with a matching dead-letter queue.
-- SLA breach monitor (`SlaBreachMonitor`) running every 5 minutes to flag response/resolution breaches and trigger
-  warning/breach emails.
+| Layer            | Technology                                                       |
+|------------------|------------------------------------------------------------------|
+| Build tool       | Vite                                                             |
+| Framework        | React + TypeScript                                               |
+| Data fetching    | TanStack Query                                                   |
+| Tables           | TanStack Table                                                   |
+| UI components    | shadcn/ui                                                        |
+| Forms/validation | React Hook Form + Zod                                            |
+| Deployment       | Docker, deployed via GitHub Actions CI/CD to the same OCI ARM VM |
 
-### Changed
-
-- `audit_log` table refactored (`V3__refactor_audit_log.sql`) from a ticket-only log into a generic entity audit trail
-  (`entity_type` + `entity_id`), with actor name/role and IP address captured at write time.
-
----
-
-## [0.2.0] - Domain refactor (SRP audit)
-
-### Changed
-
-- Extracted roughly 14 responsibilities out of oversized service classes into dedicated collaborators, including
-  `TicketEventDispatcher`, `CommentAccessPolicy`,
-  `AttachmentValidator`, `LoginLockoutService`, `OutboxRelay`, and `SlaBreachMonitor`.
-- Split ticket read/write concerns between `TicketRepository` (JPA) and
-  `TicketJdbcRepository` (JDBC) to isolate query-heavy reporting logic from the transactional aggregate repository.
+It implements the full feature set against this API: authentication, ticket management, comments, attachments, agent
+views, user administration, SLA display, and audit logs.
 
 ---
 
-## [0.1.0] - Initial ticketing core
+## Architecture
 
-### Added
+```mermaid
+graph TB
+    clients["Clients<br/>React frontend / Swagger UI"]
+    api["Spring Boot 3.5 API<br/>SecurityFilterChain (JWT + Bucket4j)<br/>Controllers → Services → Repositories"]
+    outbox[("Transactional Outbox<br/>(DB table)")]
+    relay["OutboxRelay<br/>polls every 5s"]
+    db[("PostgreSQL<br/>primary store")]
+    mq(("RabbitMQ<br/>4 queues: audit, email,<br/>SLA, reset"))
+    smtp["SMTP<br/>(email)"]
+    prom["Prometheus<br/>scrapes /actuator/prometheus"]
+    grafana["Grafana<br/>8 dashboards"]
+    clients -->|HTTPS| api
+    api -->|JPA / JDBC| db
+    api -->|writes| outbox
+    outbox --> relay
+    relay -->|AMQP| mq
+    mq -->|consumers| smtp
+    api -.->|exposes metrics| prom
+    prom --> grafana
+    classDef api fill: #1168bd, color: #fff, stroke: #0b4884
+    classDef store fill: #2b6e34, color: #fff, stroke: #1d4c25
+    classDef client fill: #666, color: #fff, stroke: #444
+    classDef ext fill: #999, color: #fff, stroke: #666
+%% @formatter:off
+    class api,relay api
+    class db,mq,outbox store
+    class clients client
+    class smtp,prom,grafana ext
+%% @formatter:on
+```
 
-- Core domain: `users`, `agents`, `tickets`, `comments`, `attachments`, `audit_log` schema (`V1__helpdesk_schema.sql`)
-  and seed data (`V2__seed_data.sql`).
-- JWT authentication (access + refresh tokens) with `USER` / `AGENT` / `ADMIN` role-based access control enforced via
-  Spring Security method security.
-- Ticket lifecycle: `OPEN → IN_PROGRESS -> RESOLVED -> CLOSED`, with an `ESCALATED` branch.
-- SLA policy tables and per-priority response/resolution deadlines (`V6__create_sla_tables.sql`).
-- OTP-based password reset flow (`V5__create_password_reset_tokens.sql`).
-- Refresh token store (`V4__create_refresh_tokens.sql`).
+This is a simplified overview. The full, versioned architecture - C4 diagrams and the reasoning behind each major
+decision - lives under [`docs/architecture/`](docs/architecture):
+
+| Doc                                                    | What it covers                                                                          |
+|--------------------------------------------------------|-----------------------------------------------------------------------------------------|
+| [`c4-context.md`](docs/architecture/c4-context.md)     | System context: actors (Employee/Agent/Admin), external systems (SMTP, Cloudflare, OCI) |
+| [`c4-container.md`](docs/architecture/c4-container.md) | Container-level view: API, PostgreSQL, RabbitMQ, file storage, Prometheus, Grafana      |
+| [`c4-component.md`](docs/architecture/c4-component.md) | Component breakdown of the API - domain modules, cross-cutting policies, messaging      |
+| [`deployment.md`](docs/architecture/deployment.md)     | Production topology on OCI, and *why* each infra choice was made                        |
+| [`decisions.md`](docs/architecture/decisions.md)       | Index of Architecture Decision Records (ADRs) under [`docs/adr/`](docs/adr)             |
+
+### Key design patterns
+
+| Pattern                  | Where used                                                                   | Why                                                                                    |
+|--------------------------|------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| Transactional Outbox     | `OutboxEvent` table + `OutboxRelay`                                          | Guarantees at-least-once message delivery without distributed transactions             |
+| Repository per aggregate | `TicketRepository`, `CommentRepository`, etc.                                | Clean domain boundaries, testable in isolation                                         |
+| DTO separation           | `*Request` / `*Response` / `*Message`                                        | Entities never leave the service layer                                                 |
+| Domain events            | `TicketEventDispatcher`                                                      | Decouples ticket state changes from audit/notification side effects                    |
+| Policy objects           | `CommentAccessPolicy`, `AttachmentValidator`, `TicketStatusTransitionPolicy` | Authorization/validation rules live in one testable place, not scattered service `if`s |
+| Per-domain metrics       | `TicketMetrics`, `AuthMetrics`, etc.                                         | Each domain owns its observability; no shared God Object                               |
+
+---
+
+## Tech Stack
+
+| Layer            | Technology                                     |
+|------------------|------------------------------------------------|
+| Language         | Java 21                                        |
+| Framework        | Spring Boot 3.5                                |
+| Security         | Spring Security 6, JWT (JJWT 0.12.6)           |
+| Persistence      | Spring Data JPA, Hibernate 6, PostgreSQL 18    |
+| Migrations       | Flyway (7 migration scripts)                   |
+| Messaging        | Spring AMQP, RabbitMQ 3                        |
+| Email            | Spring Mail + Thymeleaf templates              |
+| API Docs         | SpringDoc OpenAPI 3 (Swagger UI)               |
+| Mapping          | MapStruct 1.5.5                                |
+| Boilerplate      | Lombok 1.18.30                                 |
+| Rate Limiting    | Bucket4j 8.10.1 + Caffeine cache               |
+| Monitoring       | Micrometer, Prometheus, Grafana                |
+| Containerisation | Docker, Docker Compose                         |
+| Testing          | JUnit 5, Mockito, Testcontainers, Rest-Assured |
+| CI               | GitHub Actions                                 |
+| Static Analysis  | Checkstyle, SpotBugs, PMD, Spotless            |
+
+---
+
+## Domain Model
+
+```mermaid
+erDiagram
+    users ||--o| agents: "extends (role=AGENT)"
+    users ||--o{ tickets: "requests"
+    agents ||--o{ tickets: "is assigned"
+    ticket_categories ||--o{ tickets: "classifies"
+    ticket_categories ||--o{ ticket_categories: "parent_id"
+    tickets ||--o{ comments: "has"
+    tickets ||--o{ attachments: "has"
+    tickets ||--o| ticket_sla: "has"
+    tickets ||--o{ audit_logs: "logs"
+    users ||--o{ outbox_events: "triggers (via services)"
+    users ||--o{ assets: "is assigned"
+    tickets ||--o{ ticket_assets: "concerns"
+    assets ||--o{ ticket_assets: "has history"
+    ticket_categories ||--o{ knowledge_articles: "categorises"
+    users ||--o{ knowledge_articles: "authors"
+    tickets ||--o{ ticket_knowledge_articles: "resolved with"
+    knowledge_articles ||--o{ ticket_knowledge_articles: "used in"
+
+    users {
+        string role "USER | AGENT | ADMIN"
+    }
+    agents {
+        string availability "ONLINE | BUSY | AWAY | OFFLINE"
+    }
+    ticket_categories {
+        smallint level "0-2, max 3 levels deep"
+    }
+    tickets {
+        string status "OPEN to IN_PROGRESS to RESOLVED to CLOSED"
+        string priority "LOW | MEDIUM | HIGH | URGENT"
+    }
+    assets {
+        string type "LAPTOP | DESKTOP | PRINTER | MONITOR | ..."
+        string status "IN_USE | IN_STORAGE | UNDER_REPAIR | RETIRED | LOST"
+    }
+    knowledge_articles {
+        string type "TROUBLESHOOTING_GUIDE | FAQ | SOP | GENERAL"
+        string status "DRAFT | PUBLISHED | ARCHIVED"
+        tsvector search_vector "generated, GIN indexed"
+    }
+```
+
+Full field-level ER diagram: [`docs/database/database.md`](docs/database/database.md). Not pictured above (no direct FK
+to a ticket, but part of the same schema): `refresh_tokens` (JWT refresh token store), `password_reset_tokens`
+(OTP-based reset flow), `sla_policies` (per-priority SLA configuration).
+
+### Ticket status flow
+
+```mermaid
+stateDiagram-v2
+    [*] --> OPEN
+    OPEN --> IN_PROGRESS
+    IN_PROGRESS --> RESOLVED
+    RESOLVED --> CLOSED
+    OPEN --> ESCALATED
+    IN_PROGRESS --> ESCALATED
+```
+
+---
+
+## API Reference
+
+All endpoints are prefixed with `/v1`. Authentication is JWT Bearer token from `/v1/auth/login`.
+
+Interactive documentation is available at `http://localhost:8080/swagger-ui.html` locally, or
+[api.sothoman.com/swagger-ui.html](https://api.sothoman.com/swagger-ui.html) in production. For the authoritative,
+source-verified reference (kept in sync with the controllers directly), see
+[`docs/api/api-reference.md`](docs/api/api-reference.md).
+
+### Authentication - `/v1/auth`
+
+| Method | Path                      | Role          | Description                                   |
+|--------|---------------------------|---------------|-----------------------------------------------|
+| `POST` | `/login`                  | Public        | Authenticate, receive access + refresh tokens |
+| `POST` | `/refresh`                | Public        | Exchange refresh token for new access token   |
+| `POST` | `/logout`                 | Authenticated | Revoke all refresh tokens                     |
+| `POST` | `/password-reset/request` | Public        | Request OTP via email                         |
+| `POST` | `/password-reset/confirm` | Public        | Confirm OTP, set new password                 |
+
+### Tickets - `/v1/tickets`
+
+| Method   | Path    | Role   | Description                                                                                |
+|----------|---------|--------|----------------------------------------------------------------------------------------------|
+| `POST`   | `/`     | USER+  | Create a new ticket                                                                          |
+| `GET`    | `/`     | USER+  | List tickets (USERs see only their own); filter by `categoryId` (+ `includeDescendants`)     |
+| `GET`    | `/{id}` | USER+  | Get ticket by ID                                                                             |
+| `PATCH`  | `/{id}` | AGENT+ | Update status, assignee, priority, or category                                              |
+| `DELETE` | `/{id}` | ADMIN  | Delete ticket                                                                                |
+
+### Ticket Categories - `/v1/categories`
+
+| Method   | Path    | Role   | Description                                              |
+|----------|---------|--------|-------------------------------------------------------------|
+| `GET`    | `/`     | USER+  | Get the full category tree                                 |
+| `GET`    | `/{id}` | USER+  | Get a single category                                       |
+| `POST`   | `/`     | ADMIN  | Create a category or subcategory (max 3 levels deep)        |
+| `PATCH`  | `/{id}` | ADMIN  | Rename, re-route (default department), or (de)activate     |
+| `DELETE` | `/{id}` | ADMIN  | Soft-deactivate a category                                  |
+
+### Assets - `/v1/assets`
+
+| Method   | Path            | Role   | Description                                          |
+|----------|-----------------|--------|--------------------------------------------------------|
+| `POST`   | `/`             | ADMIN  | Register a new asset                                 |
+| `GET`    | `/`             | AGENT+ | List assets (filter by type, status, assigned user)  |
+| `GET`    | `/{id}`         | AGENT+ | Get an asset by ID                                    |
+| `PATCH`  | `/{id}`         | AGENT+ | Update an asset's details, status, or assignment      |
+| `DELETE` | `/{id}`         | ADMIN  | Retire an asset (soft delete; history preserved)      |
+| `GET`    | `/{id}/tickets` | AGENT+ | Device history - every ticket linked to this asset    |
+
+### Ticket Assets - `/v1/tickets/{ticketId}/assets`
+
+| Method   | Path         | Role   | Description                                |
+|----------|--------------|--------|-----------------------------------------------|
+| `POST`   | `/{assetId}` | AGENT+ | Link an asset to a ticket                     |
+| `DELETE` | `/{assetId}` | AGENT+ | Unlink an asset from a ticket                 |
+| `GET`    | `/`          | AGENT+ | List assets currently linked to a ticket      |
+
+### Knowledge Base - `/v1/knowledge-base`
+
+| Method   | Path             | Role       | Description                                            |
+|----------|------------------|------------|------------------------------------------------------------|
+| `POST`   | `/`              | AGENT+     | Draft a new article                                        |
+| `GET`    | `/`              | USER+      | Browse (filter by status/type/category/tag)                |
+| `GET`    | `/search`        | USER+      | Full-text search, ranked by relevance                      |
+| `GET`    | `/{id}`          | USER+      | Get by ID (increments view count)                          |
+| `GET`    | `/slug/{slug}`   | USER+      | Get by slug                                                 |
+| `PATCH`  | `/{id}`          | AGENT+     | Edit content or lifecycle status                            |
+| `DELETE` | `/{id}`          | ADMIN      | Permanently delete (prefer archiving via PATCH)             |
+| `POST`   | `/{id}/feedback` | USER+      | Rate helpful/not helpful (one vote per user)                |
+| `GET`    | `/{id}/feedback` | USER+      | Get feedback totals and your own vote                       |
+| `GET`    | `/{id}/tickets`  | AGENT+     | Usage history: tickets this article helped resolve          |
+
+Citizens only ever see `PUBLISHED` articles (drafts/archived return 404, not 403). See
+[ADR 0008](docs/adr/0008-knowledge-base.md) for the full-text search design.
+
+### Ticket Knowledge Articles - `/v1/tickets/{ticketId}/knowledge-articles`
+
+| Method   | Path           | Role   | Description                                          |
+|----------|----------------|--------|---------------------------------------------------------|
+| `POST`   | `/{articleId}` | AGENT+ | Link an article to a ticket as its resolution           |
+| `DELETE` | `/{articleId}` | AGENT+ | Unlink an article from a ticket                          |
+| `GET`    | `/`            | USER+  | List articles linked to a ticket (visible to its requester) |
+
+### Reporting - `/v1/reports`
+
+| Method | Path                   | Role   | Description                                            |
+|--------|------------------------|--------|-----------------------------------------------------------|
+| `GET`  | `/ticket-volume`       | AGENT+ | Daily ticket volume by status and priority                 |
+| `GET`  | `/sla-compliance`      | AGENT+ | Daily SLA compliance rate                                  |
+| `GET`  | `/agent-workload`      | AGENT+ | Current workload per agent, system wide                    |
+| `GET`  | `/category-breakdown`  | AGENT+ | Ticket volume and average resolution time per category     |
+| `GET`  | `/assets`              | AGENT+ | Asset inventory counts with warranty buckets                |
+| `GET`  | `/knowledge-base`      | AGENT+ | Knowledge base article usage and effectiveness              |
+| `POST` | `/refresh`             | ADMIN  | Refresh every reporting view immediately                    |
+
+Backed by Postgres materialized views refreshed every 15 minutes, see
+[ADR 0009](docs/adr/0009-reporting-schema.md).
+
+### Comments - `/v1`
+
+| Method   | Path                     | Role         | Description                                     |
+|----------|--------------------------|--------------|-------------------------------------------------|
+| `POST`   | `/tickets/{id}/comments` | USER+        | Add comment or internal note                    |
+| `GET`    | `/tickets/{id}/comments` | USER+        | List comments (internal notes filtered by role) |
+| `POST`   | `/comments/{id}/replies` | USER+        | Reply to a comment                              |
+| `GET`    | `/comments/{id}/replies` | USER+        | List replies                                    |
+| `PUT`    | `/comments/{id}`         | Author/ADMIN | Edit comment                                    |
+| `DELETE` | `/comments/{id}`         | Author/ADMIN | Delete comment                                  |
+
+### Attachments - `/v1`
+
+| Method   | Path                        | Role        | Description                               |
+|----------|-----------------------------|-------------|-------------------------------------------|
+| `POST`   | `/tickets/{id}/attachments` | USER+       | Upload files (max 20MB each, 100MB total) |
+| `GET`    | `/tickets/{id}/attachments` | USER+       | List attachments for ticket               |
+| `GET`    | `/attachments/{id}`         | USER+       | Download attachment                       |
+| `DELETE` | `/attachments/{id}`         | Owner/ADMIN | Delete attachment                         |
+
+### Agents - `/v1/agents`
+
+| Method  | Path          | Role         | Description                       |
+|---------|---------------|--------------|-----------------------------------|
+| `POST`  | `/`           | ADMIN        | Register a user as an agent       |
+| `GET`   | `/`           | AGENT, ADMIN | List all agents                   |
+| `GET`   | `/{id}`       | AGENT, ADMIN | Get agent by ID                   |
+| `PATCH` | `/{id}`       | AGENT, ADMIN | Update availability or department |
+| `GET`   | `/{id}/stats` | ADMIN        | Agent performance statistics      |
+
+### Users - `/v1/users`
+
+| Method  | Path           | Role          | Description         |
+|---------|----------------|---------------|---------------------|
+| `POST`  | `/`            | ADMIN         | Create user         |
+| `GET`   | `/`            | ADMIN         | List all users      |
+| `GET`   | `/me`          | Authenticated | Get own profile     |
+| `GET`   | `/{id}`        | ADMIN or self | Get user by ID      |
+| `PUT`   | `/{id}`        | ADMIN or self | Full update         |
+| `PATCH` | `/me/password` | Authenticated | Change own password |
+
+### Admin - `/v1/admin/users`
+
+| Method   | Path               | Role  | Description     |
+|----------|--------------------|-------|-----------------|
+| `DELETE` | `/{id}`            | ADMIN | Deactivate user |
+| `POST`   | `/{id}/reactivate` | ADMIN | Reactivate user |
+| `PATCH`  | `/{id}/role`       | ADMIN | Change role     |
+| `PATCH`  | `/{id}/password`   | ADMIN | Reset password  |
+
+### Audit Log - `/v1/audit`
+
+| Method | Path               | Role   | Description                       |
+|--------|--------------------|--------|-----------------------------------|
+| `GET`  | `/tickets/{id}`    | AGENT+ | Audit history for a ticket        |
+| `GET`  | `/users/{id}`      | ADMIN  | Audit history for a user          |
+| `GET`  | `/agents/{id}`     | ADMIN  | Audit history for an agent        |
+| `GET`  | `/auth`            | ADMIN  | Auth event log (logins, resets)   |
+| `GET`  | `/actor/{actorId}` | ADMIN  | All actions by a specific user    |
+| `GET`  | `/action/{action}` | ADMIN  | All events of a given action type |
+
+### SLA - `/v1/tickets/{id}/sla`
+
+| Method | Path | Role   | Description                                        |
+|--------|------|--------|----------------------------------------------------|
+| `GET`  | `/`  | AGENT+ | SLA record for a ticket (deadlines, breach status) |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Java 21+
+- Maven 3.9+
+- Docker and Docker Compose
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/Mosotho888/GovHelp_Desk.git
+cd GovHelp_Desk/helpdesk
+```
+
+### 2. Create your `.env` file
+
+Create a `.env` file in `helpdesk/` with the variables listed in [Configuration](#configuration) below (there is
+currently no committed `.env.example` template, copy the required-variables table as a starting point).
+
+### 3. Start infrastructure
+
+```bash
+docker compose up -d db rabbitmq
+```
+
+### 4. Run the application
+
+```bash
+./mvnw spring-boot:run
+```
+
+The API is available at `http://localhost:8080`. Swagger UI is at `http://localhost:8080/swagger-ui.html`.
+
+---
+
+## Configuration
+
+All configuration is driven by environment variables. Copy `.env.example` to `.env` and set the following:
+
+### Required
+
+| Variable               | Description                   | Example                    |
+|------------------------|-------------------------------|----------------------------|
+| `PG_HOST`              | PostgreSQL host               | `localhost`                |
+| `PG_PORT`              | PostgreSQL port               | `5432`                     |
+| `PG_USER`              | Database user                 | `helpdesk_user`            |
+| `PG_PASSWORD`          | Database password             | `changeme`                 |
+| `POSTGRES_DB`          | Database name                 | `helpdesk_db`              |
+| `JWT_SECRET_KEY`       | HS512 secret, min 64 chars    | `your-very-long-secret...` |
+| `JWT_VALIDITY`         | Access token TTL (ms)         | `900000` (15 min)          |
+| `JWT_REFRESH_VALIDITY` | Refresh token TTL (ms)        | `604800000` (7 days)       |
+| `MAIL_HOST`            | SMTP host                     | `smtp.gmail.com`           |
+| `MAIL_PORT`            | SMTP port                     | `587`                      |
+| `MAIL_USERNAME`        | SMTP username / email         | `noreply@gov.za`           |
+| `MAIL_PASSWORD`        | SMTP password or app password | `your-app-password`        |
+| `RABBITMQ_USERNAME`    | RabbitMQ username             | `admin`                    |
+| `RABBITMQ_PASSWORD`    | RabbitMQ password             | `changeme`                 |
+| `RABBITMQ_PORT`        | RabbitMQ AMQP port            | `5672`                     |
+
+### Optional (have defaults)
+
+| Variable                              | Default       | Description                                        |
+|---------------------------------------|---------------|----------------------------------------------------|
+| `UPLOAD_PATH`                         | `./uploads`   | Filesystem path for attachments                    |
+| `RATE_LIMIT_CAPACITY_UNAUTHENTICATED` | `100`         | Requests/hour for anonymous callers                |
+| `RATE_LIMIT_CAPACITY_USER`            | `1000`        | Requests/hour for USER role                        |
+| `RATE_LIMIT_CAPACITY_AGENT`           | `5000`        | Requests/hour for AGENT role                       |
+| `RATE_LIMIT_CAPACITY_ADMIN`           | `10000`       | Requests/hour for ADMIN role                       |
+| `OUTBOX_POLL_INTERVAL`                | `PT5S`        | How often OutboxRelay polls (ISO 8601 duration)    |
+| `OUTBOX_PURGE_CRON`                   | `0 0 3 * * *` | Cron for purging old processed events (3 AM daily) |
+| `SLA_MONITOR_INTERVAL`                | `PT5M`        | How often SlaBreachMonitor runs                    |
+| `MIN_CONCURRENCY`                     | `1`           | RabbitMQ consumer thread count                     |
+| `HIBERNATE_DIALECT`                   | none          | Set to `org.hibernate.dialect.PostgreSQLDialect`   |
+
+---
+
+## Running with Docker
+
+The full stack (app + PostgreSQL + RabbitMQ + Prometheus + Grafana) runs with Docker Compose.
+
+```bash
+# Start everything
+docker compose up -d
+
+# Start only infrastructure (run the app locally via mvnw)
+docker compose up -d db rabbitmq
+
+# With monitoring stack
+docker compose up -d db rabbitmq prometheus grafana
+
+# View logs
+docker compose logs -f spring-boot-app
+
+# Stop and remove containers
+docker compose down
+
+# Stop and remove containers + volumes (clean slate)
+docker compose down -v
+```
+
+### Service ports
+
+| Service             | Port    | URL                                                  |
+|---------------------|---------|------------------------------------------------------|
+| Spring Boot API     | `8080`  | `http://localhost:8080`                              |
+| Swagger UI          | `8080`  | `http://localhost:8080/swagger-ui.html`              |
+| PostgreSQL          | `5433`  | `localhost:5433` (mapped from 5432 inside container) |
+| RabbitMQ AMQP       | `5672`  | `localhost:5672`                                     |
+| RabbitMQ Management | `15672` | `http://localhost:15672`                             |
+| Prometheus          | `9090`  | `http://localhost:9090`                              |
+| Grafana             | `3000`  | `http://localhost:3000` (admin / admin)              |
+
+---
+
+## Running Tests
+
+```bash
+# All tests (unit + integration) with coverage check
+./mvnw verify
+
+# Unit tests only (no Testcontainers, fast)
+./mvnw test
+
+# Integration tests only
+./mvnw verify -Dit.test="*IT"
+
+# Skip tests (build only)
+./mvnw package -DskipTests
+```
+
+Tests use **Testcontainers** - PostgreSQL and RabbitMQ containers start automatically during the test run. Docker must
+be running. No manual database setup is required.
+
+Coverage report is generated at `target/site/jacoco/index.html` after `./mvnw verify`. The minimum required line
+coverage is **80%** - the build fails if it drops below this.
+
+---
+
+## Monitoring
+
+Prometheus and Grafana are fully provisioned. After `docker compose up -d prometheus grafana`:
+
+1. Open Grafana at `http://localhost:3000` (admin / admin)
+2. Navigate to **Dashboards → GovHelpDesk** folder
+3. Eight dashboards are pre-loaded:
+
+| Dashboard             | What it shows                                                    |
+|-----------------------|------------------------------------------------------------------|
+| **Tickets**           | Create/resolve/close/escalate rates, resolution time p50/p95/p99 |
+| **Comments**          | Public vs internal note volume, edit/delete rates                |
+| **Attachments**       | Upload/download rates, file size distribution                    |
+| **Agents**            | Registrations, availability changes, department reassignments    |
+| **SLA**               | Response/resolution breach and warning rates, 24h window         |
+| **Outbox Relay**      | Pending backlog gauge, publish/failure/dead-letter rates         |
+| **Auth and Security** | Login success/failure ratio, token lifecycle, brute-force signal |
+| **Notifications**     | Email ACK/NACK/DLQ rates, audit consumer throughput              |
+
+### Custom metrics
+
+All custom metrics use the `helpdesk.*` prefix. Micrometer auto-instruments the rest (`http.*`, `jvm.*`, `hikaricp.*`,
+etc.).
+
+Each domain owns its metrics through a dedicated `@Component` bean:
+
+```
+TicketMetrics       → helpdesk.ticket.*
+CommentMetrics      → helpdesk.comment.*
+AttachmentMetrics   → helpdesk.attachment.*
+AgentMetrics        → helpdesk.agent.*
+SlaMetrics          → helpdesk.sla.*
+OutboxMetrics       → helpdesk.outbox.*
+AuthMetrics         → helpdesk.auth.*
+NotificationMetrics → helpdesk.notification.*
+```
+
+Prometheus scrapes `/actuator/prometheus` every 15 seconds.
+
+---
+
+## CI/CD Pipeline
+
+### CI - `.github/workflows/ci.yml`
+
+Every push triggers the GitHub Actions CI pipeline.
+
+```mermaid
+graph LR
+    trigger["push / pull_request"]
+    test["build-and-test<br/>compile + tests + JaCoCo 80% coverage<br/>(Testcontainers: PostgreSQL + RabbitMQ)"]
+    analysis["static-analysis<br/>Spotless → Checkstyle → PMD + CPD → SpotBugs"]
+    publish["docker-publish<br/>build + push to Docker Hub<br/>tags: latest, short-sha, YYYY.MM.DD<br/>(main branch only)"]
+    trigger --> test
+    trigger --> analysis
+    test --> publish
+    analysis --> publish
+```
+
+### CD - `.github/workflows/cd.yml`
+
+On successful CI against `main`, the CD workflow deploys straight to production:
+
+```mermaid
+graph LR
+    ci["CI workflow succeeds<br/>on main"]
+    scp["SCP monitoring config<br/>→ OCI VM (~/helpdesk/monitoring)"]
+    ssh["SSH into OCI VM"]
+    pull["docker compose pull app"]
+    up["docker compose up -d<br/>--no-deps app"]
+    prune["docker image prune -f"]
+    ci --> scp
+    ci --> ssh
+    ssh --> pull --> up --> prune
+```
+
+This deploys only the `app` service - the database, RabbitMQ, Prometheus, and Grafana containers are left running
+untouched. The live API is served at [api.sothoman.com](https://api.sothoman.com) from an OCI Free Tier ARM VM (Ubuntu
+22.04, Johannesburg), fronted by Cloudflare DNS with Full (Strict) SSL.
+
+`railway.json` is kept in the repo as a documented fallback deploy target (a quick demo without provisioning a VM) - it
+is not the primary target. See [ADR 0004](docs/adr/0004-oci-arm-free-tier-deployment.md) for why OCI was chosen instead.
+
+### Required GitHub repository secrets
+
+Go to **Settings → Secrets and variables → Actions** and add:
+
+| Secret                | Description                                           | Used by |
+|-----------------------|-------------------------------------------------------|---------|
+| `DOCKERHUB_USERNAME`  | Your Docker Hub username                              | CI      |
+| `DOCKERHUB_TOKEN`     | Docker Hub access token (Account Settings → Security) | CI      |
+| `OCI_VM_IP`           | Public IP of the OCI deployment VM                    | CD      |
+| `OCI_SSH_PRIVATE_KEY` | SSH private key with access to the OCI VM             | CD      |
+
+---
+
+## Static Analysis
+
+Four tools run on every push. All configuration lives under `config/`.
+
+### Spotless - formatting
+
+Enforces consistent formatting using the Eclipse formatter engine.
+
+```bash
+./mvnw spotless:check   # check (used in CI)
+./mvnw spotless:apply   # auto-fix (run locally before committing)
+```
+
+**Always run `./mvnw spotless:apply` before pushing.** CI runs `check` only - it will fail if any file is unformatted.
+
+Config: `config/spotless/eclipse-formatter.xml`
+
+### Checkstyle - source style
+
+Enforces naming conventions, import order, line length (120), brace placement, and magic number rules.
+
+```bash
+./mvnw checkstyle:check       # fail on violations
+./mvnw checkstyle:checkstyle  # generate HTML report
+```
+
+Config: `config/checkstyle/checkstyle.xml`
+
+> **Note:** Existing wildcard imports (`import lombok.*`) are flagged by Checkstyle.
+> Fix with **IntelliJ → Code → Optimize Imports** on each affected file.
+
+### PMD - code quality
+
+Detects code complexity, dead code, bad patterns, and copy-paste duplication (CPD).
+
+```bash
+./mvnw pmd:check      # PMD violations
+./mvnw pmd:cpd-check  # copy-paste violations
+./mvnw pmd:pmd        # generate HTML report
+```
+
+Config: `config/pmd/pmd-ruleset.xml`
+
+### SpotBugs - bytecode bugs
+
+Finds null dereferences, resource leaks, unsafe synchronisation, and dangerous API usage by analysing compiled bytecode.
+
+```bash
+./mvnw spotbugs:check  # fail on findings
+./mvnw spotbugs:gui    # open interactive GUI report
+```
+
+Config: `config/spotbugs/exclude.xml` (false-positive suppressions for Lombok/MapStruct/Spring)
+
+---
+
+## Project Structure
+
+```
+src/
+├── main/
+│   ├── java/za/gov/helpdesk/
+│   │   ├── HelpdeskApplication.java
+│   │   ├── agent/              # Agent profiles and availability
+│   │   ├── attachment/         # File upload/download
+│   │   ├── auditlog/           # Audit trail (consumer + query API)
+│   │   ├── auth/               # JWT auth, refresh tokens, password reset
+│   │   ├── comment/            # Threaded comments and internal notes
+│   │   ├── config/
+│   │   │   ├── metrics/        # Per-domain Micrometer beans
+│   │   │   ├── messaging/      # RabbitMQ topology (exchanges, queues)
+│   │   │   └── security/       # SecurityFilterChain, RateLimitingFilter
+│   │   ├── exception/          # Global exception handler, custom exceptions
+│   │   ├── notification/       # Email consumers and SMTP service
+│   │   ├── outbox/             # Transactional outbox (model, relay, repo)
+│   │   ├── sla/                # SLA policies, per-ticket SLA, breach monitor
+│   │   ├── ticket/             # Core ticket domain
+│   │   └── users/              # User management
+│   └── resources/
+│       ├── application.properties
+│       ├── db/migration/       # Flyway scripts V1-V11
+│       └── templates/          # Thymeleaf email templates
+├── test/
+│   ├── java/za/gov/helpdesk/
+│   │   ├── integration/        # Testcontainers integration tests
+│   │   └── unit/               # Mockito unit tests per service
+│   └── resources/
+│       └── application-test.properties
+config/
+├── checkstyle/checkstyle.xml
+├── spotbugs/exclude.xml
+├── pmd/pmd-ruleset.xml
+└── spotless/eclipse-formatter.xml
+monitoring/
+├── prometheus/prometheus.yml
+└── grafana/
+    ├── provisioning/
+    │   ├── datasources/
+    │   └── dashboards/
+    └── dashboards/             # 8 JSON dashboard definitions
+.github/
+└── workflows/
+    └── ci.yml
+Dockerfile                      # Multi-stage: eclipse-temurin:17-jdk → 17-jre
+docker-compose.yml
+```
+
+## Limitations and Future Enhancements
+
+GovHelpDesk currently focuses on providing the core functionality required for an IT department Help Desk. While it
+supports secure authentication, ticket lifecycle management, SLA monitoring, audit logging, notifications, and
+observability, several enterprise features are intentionally reserved for future releases.
+
+### Planned Enhancements
+
+- **Operational Dashboards**
+    - Backend reporting API delivered (`/v1/reports`, see [ADR 0009](docs/adr/0009-reporting-schema.md)):
+      ticket volume, SLA compliance, agent workload, category breakdown, asset summary, and knowledge base
+      effectiveness, backed by materialized views refreshed every 15 minutes.
+    - Still to build: a frontend dashboard (recharts) presenting this data to agents and administrators, and Phase 2/3
+      of the analytics roadmap (an event-driven fact table, optional Parquet/DuckDB export)
+      if reporting needs outgrow periodically refreshed views.
+
+- **Automation Rules**
+    - Trigger notifications, escalations, and SLA-based workflows without manual intervention, building on the
+      category-based auto-assignment already in place (see [
+      `docs/adr/0006-hierarchical-ticket-categories.md`](docs/adr/0006-hierarchical-ticket-categories.md)).
+
+- **Saved Replies**
+    - Allow agents to use predefined response templates for common IT support scenarios, improving consistency and
+      reducing response times.
+
+- **Customer Satisfaction (CSAT)**
+    - Collect user feedback after ticket resolution to measure service quality and support continuous improvement.
+
+These enhancements are planned to extend GovHelpDesk from a production-ready IT Help Desk into a more comprehensive IT
+Service Management (ITSM) platform while maintaining a modular and scalable architecture.

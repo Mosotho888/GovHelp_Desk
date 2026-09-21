@@ -65,7 +65,7 @@ graph TB
     class auth,users,agent,ticket,comment,attachment,sla,auditlog domain
     class outbox,notification msg
     class db,mq store
-    %% @formatter:on
+%% @formatter:on
 ```
 
 ## Key components and their single responsibility
@@ -81,12 +81,17 @@ graph TB
 | `TicketCategoryQueryHelper`                        | `category.service`           | Builds category breadcrumb paths and resolves a category's descendant ids for filtering                  |
 | `AssetService` / `AssetServiceImpl`                | `asset.service`              | IT asset CRUD: registration, updates, assignment, and soft-retirement                                     |
 | `TicketAssetLinkService`                            | `asset.service`              | Links/unlinks assets to tickets and serves an asset's device history                                      |
+| `ArticleService` / `ArticleServiceImpl`             | `knowledgebase.service`      | Knowledge article CRUD, lifecycle transitions (draft/publish/archive), and feedback                       |
+| `ArticleQueryHelper`                                | `knowledgebase.service`      | Centralises the citizen-visibility rule: only PUBLISHED articles are visible outside staff                |
+| `TicketArticleLinkService`                          | `knowledgebase.service`      | Links/unlinks KB articles to tickets and tracks article usage/ticket-history                               |
+| `ReportingRepository`                               | `reporting.repository.jdbc`  | Reads the reporting materialized views with typed row mappers; issues the concurrent view refreshes         |
+| `ReportingRefreshScheduler`                          | `reporting.scheduler`        | Refreshes every reporting materialized view on a 15 minute fixed rate                                        |
 | `CommentAccessPolicy`                              | `comment.policy`             | Enforces the author-or-admin, 15-minute edit window rule for comment mutation                             |
 | `AttachmentValidator`                              | `attachment.policy`          | Enforces file count, size, and MIME-type limits before storage                                            |
 | `FileStorageServiceImpl`                           | `attachment.service.storage` | Normalises and containment-checks the destination path to prevent path traversal                          |
 | `SlaBreachMonitor`                                 | `sla.schedular`              | `@Scheduled` job (every 5 minutes) that flags response/resolution breaches                                |
 | `BusinessHoursCalculator`                          | `sla.service`                | Computes SLA due dates against business-hours logic                                                       |
-| `OutboxWriter` / `OutboxRelay` / `OutboxProcessor` | `outbox`                     | Implements the transactional outbox pattern — see [ADR 0001](../adr/0001-transactional-outbox-pattern.md) |
+| `OutboxWriter` / `OutboxRelay` / `OutboxProcessor` | `outbox`                     | Implements the transactional outbox pattern, see [ADR 0001](../adr/0001-transactional-outbox-pattern.md) |
 | `RateLimitingFilter` / `RateLimitPolicyProvider`   | `config.security`            | Token-bucket rate limiting, capacity resolved by authenticated role                                       |
 | `GlobalExceptionHandler`                           | `exception.global`           | Central `@ControllerAdvice` translating domain exceptions to a consistent `ApiErrorResponse`              |
 

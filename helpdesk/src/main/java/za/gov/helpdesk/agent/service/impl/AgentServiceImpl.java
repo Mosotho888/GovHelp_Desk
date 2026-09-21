@@ -17,10 +17,9 @@ import za.gov.helpdesk.agent.metrics.AgentMetrics;
 import za.gov.helpdesk.agent.model.Agent;
 import za.gov.helpdesk.agent.repository.jdbc.ReportJdbcRepository;
 import za.gov.helpdesk.agent.repository.jpa.AgentRepository;
+import za.gov.helpdesk.agent.service.AgentAuditService;
 import za.gov.helpdesk.agent.service.AgentQueryHelper;
 import za.gov.helpdesk.agent.service.AgentService;
-import za.gov.helpdesk.auditlog.messaging.AuditEventPublisher;
-import za.gov.helpdesk.auditlog.model.AuditLog;
 import za.gov.helpdesk.exception.DuplicateResourceException;
 import za.gov.helpdesk.users.model.User;
 import za.gov.helpdesk.users.service.UserQueryHelper;
@@ -38,7 +37,7 @@ public class AgentServiceImpl implements AgentService {
     private final AgentQueryHelper agentQuery;
     private final AgentMapper agentMapper;
     private final ReportJdbcRepository reportJdbcRepository;
-    private final AuditEventPublisher auditPublisher;
+    private final AgentAuditService agentAuditService;
     private final AgentMetrics agentMetrics;
 
     @Override
@@ -74,17 +73,7 @@ public class AgentServiceImpl implements AgentService {
         }
         agentMetrics.incrementRegistered();
 
-        auditPublisher.publishAudit(
-                AuditLog.EntityType.AGENT,
-                savedAgent.getId(),
-                actor,
-                AuditLog.AuditAction.AGENT_REGISTERED,
-                null,
-                user.getName(),
-                "Registered as agent in department: "
-                        + (savedAgent.getDepartment() != null
-                                ? savedAgent.getDepartment()
-                                : "N/A"));
+        agentAuditService.agentCreated(savedAgent, actor, user);
 
         return agentMapper.toAgentResponse(savedAgent);
     }
@@ -121,14 +110,9 @@ public class AgentServiceImpl implements AgentService {
         if (request.getAvailability() != null
                 && request.getAvailability() != agent.getAvailability()) {
 
-            auditPublisher.publishAudit(
-                    AuditLog.EntityType.AGENT,
-                    agent.getId(),
-                    actor,
-                    AuditLog.AuditAction.AVAILABILITY_CHANGED,
-                    agent.getAvailability().name(),
-                    request.getAvailability().name(),
-                    null);
+            agentAuditService.agentUpdatedAvailability(
+                    agent, actor, request.getAvailability().name());
+
             agent.setAvailability(request.getAvailability());
             agentMetrics.incrementAvailabilityChanged(request.getAvailability());
         }
@@ -136,14 +120,8 @@ public class AgentServiceImpl implements AgentService {
         if (request.getDepartment() != null
                 && !request.getDepartment().equals(agent.getDepartment())) {
 
-            auditPublisher.publishAudit(
-                    AuditLog.EntityType.AGENT,
-                    agent.getId(),
-                    actor,
-                    AuditLog.AuditAction.DEPARTMENT_CHANGED,
-                    agent.getDepartment(),
-                    request.getDepartment(),
-                    null);
+            agentAuditService.agentUpdatedDepartment(agent, actor, request.getDepartment());
+
             agent.setDepartment(request.getDepartment());
             agentMetrics.incrementDepartmentChanged();
         }

@@ -24,6 +24,13 @@ erDiagram
     users ||--o{ assets: "is assigned"
     tickets ||--o{ ticket_assets: "concerns"
     assets ||--o{ ticket_assets: "has history"
+    ticket_categories ||--o{ knowledge_articles: "categorises"
+    users ||--o{ knowledge_articles: "authors"
+    knowledge_articles ||--o{ knowledge_article_tags: "tagged with"
+    knowledge_articles ||--o{ knowledge_article_feedback: "rated by"
+    users ||--o{ knowledge_article_feedback: "rates"
+    tickets ||--o{ ticket_knowledge_articles: "resolved with"
+    knowledge_articles ||--o{ ticket_knowledge_articles: "used in"
 
     users {
         bigint id PK
@@ -123,6 +130,49 @@ erDiagram
         timestamp linked_at
     }
 
+    knowledge_articles {
+        bigint id PK
+        varchar title
+        varchar slug UK
+        varchar summary
+        text content
+        varchar type "TROUBLESHOOTING_GUIDE|FAQ|STANDARD_OPERATING_PROCEDURE|GENERAL"
+        varchar status "DRAFT|PUBLISHED|ARCHIVED"
+        bigint category_id FK "nullable"
+        bigint author_id FK
+        tsvector search_vector "generated, GIN indexed"
+        bigint view_count
+        int helpful_count
+        int not_helpful_count
+        int usage_count
+        timestamp published_at
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    knowledge_article_tags {
+        bigint article_id FK
+        varchar tag
+    }
+
+    knowledge_article_feedback {
+        bigint id PK
+        bigint article_id FK
+        bigint user_id FK
+        boolean helpful
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    ticket_knowledge_articles {
+        bigint id PK
+        bigint ticket_id FK
+        bigint article_id FK
+        bigint linked_by_id FK
+        varchar linked_by_name
+        timestamp linked_at
+    }
+
     audit_log {
         bigint id PK
         varchar entity_type
@@ -200,7 +250,7 @@ erDiagram
 System-wide identity table for all three roles. `role` is constrained to
 `USER | AGENT | ADMIN` at the database level (`CHECK` constraint), not just in application code. `login_attempts` backs
 the account-lockout mechanism - see
-[`docs/security/security-model.md`](../security/security-model.md#account-lockout).
+[`docs/security/README.md`](../security/security-model.md#account-lockout).
 
 ### `agents`
 
@@ -258,6 +308,47 @@ fields. `uq_ticket_assets_ticket_asset` prevents linking the same asset to the s
 `idx_ticket_assets_asset` (on `asset_id, linked_at DESC`) is what makes an asset's device history
 (`GET /v1/assets/{id}/tickets`) fast to page through.
 
+### `knowledge_articles`
+
+Self-service documentation: troubleshooting guides, FAQs, and standard operating procedures. `search_vector` is a
+`GENERATED ALWAYS AS ... STORED` `tsvector` column combining title/summary/content with descending weights (A/B/C),
+GIN-indexed for full-text search - see [ADR 0008](../adr/0008-knowledge-base.md) for why a generated column and Postgres
+full-text search were chosen over `LIKE` matching or external search infrastructure. `category_id` links to
+`ticket_categories` (nullable) so articles can be suggested against the same taxonomy tickets are filed under.
+`view_count`, `helpful_count`/`not_helpful_count`, and `usage_count` together measure whether the KB is actually
+working: opened, rated, and (via `usage_count`) genuinely used to resolve a ticket. `status` follows `DRAFT ->
+PUBLISHED -> ARCHIVED`; the application layer rejects moving back to `DRAFT` once published.
+
+### `knowledge_article_tags`
+
+Plain string tags via a join table rather than a dedicated `Tag` entity, since tags here carry no attributes of their
+own beyond the label. `idx_knowledge_article_tags_tag` supports filtering articles by tag.
+
+### `knowledge_article_feedback`
+
+One helpful/not-helpful vote per `(article_id, user_id)`, enforced by `uq_knowledge_article_feedback_article_user` -
+upserted rather than appended, so a reader can change their mind without the article's counters double-counting or
+drifting out of sync with the underlying votes.
+
+### `ticket_knowledge_articles`
+
+Join table linking a ticket to the article (s) used to resolve it, structurally identical to `ticket_assets` for the
+same accountability reasons. Unlike `ticket_assets`, linking here also increments the article's `usage_count` - a
+running total (not decremented on unlink) of how often the article has actually helped resolve a ticket, which is the
+clearest signal of which KB content is worth maintaining.
+
+### Reporting materialized views
+
+`V11__create_reporting_views.sql` adds six materialized views feeding the `/v1/reports` endpoints:
+`mv_ticket_volume_daily`,
+`mv_sla_compliance_daily`, `mv_agent_workload`, `mv_category_breakdown`, `mv_asset_summary`, and `mv_kb_effectiveness`.
+Each pre-aggregates one dashboard's query so a report request reads a small, already summarised table rather than
+scanning `tickets`, `ticket_sla`, `assets`, or `knowledge_articles` directly. Every view carries a unique index on its
+natural grouping key (for example `report_date, status, priority` on the ticket volume view, or `agent_id` on the
+workload view), which is what allows `REFRESH MATERIALIZED VIEW CONCURRENTLY` to rebuild each one without blocking
+concurrent dashboard reads. See [ADR 0009](../adr/0009-reporting-schema.md) for why materialized views were chosen over
+computing every aggregation on demand, and how refreshing is scheduled.
+
 ### `audit_log`
 
 Originally a ticket-only log; refactored in `V3__refactor_audit_log.sql` into a generic entity audit trail
@@ -274,7 +365,7 @@ state, created when a ticket is opened and updated as
 
 ### `outbox_events`
 
-Backs the transactional outbox pattern — see
+Backs the transactional outbox pattern, see
 [ADR 0001](../adr/0001-transactional-outbox-pattern.md). The partial index
 `idx_outbox_status_created` (`WHERE status = 'PENDING'`) keeps the relay's polling query fast even as processed rows
 accumulate, since it only indexes the rows the poller actually needs.
@@ -287,17 +378,19 @@ raw OTP) for password reset.
 
 ## Migration history
 
-| Version | File                                   | Summary                                                                                                                            |
-|---------|----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| V1      | `V1__helpdesk_schema.sql`              | Core schema: `users`, `agents`, `tickets`, `comments`, `attachments`, original `audit_log`                                         |
-| V2      | `V2__seed_data.sql`                    | Seed data for local/demo environments                                                                                              |
-| V3      | `V3__refactor_audit_log.sql`           | Generalised `audit_log` from ticket-only to entity-generic, added actor/IP metadata                                                |
-| V4      | `V4__create_refresh_tokens.sql`        | Added `refresh_tokens`                                                                                                             |
-| V5      | `V5__create_password_reset_tokens.sql` | Added `password_reset_tokens`                                                                                                      |
-| V6      | `V6__create_sla_tables.sql`            | Added `sla_policies` (seeded) and `ticket_sla`                                                                                     |
-| V7      | `V7__create_outbox_events.sql`         | Added `outbox_events` for the transactional outbox pattern                                                                         |
-| V8      | `V8__create_ticket_categories.sql`     | Added hierarchical `ticket_categories`, seeded default tree, migrated `tickets.category` (free text) to `tickets.category_id` (FK) |
-| V9      | `V9__create_assets.sql`                | Added `assets` and `ticket_assets` (join table), seeded demo inventory                                                             |
+| Version | File                                   | Summary                                                                                                                                                                               |
+|---------|----------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| V1      | `V1__helpdesk_schema.sql`              | Core schema: `users`, `agents`, `tickets`, `comments`, `attachments`, original `audit_log`                                                                                            |
+| V2      | `V2__seed_data.sql`                    | Seed data for local/demo environments                                                                                                                                                 |
+| V3      | `V3__refactor_audit_log.sql`           | Generalised `audit_log` from ticket-only to entity-generic, added actor/IP metadata                                                                                                   |
+| V4      | `V4__create_refresh_tokens.sql`        | Added `refresh_tokens`                                                                                                                                                                |
+| V5      | `V5__create_password_reset_tokens.sql` | Added `password_reset_tokens`                                                                                                                                                         |
+| V6      | `V6__create_sla_tables.sql`            | Added `sla_policies` (seeded) and `ticket_sla`                                                                                                                                        |
+| V7      | `V7__create_outbox_events.sql`         | Added `outbox_events` for the transactional outbox pattern                                                                                                                            |
+| V8      | `V8__create_ticket_categories.sql`     | Added hierarchical `ticket_categories`, seeded default tree, migrated `tickets.category` (free text) to `tickets.category_id` (FK)                                                    |
+| V9      | `V9__create_assets.sql`                | Added `assets` and `ticket_assets` (join table), seeded demo inventory                                                                                                                |
+| V10     | `V10__create_knowledge_base.sql`       | Added `knowledge_articles` (with generated `tsvector` search column), `knowledge_article_tags`, `knowledge_article_feedback`, and `ticket_knowledge_articles`; seeded 5 demo articles |
+| V11     | `V11__create_reporting_views.sql`      | Added 6 reporting materialized views (ticket volume, SLA compliance, agent workload, category breakdown, asset summary, KB effectiveness) with unique indexes for concurrent refresh  |
 
 New migrations should always be additive and forward-only (Flyway's model) - never edit a committed migration file once
 it has run against any shared environment.

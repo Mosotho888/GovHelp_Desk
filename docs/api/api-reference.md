@@ -16,16 +16,16 @@ paths requires a JWT bearer token:
 Authorization: Bearer <access_token>
 ```
 
-Get a token from `POST /v1/auth/login`, and refresh it from `POST /v1/auth/refresh` before it expires - see [
+Get a token from `POST /v1/auth/login`, and refresh it from `POST /v1/auth/refresh` before it expires, see [
 `docs/security/README.md`](../security/security-model.md) for token lifetimes and the full authentication model.
 
 ## Roles
 
-| Role    | Description                                         |
-|---------|-----------------------------------------------------|
-| `USER`  | A employee who submits and tracks their own tickets |
-| `AGENT` | A support agent working assigned/queued tickets     |
-| `ADMIN` | Full administrative access                          |
+| Role    | Description                                        |
+|---------|----------------------------------------------------|
+| `USER`  | A citizen who submits and tracks their own tickets |
+| `AGENT` | A support agent working assigned/queued tickets    |
+| `ADMIN` | Full administrative access                         |
 
 Authorization on each endpoint below is enforced with Spring Security's `@PreAuthorize`
 method security - where a "Role" column says `USER+`, it means any authenticated role (the endpoint has no explicit
@@ -129,7 +129,10 @@ drives ticket auto-assignment.
 `EXPIRING_SOON`/`EXPIRED`/`NO_WARRANTY_INFO`) is computed at read time from `warrantyExpiryDate` -
 see [ADR 0007](../adr/0007-asset-management.md). To clear an asset's current owner, set
 `clearAssignedUser: true` on the `PATCH` body rather than sending `assignedUserId: null`, since the two are
-indistinguishable over JSON otherwise.
+indistinguishable over JSON otherwise. `location` can be updated in the same `PATCH` call as a reassignment (e.g. moving
+a laptop to a different owner in a different office); doing so produces both an
+`ASSET_LOCATION_CHANGED` and an `ASSET_ASSIGNED` audit entry, with the assignment's description reflecting the asset's
+new location.
 
 ## Ticket Assets - `/v1/tickets/{ticketId}/assets`
 
@@ -141,6 +144,60 @@ indistinguishable over JSON otherwise.
 
 Linking or unlinking an asset publishes an audit entry against both the ticket and the asset, so the event is
 discoverable from either `GET /v1/audit/tickets/{id}` or `GET /v1/audit/assets/{id}`.
+
+## Knowledge Base - `/v1/knowledge-base`
+
+| Method   | Path             | Role             | Description                                                          |
+|----------|------------------|------------------|----------------------------------------------------------------------|
+| `POST`   | `/`              | `AGENT`, `ADMIN` | Draft a new article                                                  |
+| `GET`    | `/`              | Authenticated    | Browse articles, filterable by `status`, `type`, `categoryId`, `tag` |
+| `GET`    | `/search`        | Authenticated    | Full-text search (`?q=`) ranked by relevance                         |
+| `GET`    | `/{id}`          | Authenticated    | Get an article by ID (increments its view count)                     |
+| `GET`    | `/slug/{slug}`   | Authenticated    | Get an article by its slug                                           |
+| `PATCH`  | `/{id}`          | `AGENT`, `ADMIN` | Edit content, category, tags, or lifecycle status                    |
+| `DELETE` | `/{id}`          | `ADMIN`          | Permanently delete an article (prefer archiving via `PATCH`)         |
+| `POST`   | `/{id}/feedback` | Authenticated    | Rate an article helpful or not helpful (one vote per user)           |
+| `GET`    | `/{id}/feedback` | Authenticated    | Get feedback totals and the requester's own vote                     |
+| `GET`    | `/{id}/tickets`  | `AGENT`, `ADMIN` | Get an article's usage history: every ticket it helped resolve       |
+
+Citizens (role `USER`) only ever see `PUBLISHED` articles - a request for a draft or archived article by id or slug
+returns `404`, not `403`, so a citizen can't detect that unpublished content exists. Search results are similarly
+restricted to `PUBLISHED` for citizens.
+
+Search uses Postgres full-text search (a generated `tsvector` column, GIN-indexed, ranked by
+`ts_rank`) rather than substring matching - see [ADR 0008](../adr/0008-knowledge-base.md). An article's lifecycle is
+`DRAFT -> PUBLISHED -> ARCHIVED`; `PATCH`ing `status` back to `PUBLISHED`
+after `ARCHIVED` republishes it, but moving a `PUBLISHED` article back to `DRAFT` is rejected with
+`422 Unprocessable Entity` - archive it instead.
+
+## Ticket Knowledge Articles - `/v1/tickets/{ticketId}/knowledge-articles`
+
+| Method   | Path           | Role             | Description                                                         |
+|----------|----------------|------------------|---------------------------------------------------------------------|
+| `POST`   | `/{articleId}` | `AGENT`, `ADMIN` | Link an article to a ticket as (part of) its resolution             |
+| `DELETE` | `/{articleId}` | `AGENT`, `ADMIN` | Unlink an article from a ticket                                     |
+| `GET`    | `/`            | Authenticated    | List articles linked to a ticket - visible to its own requester too |
+
+Linking increments the article's `usageCount` (a running total, not decremented on unlink) - the clearest measure of
+which KB content actually resolves tickets. Link/unlink events are logged against both the ticket and the article,
+discoverable via either `GET /v1/audit/tickets/{id}` or
+`GET /v1/audit/knowledge-articles/{id}`.
+
+## Reporting - `/v1/reports`
+
+| Method | Path                  | Role             | Description                                                      |
+|--------|-----------------------|------------------|------------------------------------------------------------------|
+| `GET`  | `/ticket-volume`      | `AGENT`, `ADMIN` | Daily ticket volume by status and priority (`?days=` default 30) |
+| `GET`  | `/sla-compliance`     | `AGENT`, `ADMIN` | Daily SLA compliance rate (`?days=` default 30)                  |
+| `GET`  | `/agent-workload`     | `AGENT`, `ADMIN` | Current workload per agent, system wide                          |
+| `GET`  | `/category-breakdown` | `AGENT`, `ADMIN` | Ticket volume and average resolution time per category           |
+| `GET`  | `/assets`             | `AGENT`, `ADMIN` | Asset inventory counts by type and status, with warranty buckets |
+| `GET`  | `/knowledge-base`     | `AGENT`, `ADMIN` | Knowledge base article usage and effectiveness                   |
+| `POST` | `/refresh`            | `ADMIN`          | Refresh every reporting view immediately, outside the schedule   |
+
+All of these read from Postgres materialized views refreshed every 15 minutes, so dashboard data can be up to that far
+behind live activity, see [ADR 0009](../adr/0009-reporting-schema.md). Use `POST /refresh` after seeding demo data or
+before a live walkthrough to get current numbers immediately.
 
 ## Comments - `/v1`
 
@@ -176,20 +233,21 @@ model.
 | `GET`  | `/`  | `AGENT`, `ADMIN` | Get SLA status (due dates, breach flags) for a ticket |
 
 SLA policies are seeded per priority (response/resolution minutes, warning threshold) and evaluated every 5 minutes by
-`SlaBreachMonitor` — see
+`SlaBreachMonitor`, see
 [`docs/database/README.md`](../database/database.md#sla_policies--ticket_sla).
 
 ## Audit - `/v1/audit`
 
-| Method | Path               | Role             | Description                                                      |
-|--------|--------------------|------------------|------------------------------------------------------------------|
-| `GET`  | `/tickets/{id}`    | `AGENT`, `ADMIN` | Audit trail for a ticket                                         |
-| `GET`  | `/users/{id}`      | `ADMIN`          | Audit trail for a user                                           |
-| `GET`  | `/agents/{id}`     | `ADMIN`          | Audit trail for an agent                                         |
-| `GET`  | `/assets/{id}`     | `AGENT`, `ADMIN` | Audit trail for an asset                                         |
-| `GET`  | `/auth`            | `ADMIN`          | Paginated authentication-related audit events (logins, lockouts) |
-| `GET`  | `/actor/{actorId}` | `ADMIN`          | Paginated audit events performed by a given actor                |
-| `GET`  | `/action/{action}` | `ADMIN`          | Paginated audit events of a given action type                    |
+| Method | Path                       | Role             | Description                                                      |
+|--------|----------------------------|------------------|------------------------------------------------------------------|
+| `GET`  | `/tickets/{id}`            | `AGENT`, `ADMIN` | Audit trail for a ticket                                         |
+| `GET`  | `/users/{id}`              | `ADMIN`          | Audit trail for a user                                           |
+| `GET`  | `/agents/{id}`             | `ADMIN`          | Audit trail for an agent                                         |
+| `GET`  | `/assets/{id}`             | `AGENT`, `ADMIN` | Audit trail for an asset                                         |
+| `GET`  | `/knowledge-articles/{id}` | `AGENT`, `ADMIN` | Audit trail for a knowledge base article                         |
+| `GET`  | `/auth`                    | `ADMIN`          | Paginated authentication-related audit events (logins, lockouts) |
+| `GET`  | `/actor/{actorId}`         | `ADMIN`          | Paginated audit events performed by a given actor                |
+| `GET`  | `/action/{action}`         | `ADMIN`          | Paginated audit events of a given action type                    |
 
 ## Health and observability (unauthenticated)
 
